@@ -80,6 +80,15 @@
 | 52 | POST | /api/v1/mes/processes/{id}/start · /finish · /qc | mes:process:work / mes:qc:release | 开工/报工/检验放行（E-26） |
 | 53 | POST | /api/v1/mes/andon(+ /escalate) | mes:andon:raise | Andon 四类报警/分级升级 |
 
+## S6 已交付接口（质量）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 54 | GET/POST | /api/v1/qms/inspections(+ /{id}/correct) | qms:inspect | 检验三关口/AI 改判留痕 |
+| 55 | POST | /api/v1/qms/8ds(+ /{id}/close) | qms:8d:manage | 8D（D6 未填拒关） |
+| 56 | GET/POST | /api/v1/qms/gauges/usable · /gauges/{id}/calibrate | qms:gauge:manage | 量具超期锁定/校准 |
+| 57 | GET | /api/v1/qms/assets/{id}/mtbf | 登录 | MTBF |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

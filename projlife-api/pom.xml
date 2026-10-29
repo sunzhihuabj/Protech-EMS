@@ -60,6 +60,10 @@
         </dependency>
         <dependency>
             <groupId>com.projlife</groupId>
+            <artifactId>module-qms</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
             <artifactId>module-crm</artifactId>
         </dependency>
         <dependency>
