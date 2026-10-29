@@ -45,6 +45,21 @@
 | 34 | POST/GET | /api/v1/contract/{id}/dispatch · /dispatches/{id}/read | contract:dispatch | 交底/已阅 |
 | 35 | POST | /api/v1/contract/receipts(+ confirm)；/invoices(+ confirm)；/{id}/unfreeze | contract:payment:* | 收款/开票/解冻 |
 
+## S3 已交付接口（研发与工艺）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 36 | GET/POST | /api/v1/mdm/materials | mdm:material:* | 物料建档（双码检测 FR-MDM-26） |
+| 37 | GET/POST | /api/v1/plm/bom(+ /{id} /{id}/lines /lines/{id} DELETE) | bom:create/edit | BOM 二维矩阵（C+MBOM 422） |
+| 38 | GET | /api/v1/plm/bom/{id}/validate | bom:edit | 13 条质量校验 |
+| 39 | POST | /api/v1/plm/bom/{id}/release；/bom/{goldenId}/derive；/bom/{src}/convert；/bom/{tpl}/expand | bom:release/create/edit | 发布/派生/转换/参数化展开 |
+| 40 | GET | /api/v1/plm/bom/diff?bomAId&bomBId | bom:edit | 四类差异 |
+| 41 | POST | /api/v1/plm/bom/{id}/ecn；/ecn/{id}/publish | bom:ecn:* | ECN（BR-09）/发布新版本 |
+| 42 | GET/POST | /api/v1/plm/pcs/docs(+ /{id}/publish /{id}/pause)；/pcs/routes(+ steps) | pcs:manage | 工艺文件（BR-PCS-01/02）/路线 |
+| 43 | GET | /api/v1/plm/pcs/coverage | 登录 | 覆盖度矩阵 |
+
+> JSON 列入参约定：传 JSON 字符串（如 affectedDepts、param_json）。
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

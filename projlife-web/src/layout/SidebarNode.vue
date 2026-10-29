@@ -19,6 +19,7 @@ const ROUTE_BY_CODE = {
   'menu:crm': '/crm/opportunities',
   'menu:contract': '/contract',
   'menu:project': '/project',
+  'menu:plm': '/plm/boms',
   'menu:system:user': '/system/users',
   'menu:system:role': '/system/roles',
   'menu:system:dept': '/system/depts',

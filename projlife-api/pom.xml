@@ -44,6 +44,10 @@
         </dependency>
         <dependency>
             <groupId>com.projlife</groupId>
+            <artifactId>module-plm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
             <artifactId>module-crm</artifactId>
         </dependency>
         <dependency>

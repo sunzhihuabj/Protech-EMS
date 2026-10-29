@@ -36,13 +36,16 @@ public class MdmController {
     private final WindFarmService farmService;
     private final MdProjectService projectService;
     private final NameRuleService nameRuleService;
+    private final com.projlife.mdm.service.MaterialService materialService;
 
     public MdmController(CustomerService customerService, WindFarmService farmService,
-                         MdProjectService projectService, NameRuleService nameRuleService) {
+                         MdProjectService projectService, NameRuleService nameRuleService,
+                         com.projlife.mdm.service.MaterialService materialService) {
         this.customerService = customerService;
         this.farmService = farmService;
         this.projectService = projectService;
         this.nameRuleService = nameRuleService;
+        this.materialService = materialService;
     }
 
     // ---------- 客户主体 ----------
@@ -82,6 +85,20 @@ public class MdmController {
     public ApiResponse<Void> deactivateCustomer(@PathVariable Long id) {
         customerService.deactivate(id);
         return ApiResponse.ok();
+    }
+
+    // ---------- 物料 ----------
+
+    @GetMapping("/materials")
+    public ApiResponse<com.projlife.common.api.PageResp<com.projlife.mdm.entity.MdMaterial>> materials(
+            com.projlife.common.api.PageReq pageReq, @RequestParam(required = false) String keyword) {
+        return ApiResponse.ok(materialService.page(pageReq, keyword));
+    }
+
+    @PostMapping("/materials")
+    @RequirePermission("mdm:material:create")
+    public ApiResponse<Long> createMaterial(@RequestBody com.projlife.mdm.entity.MdMaterial material) {
+        return ApiResponse.ok(materialService.create(material));
     }
 
     // ---------- 风场 ----------

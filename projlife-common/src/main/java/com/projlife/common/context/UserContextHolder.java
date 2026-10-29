@@ -23,6 +23,11 @@ public final class UserContextHolder {
         return u == null || u.getUserId() == null ? null : u.getUserId();
     }
 
+    public static String currentUserCode() {
+        LoginUser u = CONTEXT.get();
+        return u == null ? "system" : (u.getUserCode() == null ? "unknown" : u.getUserCode());
+    }
+
     public static String currentUserName() {
         LoginUser u = CONTEXT.get();
         return u == null ? "system" : (u.getRealName() == null ? u.getUsername() : u.getRealName());

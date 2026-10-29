@@ -16,6 +16,7 @@
     <modules>
         <module>module-org</module>
         <module>module-project</module>
+        <module>module-plm</module>
         <module>module-mdm</module>
         <module>module-crm</module>
         <module>module-contract</module>
