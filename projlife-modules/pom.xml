@@ -15,6 +15,9 @@
 
     <modules>
         <module>module-org</module>
+        <module>module-mdm</module>
+        <module>module-crm</module>
+        <module>module-contract</module>
         <module>module-file</module>
         <module>module-integration</module>
     </modules>

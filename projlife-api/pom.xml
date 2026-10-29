@@ -34,6 +34,18 @@
             <groupId>com.projlife</groupId>
             <artifactId>module-integration</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>module-mdm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>module-crm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>module-contract</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>org.springframework.boot</groupId>

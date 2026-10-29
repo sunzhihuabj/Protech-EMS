@@ -28,6 +28,23 @@
 | 20 | GET | /api/v1/system/codes/preview | system:config:manage | 编码引擎预览取号（18 类） |
 | 21 | GET | /actuator/health | 内部 | db/redis/disk 健康检查 |
 
+## S1 已交付接口（主数据 / 商机 / 合同）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 24 | GET/POST | /api/v1/mdm/customers(+ /groups /aliases /resolve /{id}/deactivate) | mdm:customer:* | 客户主体（R18 唯一入口） |
+| 25 | GET/POST | /api/v1/mdm/farms | mdm:project:create | 风场（一地一档） |
+| 26 | GET/POST | /api/v1/mdm/projects(+ /{id} /name-rule /triple-check /{id}/products /{id}/aliases) | mdm:project:* | 项目档案（三重查重/名称生成器） |
+| 27 | GET/POST | /api/v1/crm/opportunities(+ /{id} /{id}/followups /{id}/convert /{id}/lose /{id}/reopen) | opportunity:* | 商机全流程 |
+| 28 | GET | /api/v1/crm/funnel；/api/v1/crm/customers/{id}/profile | opportunity:* | 漏斗/客户360 |
+| 29 | GET/POST | /api/v1/contract(+ /{id} /{id}/number-preview) | contract:* | 台账/起草 |
+| 30 | POST | /api/v1/contract/{id}/review/submit | contract:review:submit | BR-01 硬卡点 |
+| 31 | POST | /api/v1/contract/{id}/seal；/{id}/filing；/{id}/completeness | contract:seal/confirm | 用印取号/建档 26 要素 |
+| 32 | POST | /api/v1/contract/{id}/ai/risk · /ai/extract · /ai/confirm；/ai/risks/{id}/adopt | contract:edit/confirm | AI-001/002（网关 mock 可跑通） |
+| 33 | POST/GET | /api/v1/contract/{id}/changes · /changes/{id}/approve | contract:change:* | 变更 -BCn |
+| 34 | POST/GET | /api/v1/contract/{id}/dispatch · /dispatches/{id}/read | contract:dispatch | 交底/已阅 |
+| 35 | POST | /api/v1/contract/receipts(+ confirm)；/invoices(+ confirm)；/{id}/unfreeze | contract:payment:* | 收款/开票/解冻 |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

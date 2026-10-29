@@ -129,6 +129,7 @@ public class AiGatewayController {
         }
         try {
             callLogMapper.insert(callLog);
+            response.put("callId", callLog.getId());
         } catch (Exception ex) {
             log.warn("AI 调用日志写入失败（不影响业务）", ex);
         }

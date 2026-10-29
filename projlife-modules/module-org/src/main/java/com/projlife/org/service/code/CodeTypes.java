@@ -16,9 +16,9 @@ public final class CodeTypes {
                 entityCode + "-" + year + "-" + nature + "-" + business + "-", 4);
     }
 
-    /** 2. 补充协议：{合同号}-BC{n}，作用域 单合同内 */
+    /** 2. 补充协议：{合同号}-BC{n}，作用域 单合同内（scope 尾段 SEQ 为固定周期标识，合同号本身作中段） */
     public static CodeRequest contractChange(String contractNo) {
-        return new CodeRequest("CTBC:" + contractNo, contractNo + "-BC", 1);
+        return new CodeRequest("CTBC:" + contractNo + ":SEQ", contractNo + "-BC", 1);
     }
 
     /** 3. 存量合同号（历史兼容，仅迁移使用）：CON-{YYYYMM}-{4位} */

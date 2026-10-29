@@ -53,4 +53,15 @@ public class CodeSequenceService {
         int idx = scopeKey.lastIndexOf(':');
         return idx < 0 ? scopeKey : scopeKey.substring(idx + 1);
     }
+
+    /**
+     * 编码预览（FR-CT-18 / FR-MDM-44）：返回当前值（不占号）；序列未初始化返回 0。
+     */
+    @Transactional(propagation = Propagation.SUPPORTS, readOnly = true)
+    public long peek(CodeTypes.CodeRequest request) {
+        Long value = jdbcTemplate.queryForObject(
+                "SELECT current_value FROM sys_code_sequence WHERE scope_key = ?",
+                Long.class, request.getScopeKey());
+        return value == null ? 0 : value;
+    }
 }

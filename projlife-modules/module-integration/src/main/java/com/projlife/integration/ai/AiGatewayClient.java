@@ -38,11 +38,11 @@ public class AiGatewayClient {
      * 网关侧 mock 模式恒可用；真实模型不可用时网关自身降级，这里兜底处理连接失败。
      */
     @SuppressWarnings("unchecked")
-    public Map<String, Object> call(String aiCode, String bizType, String bizId, Object payload) {
+    public Map<String, Object> call(String aiCode, String bizType, Long bizId, Object payload) {
         Map<String, Object> request = new HashMap<>();
         request.put("aiCode", aiCode);
         request.put("bizType", bizType);
-        request.put("bizId", bizId);
+        request.put("bizId", bizId == null ? null : String.valueOf(bizId));
         request.put("payload", payload);
         try {
             HttpHeaders headers = new HttpHeaders();

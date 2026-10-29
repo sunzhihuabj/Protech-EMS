@@ -138,12 +138,13 @@ if code_types.exists():
 else:
     FAIL.append("3.编码引擎: CodeTypes.java 不存在")
 
-# ---------- 4. 硬卡点（00 册 §7.2，S0 范围 BR-07/BR-08） ----------
+# ---------- 4. 硬卡点（00 册 §7.2，随切片生效） ----------
 java_srcs = list(ROOT.glob('projlife-*/src/**/*.java')) + list(ROOT.glob('projlife-modules/*/src/**/*.java'))
 all_java = '\n'.join(p.read_text(encoding='utf-8', errors='replace') for p in java_srcs)
+active = [code for code in ['BR-01', 'BR-02', 'BR-05', 'BR-07', 'BR-08'] if code in all_java]
 if 'BR-07' in all_java and 'BR-08' in all_java:
-    OK.append("4.硬卡点: BR-07（仅水印件下载）/ BR-08（施工人员端限制）已在 S0 生效；"
-              "BR-01~06、BR-09 随 S1-S3 切片生效（切片内允许未建）")
+    remaining = [b for b in ['BR-03', 'BR-04', 'BR-06', 'BR-09'] if b not in all_java]
+    OK.append(f"4.硬卡点: 已生效 {active}；{'其余 ' + str(remaining) + ' 随后续切片生效（切片内允许未建）' if remaining else '全部生效'}")
 else:
     FAIL.append("4.硬卡点: BR-07/BR-08 未在代码中生效")
 

@@ -15,6 +15,8 @@ const routes = [
     children: [
       { path: '', name: 'workbench', component: () => import('@/views/Workbench.vue'), meta: { title: '个人工作台', permCode: 'menu:workbench' } },
       { path: 'notifications', name: 'notifications', component: () => import('@/views/Notifications.vue'), meta: { title: '消息中心', permCode: 'menu:notification' } },
+      { path: 'crm/opportunities', name: 'opportunities', component: () => import('@/views/crm/Opportunities.vue'), meta: { title: '商机管理', permCode: 'menu:crm' } },
+      { path: 'contract', name: 'contracts', component: () => import('@/views/contract/Contracts.vue'), meta: { title: '合同管理', permCode: 'menu:contract' } },
       { path: 'profile/appearance', name: 'appearance', component: () => import('@/views/profile/Appearance.vue'), meta: { title: '外观设置' } },
       { path: 'system/users', name: 'users', component: () => import('@/views/system/Users.vue'), meta: { title: '用户管理', permCode: 'menu:system:user' } },
       { path: 'system/roles', name: 'roles', component: () => import('@/views/system/Roles.vue'), meta: { title: '角色权限', permCode: 'menu:system:role' } },
