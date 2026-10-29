@@ -166,11 +166,16 @@ public class MdProjectService implements MdmApi {
     }
 
     /** 状态流转按 02 册 §7.2：首个任务开工/首采 → IN_PROGRESS（手工改状态不开放，由 S2 联动） */
+    @Override
     @Transactional
-    public void markInProgress(Long id) {
-        MdProject p = mustGet(id);
+    public void markMdProjectInProgress(Long id) {
+        MdProject p = projectMapper.selectById(id);
+        if (p == null) {
+            // 自动链路韧性：档案缺失不阻断任务开工（正常建档流程档案必在）
+            return;
+        }
         if (!"SIGNED_PENDING".equals(p.getStatus())) {
-            throw BizException.badRequest("仅签约待执行可流转为进行中（02 册 §7.2）");
+            return;
         }
         p.setStatus("IN_PROGRESS");
         projectMapper.updateById(p);

@@ -10,6 +10,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
+# 模块 -> Java 包段
+PKG = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract', 'prj': 'project'}
+
 # 类型映射：MySQL 列类型 -> Java
 JAVA = {
     'VARCHAR': 'String', 'BIGINT': 'Long', 'DECIMAL': 'java.math.BigDecimal',
@@ -22,6 +25,7 @@ MODULES = {
     'mdm': 'projlife-modules/module-mdm',
     'crm': 'projlife-modules/module-crm',
     'ct': 'projlife-modules/module-contract',
+    'prj': 'projlife-modules/module-project',
 }
 
 # 表规格：表名 -> (模块, 实体名, 是否乐观锁, 字段列表 [(列名, 类型, 注释)])
@@ -328,6 +332,98 @@ TABLES = {
         ('status', 'VARCHAR', 'PENDING/CONFIRMED'),
         ('confirm_by', 'BIGINT', '财务确认人'),
     ]),
+    # ---------------- T-PRJ 项目与工程变更（S2） ----------------
+    'prj_project': ('prj', 'PrjProject', True, [
+        ('project_no', 'VARCHAR', 'PRJ-{YYYY}-{4位} 执行号'),
+        ('md_project_id', 'BIGINT', '项目档案（1:1 或 1:N）'),
+        ('contract_id', 'BIGINT', '关联合同'),
+        ('project_name', 'VARCHAR', '项目名称'),
+        ('manager_id', 'BIGINT', '项目经理'),
+        ('template_id', 'BIGINT', '项目模板'),
+        ('plan_start', 'DATE', '计划开始'),
+        ('plan_end', 'DATE', '计划结束'),
+        ('actual_start', 'DATE', '实际开始'),
+        ('actual_end', 'DATE', '实际结束'),
+        ('status', 'VARCHAR', 'E-14 项目状态'),
+        ('progress_pct', 'DECIMAL', '进度 0-100'),
+        ('budget_total', 'DECIMAL', '预算总额（元）'),
+        ('cost_actual', 'DECIMAL', '实际成本汇总（冗余）'),
+    ]),
+    'prj_member': ('prj', 'PrjMember', False, [
+        ('project_id', 'BIGINT', '执行项目 id'),
+        ('user_id', 'BIGINT', '成员'),
+        ('role_code', 'VARCHAR', '项目内角色'),
+        ('join_date', 'DATE', '加入日期'),
+        ('leave_date', 'DATE', '退出日期'),
+        ('is_active', 'TINYINT', '在项标记'),
+    ]),
+    'prj_task': ('prj', 'PrjTask', True, [
+        ('task_no', 'VARCHAR', 'T-{project_no}-{3位}'),
+        ('project_id', 'BIGINT', '执行项目 id'),
+        ('parent_id', 'BIGINT', '父任务（树形）'),
+        ('wbs_code', 'VARCHAR', '形如 1.2.3'),
+        ('task_name', 'VARCHAR', '任务名称'),
+        ('task_type', 'VARCHAR', 'E-15 NORMAL/APPROVAL/DELIVERABLE'),
+        ('dept_id', 'BIGINT', '承担部门'),
+        ('assignee_id', 'BIGINT', '责任人'),
+        ('role_code', 'VARCHAR', '默认角色'),
+        ('is_optional', 'TINYINT', '可选任务'),
+        ('is_temp', 'TINYINT', '计划外临时任务（FR-PRJ-12，A-14）'),
+        ('is_milestone', 'TINYINT', '里程碑（FR-PRJ-27，A-14）'),
+        ('plan_start', 'DATE', '计划开始'),
+        ('plan_end', 'DATE', '计划结束'),
+        ('actual_start', 'DATETIME', '实际开始'),
+        ('actual_end', 'DATETIME', '实际完成'),
+        ('progress_pct', 'DECIMAL', '进度'),
+        ('status', 'VARCHAR', 'E-16 任务状态'),
+        ('output_required', 'TINYINT', '必须上传产出物'),
+        ('output_file_ids', 'JSON', '产出物附件'),
+        ('finish_note', 'VARCHAR', '完成说明（FR-PRJ-16）'),
+        ('approval_required', 'TINYINT', '需审批'),
+        ('approve_by', 'BIGINT', '审批人'),
+        ('delay_days', 'INT', '逾期天数（计算）'),
+        ('pause_reason', 'VARCHAR', '暂停原因'),
+    ]),
+    'prj_task_dependency': ('prj', 'PrjTaskDependency', False, [
+        ('task_id', 'BIGINT', '后置任务'),
+        ('pre_task_id', 'BIGINT', '前置任务'),
+        ('dep_type', 'VARCHAR', 'FS/SS/FF/SF'),
+        ('lag_days', 'INT', '滞后天数'),
+    ]),
+    'prj_template': ('prj', 'PrjTemplate', False, [
+        ('template_code', 'VARCHAR', '模板编码'),
+        ('template_name', 'VARCHAR', '模板名称'),
+        ('project_type', 'VARCHAR', '适用项目类型'),
+        ('is_default', 'TINYINT', '默认模板'),
+        ('status', 'VARCHAR', 'E-02'),
+    ]),
+    'prj_template_task': ('prj', 'PrjTemplateTask', False, [
+        ('template_id', 'BIGINT', '模板 id'),
+        ('parent_id', 'BIGINT', '父节点（阶段=一级）'),
+        ('task_name', 'VARCHAR', '任务名'),
+        ('dept_id', 'BIGINT', '承担部门'),
+        ('role_code', 'VARCHAR', '默认角色'),
+        ('duration_days', 'INT', '工期（天）'),
+        ('is_optional', 'TINYINT', '可选'),
+        ('output_required', 'TINYINT', '产出物要求'),
+        ('output_name', 'VARCHAR', '产出物名称'),
+        ('approval_required', 'TINYINT', '需审批'),
+        ('seq', 'INT', '同层顺序'),
+    ]),
+    'prj_eco': ('prj', 'PrjEco', True, [
+        ('eco_no', 'VARCHAR', 'ECN-{YYYY}-{4位}（与 BOM 变更统一编号）'),
+        ('project_id', 'BIGINT', '执行项目 id'),
+        ('change_reason', 'VARCHAR', '变更原因'),
+        ('change_content', 'VARCHAR', '变更内容'),
+        ('impact_analysis', 'VARCHAR', '影响分析（采购/生产/进度）'),
+        ('affected_depts', 'JSON', '受影响部门数组'),
+        ('file_ids', 'JSON', '新版本文件'),
+        ('status', 'VARCHAR', '发起/会签中/已批准/已生效/已驳回'),
+        ('approved_by', 'BIGINT', '批准人'),
+        ('effective_at', 'DATETIME', '生效时间'),
+        ('old_disposal_plan', 'VARCHAR', '旧料处置方案（BR-09 必填）'),
+        ('bom_change_id', 'BIGINT', '联动 bom_change（FR-PRJ-36）'),
+    ]),
     # ---------------- T-AI 复核反馈 ----------------
     'ai_feedback': ('ct', 'AiFeedback', False, [
         ('call_id', 'BIGINT', 'AI 调用 id'),
@@ -344,7 +440,7 @@ TABLES = {
 
 
 def gen_entity(table, module, entity, versioned, fields):
-    pkg = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract'}[module]
+    pkg = PKG[module]
     base = 'VersionedEntity' if versioned else 'BaseEntity'
     imports = {
         'java.math.BigDecimal', 'java.time.LocalDate', 'java.time.LocalDateTime',
@@ -398,7 +494,7 @@ def gen_entity(table, module, entity, versioned, fields):
 
 
 def gen_mapper(table, module, entity):
-    pkg = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract'}[module]
+    pkg = PKG[module]
     return '\n'.join([
         f'package com.projlife.{pkg}.mapper;',
         '',
@@ -418,7 +514,7 @@ def main():
     changed = 0
     for table, (module, entity, versioned, fields) in TABLES.items():
         base_dir = ROOT / MODULES[module]
-        pkg = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract'}[module]
+        pkg = PKG[module]
         entity_path = base_dir / 'src' / 'main' / 'java' / 'com' / 'projlife' / pkg / 'entity' / f'{entity}.java'
         mapper_path = base_dir / 'src' / 'main' / 'java' / 'com' / 'projlife' / pkg / 'mapper' / f'{entity}Mapper.java'
         outputs = [(entity_path, gen_entity(table, module, entity, versioned, fields)),

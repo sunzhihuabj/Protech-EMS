@@ -80,6 +80,11 @@
             </dependency>
             <dependency>
                 <groupId>com.projlife</groupId>
+                <artifactId>module-project</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.projlife</groupId>
                 <artifactId>module-crm</artifactId>
                 <version>${project.version}</version>
             </dependency>

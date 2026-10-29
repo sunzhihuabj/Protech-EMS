@@ -11,6 +11,9 @@ public interface MdmApi {
     /** 项目档案是否存在且未关闭 */
     boolean projectActive(Long mdProjectId);
 
+    /** 档案状态流转：签约待执行 → 进行中（02 册 §7.2，首个任务开工/首采触发） */
+    void markMdProjectInProgress(Long mdProjectId);
+
     /** 合同已关联的项目档案 id（FR-MDM-18 多对多，BR-01 判定依据） */
     java.util.List<Long> linkedProjectIds(Long contractId);
 

@@ -48,15 +48,17 @@ public class ContractService {
     private final MdLegalEntityMapper legalEntityMapper;
     private final CodeSequenceService codeSequenceService;
     private final MdmApi mdmApi;
+    private final com.projlife.project.api.PrjApi prjApi;
 
     public ContractService(CtContractMapper contractMapper, CtContractPaymentPlanMapper planMapper,
                            MdLegalEntityMapper legalEntityMapper, CodeSequenceService codeSequenceService,
-                           MdmApi mdmApi) {
+                           MdmApi mdmApi, com.projlife.project.api.PrjApi prjApi) {
         this.contractMapper = contractMapper;
         this.planMapper = planMapper;
         this.legalEntityMapper = legalEntityMapper;
         this.codeSequenceService = codeSequenceService;
         this.mdmApi = mdmApi;
+        this.prjApi = prjApi;
     }
 
     public PageResp<CtContract> page(PageReq pageReq, String keyword, String status) {
@@ -222,9 +224,25 @@ public class ContractService {
         contract.setStatus("PERFORMING");
         contract.setInvoiceFrozen(0);
         contractMapper.updateById(contract);
+
+        // FR-PRJ-01 自动立项：合同建档即生成执行项目（120 天默认工期，A-15）
+        Long prjId = null;
+        try {
+            List<Long> linkedProjects = mdmApi.linkedProjectIds(contract.getId());
+            if (!linkedProjects.isEmpty()) {
+                prjId = prjApi.autoCreateFromContract(linkedProjects.get(0), contract.getId(),
+                        contract.getContractName(), contract.getSignDate(), 120);
+            }
+        } catch (Exception ex) {
+            // 立项失败不阻断建档（可由 PMO 手工立项补齐），记日志追踪
+            org.slf4j.LoggerFactory.getLogger(ContractService.class)
+                    .warn("自动立项失败 contractId={}", contract.getId(), ex);
+        }
+
         Map<String, Object> result = new java.util.HashMap<>();
         result.put("filedAt", contract.getFiledAt());
         result.put("completeness", "100%");
+        result.put("autoProjectId", prjId);
         return result;
     }
 
