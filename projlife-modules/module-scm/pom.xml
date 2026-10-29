@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.projlife</groupId>
+        <artifactId>projlife-modules</artifactId>
+        <version>1.0.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>module-scm</artifactId>
+    <name>模块·供应链</name>
+    <description>供应商五阶准入/评价/采购需求订单/价格库/物流</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>projlife-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>projlife-security</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>module-org</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>module-mdm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+</project>

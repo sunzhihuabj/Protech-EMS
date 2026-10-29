@@ -60,6 +60,18 @@
 
 > JSON 列入参约定：传 JSON 字符串（如 affectedDepts、param_json）。
 
+## S4 已交付接口（供应链 / 库房）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 44 | POST | /api/v1/mdm/suppliers-register | mdm:supplier:manage | 供应商建档（S{4位}） |
+| 45 | POST/GET | /api/v1/scm/suppliers/{id}/register · /advance · /onboarding | scm:supplier:manage | 五阶准入 |
+| 46 | GET/POST | /api/v1/scm/requirements · /orders(+ /{id} /{id}/dispatch) | scm:req/order:* | 采购链（BR-SCM-01/03） |
+| 47 | POST | /api/v1/inv/transactions(+ /by-key /retry-exceptions) | inv:scan | 库存事务（幂等 BR-INV-03） |
+| 48 | GET | /api/v1/inv/stock/available | inv:scan | 可用量（缓存口径） |
+| 49 | POST | /api/v1/inv/reconcile | inv:count:manage | 每日对账 |
+| 50 | GET/POST | /api/v1/inv/replenish(+ /{id}/approve /issue /backfill /lock-overdue) | inv:replenish:* | 补货（BR-05） |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

@@ -28,12 +28,15 @@ public class CustomerService {
 
     private final MdCustomerMapper customerMapper;
     private final MdCustomerAliasMapper aliasMapper;
+    private final com.projlife.mdm.mapper.MdSupplierMapper supplierMapper;
     private final CodeSequenceService codeSequenceService;
 
     public CustomerService(MdCustomerMapper customerMapper, MdCustomerAliasMapper aliasMapper,
+                           com.projlife.mdm.mapper.MdSupplierMapper supplierMapper,
                            CodeSequenceService codeSequenceService) {
         this.customerMapper = customerMapper;
         this.aliasMapper = aliasMapper;
+        this.supplierMapper = supplierMapper;
         this.codeSequenceService = codeSequenceService;
     }
 
@@ -93,6 +96,23 @@ public class CustomerService {
         }
         customerMapper.insert(customer);
         return customer.getId();
+    }
+
+    /** FR-SCM-01：供应商建档（编码 S{4位}）——后续准入/评价在 scm 模块 */
+    @Audited(module = "mdm", action = "create_supplier", targetType = "md_supplier", targetId = "{0}")
+    @Transactional
+    public Long registerSupplier(String name, String creditCode) {
+        if (name == null || name.isEmpty()) {
+            throw BizException.badRequest("供应商名称必填");
+        }
+        com.projlife.mdm.entity.MdSupplier supplier = new com.projlife.mdm.entity.MdSupplier();
+        supplier.setSupplierName(name);
+        supplier.setCreditCode(creditCode);
+        supplier.setSupplierCode(codeSequenceService.next(CodeTypes.supplier()));
+        supplier.setStatus("PENDING");
+        supplier.setBlacklistFlag(0);
+        supplierMapper.insert(supplier);
+        return supplier.getId();
     }
 
     /** 别名登记（只增不删——FR-MDM-23，删除需 R03 + 审计，本接口不提供删除） */

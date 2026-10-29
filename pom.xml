@@ -83,11 +83,21 @@
                 <artifactId>module-project</artifactId>
                 <version>${project.version}</version>
             </dependency>
-        <dependency>
-            <groupId>com.projlife</groupId>
-            <artifactId>module-plm</artifactId>            
-            <version>${project.version}</version>
-        </dependency>
+            <dependency>
+                <groupId>com.projlife</groupId>
+                <artifactId>module-plm</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.projlife</groupId>
+                <artifactId>module-scm</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.projlife</groupId>
+                <artifactId>module-inventory</artifactId>
+                <version>${project.version}</version>
+            </dependency>
             <dependency>
                 <groupId>com.projlife</groupId>
                 <artifactId>module-crm</artifactId>

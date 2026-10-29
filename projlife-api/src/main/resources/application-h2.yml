@@ -8,3 +8,5 @@ spring:
 projlife:
   redis:
     enabled: false
+  inv:
+    safety-materials: "50000002"  # 测试安全件清单（BR-05 验证）

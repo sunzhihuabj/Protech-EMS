@@ -48,6 +48,14 @@
         </dependency>
         <dependency>
             <groupId>com.projlife</groupId>
+            <artifactId>module-scm</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
+            <artifactId>module-inventory</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.projlife</groupId>
             <artifactId>module-crm</artifactId>
         </dependency>
         <dependency>

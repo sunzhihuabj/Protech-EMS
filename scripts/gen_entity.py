@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # 模块 -> Java 包段
-PKG = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract', 'prj': 'project', 'plm': 'plm', 'pcs': 'plm'}
+PKG = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract', 'prj': 'project', 'plm': 'plm', 'pcs': 'plm', 'scm': 'scm', 'inv': 'inventory'}
 
 # 类型映射：MySQL 列类型 -> Java
 JAVA = {
@@ -28,6 +28,8 @@ MODULES = {
     'prj': 'projlife-modules/module-project',
     'plm': 'projlife-modules/module-plm',
     'pcs': 'projlife-modules/module-plm',
+    'scm': 'projlife-modules/module-scm',
+    'inv': 'projlife-modules/module-inventory',
 }
 
 # 表规格：表名 -> (模块, 实体名, 是否乐观锁, 字段列表 [(列名, 类型, 注释)])
@@ -588,6 +590,242 @@ TABLES = {
         ('length', 'DECIMAL', '长度（米）'),
         ('remark', 'VARCHAR', '备注'),
     ]),
+    # ---------------- T-SCM 供应链（S4） ----------------
+    'scm_supplier_onboarding': ('scm', 'ScmSupplierOnboarding', False, [
+        ('supplier_id', 'BIGINT', '供应商（md_supplier）'),
+        ('current_stage', 'VARCHAR', 'REGISTERED/QUALIFIED/VISITED/SAMPLED/APPROVED/REJECTED'),
+        ('stage_status', 'VARCHAR', 'PENDING/PASSED/FAILED'),
+        ('qualification_json', 'JSON', '各阶段材料'),
+        ('audit_result', 'VARCHAR', '审核结论'),
+        ('final_level', 'VARCHAR', 'E-36 五档'),
+        ('apply_by', 'BIGINT', '申请人'),
+    ]),
+    'scm_supplier_qualification': ('scm', 'ScmSupplierQualification', False, [
+        ('supplier_id', 'BIGINT', '供应商'),
+        ('cert_type', 'VARCHAR', '证照类型'),
+        ('cert_no', 'VARCHAR', '证照号'),
+        ('cert_name', 'VARCHAR', '证照名称'),
+        ('issue_date', 'DATE', '发证日'),
+        ('expire_date', 'DATE', '有效期止'),
+        ('file_id', 'BIGINT', '附件'),
+        ('status', 'VARCHAR', 'E-02'),
+    ]),
+    'scm_supplier_evaluation': ('scm', 'ScmSupplierEvaluation', False, [
+        ('supplier_id', 'BIGINT', '供应商'),
+        ('eval_period', 'VARCHAR', '评价期（如 2026Q4）'),
+        ('quality_score', 'DECIMAL', '质量分'),
+        ('delivery_score', 'DECIMAL', '交期分'),
+        ('service_score', 'DECIMAL', '服务分'),
+        ('total_score', 'DECIMAL', '总分'),
+        ('grade', 'VARCHAR', '等级'),
+        ('evaluator_id', 'BIGINT', '评价人'),
+    ]),
+    'scm_price_history': ('scm', 'ScmPriceHistory', False, [
+        ('material_id', 'BIGINT', '物料'),
+        ('supplier_id', 'BIGINT', '供应商'),
+        ('unit_price', 'DECIMAL', '单价'),
+        ('tax_rate', 'DECIMAL', '税率'),
+        ('price_date', 'DATE', '价格日期'),
+        ('source_po_id', 'BIGINT', '来源 PO'),
+        ('is_lowest', 'TINYINT', '历史最低'),
+    ]),
+    'scm_purchase_requirement': ('scm', 'ScmPurchaseRequirement', True, [
+        ('req_no', 'VARCHAR', 'PR-{YYYYMM}-{4位}'),
+        ('source_type', 'VARCHAR', 'BOM_SHORTAGE/SAFETY_STOCK/MANUAL/STOCK'),
+        ('project_id', 'BIGINT', '项目（①③必填）'),
+        ('material_id', 'BIGINT', '物料'),
+        ('qty', 'DECIMAL', '数量'),
+        ('expect_date', 'DATE', '期望到货'),
+        ('status', 'VARCHAR', 'OPEN/MERGED/CLOSED'),
+        ('merge_po_id', 'BIGINT', '合并后 PO'),
+        ('requester_id', 'BIGINT', '请购人'),
+    ]),
+    'scm_purchase_order': ('scm', 'ScmPurchaseOrder', True, [
+        ('po_no', 'VARCHAR', 'PO-{YYYYMM}-{4位}'),
+        ('supplier_id', 'BIGINT', '供应商'),
+        ('legal_entity_id', 'BIGINT', '法人'),
+        ('project_id', 'BIGINT', '主项目'),
+        ('total_amount', 'DECIMAL', '总金额'),
+        ('tax_rate', 'DECIMAL', '税率'),
+        ('status', 'VARCHAR', 'E-34'),
+        ('dispatched_at', 'DATETIME', '下发时间'),
+        ('buyer_id', 'BIGINT', '采购员'),
+    ]),
+    'scm_purchase_order_item': ('scm', 'ScmPurchaseOrderItem', False, [
+        ('po_id', 'BIGINT', 'PO id'),
+        ('line_no', 'INT', '行号'),
+        ('project_id', 'BIGINT', '项目（分行保留）'),
+        ('material_id', 'BIGINT', '物料'),
+        ('qty', 'DECIMAL', '数量'),
+        ('received_qty', 'DECIMAL', '已收数量'),
+        ('unit_price', 'DECIMAL', '单价（BR-06 脱敏）'),
+        ('amount', 'DECIMAL', '金额'),
+        ('expected_date', 'DATE', '期望到货'),
+        ('status', 'VARCHAR', 'E-02'),
+    ]),
+    'scm_purchase_return': ('scm', 'ScmPurchaseReturn', False, [
+        ('return_no', 'VARCHAR', '退货单号'),
+        ('po_id', 'BIGINT', '原 PO'),
+        ('item_id', 'BIGINT', '行 id'),
+        ('qty', 'DECIMAL', '退货数量'),
+        ('reason', 'VARCHAR', '原因'),
+        ('return_date', 'DATE', '退货日期'),
+        ('status', 'VARCHAR', 'E-02'),
+        ('t_plus_ref', 'VARCHAR', 'T+ 冲减凭证'),
+    ]),
+    'scm_logistics': ('scm', 'ScmLogistics', False, [
+        ('po_id', 'BIGINT', 'PO id'),
+        ('carrier', 'VARCHAR', '承运商'),
+        ('tracking_no', 'VARCHAR', '运单号'),
+        ('status', 'VARCHAR', '在途/已到/签收'),
+        ('last_update', 'DATETIME', '最近更新'),
+        ('timeline_json', 'JSON', '轨迹时间线'),
+    ]),
+    # ---------------- T-INV 库存（S4） ----------------
+    'inv_transaction': ('inv', 'InvTransaction', False, [
+        ('txn_no', 'VARCHAR', 'TX-{YYYYMMDD}-{6位}'),
+        ('txn_type', 'VARCHAR', 'E-23 RECEIPT/ISSUE/TRANSFER/ADJUST/COUNT_ADJ/RETURN'),
+        ('legal_entity_id', 'BIGINT', '两司隔离'),
+        ('warehouse_code', 'VARCHAR', '仓库 YL/CP/QT/GC'),
+        ('location_id', 'BIGINT', '货位'),
+        ('material_id', 'BIGINT', '物料'),
+        ('batch_no', 'VARCHAR', '批次（安全件必填）'),
+        ('qty', 'DECIMAL', '正入负出 ≠0'),
+        ('unit', 'VARCHAR', '单位'),
+        ('cost_price', 'DECIMAL', '成本单价（R11 脱敏）'),
+        ('amount', 'DECIMAL', 'qty×cost_price'),
+        ('before_qty', 'DECIMAL', 'T+ 回读快照'),
+        ('after_qty', 'DECIMAL', 'T+ 回读快照'),
+        ('project_id', 'BIGINT', '成本归集维度'),
+        ('source_type', 'VARCHAR', 'PO/RECEIPT/SHIP/DISPATCH/REPLENISH/COUNT'),
+        ('source_id', 'BIGINT', '来源单据 id'),
+        ('source_no', 'VARCHAR', '来源单号'),
+        ('idempotency_key', 'VARCHAR', '来源单号+行号+动作，UNIQUE'),
+        ('sync_status', 'VARCHAR', 'E-24 PENDING_SYNC/SYNCED/EXCEPTION'),
+        ('t_plus_voucher_no', 'VARCHAR', 'T+ 单据号'),
+        ('sync_error', 'VARCHAR', '失败原因'),
+        ('occurred_at', 'DATETIME', '业务发生时间'),
+        ('operator_id', 'BIGINT', '操作人'),
+        ('scanned_code', 'VARCHAR', '扫码原文'),
+        ('remark', 'VARCHAR', '备注'),
+    ], 'AUDITED'),
+    'inv_stock_cache': ('inv', 'InvStockCache', False, [
+        ('legal_entity_id', 'BIGINT', '法人'),
+        ('warehouse_code', 'VARCHAR', '仓库'),
+        ('location_id', 'BIGINT', '货位'),
+        ('material_id', 'BIGINT', '物料'),
+        ('batch_no', 'VARCHAR', '批次'),
+        ('qty_on_hand', 'DECIMAL', '现存量'),
+        ('qty_allocated', 'DECIMAL', '已分配'),
+        ('qty_available', 'DECIMAL', '可用量'),
+        ('cached_at', 'DATETIME', '缓存时间'),
+        ('ttl_seconds', 'INT', 'TTL 秒'),
+        ('source', 'VARCHAR', '来源（T_PLUS）'),
+    ]),
+    'inv_batch': ('inv', 'InvBatch', False, [
+        ('material_id', 'BIGINT', '物料'),
+        ('batch_no', 'VARCHAR', '批次'),
+        ('location_id', 'BIGINT', '货位'),
+        ('qty', 'DECIMAL', '数量'),
+        ('locked_qty', 'DECIMAL', '锁定'),
+        ('receipt_date', 'DATE', '入库日期'),
+        ('supplier_id', 'BIGINT', '供应商'),
+        ('expire_date', 'DATE', '失效日期'),
+        ('legal_entity_id', 'BIGINT', '法人'),
+    ]),
+    'inv_count': ('inv', 'InvCount', True, [
+        ('count_no', 'VARCHAR', 'CT-{YYYYMMDD}-{3位}'),
+        ('count_type', 'VARCHAR', 'A/B/C/FULL'),
+        ('scope_json', 'JSON', '范围（仓库/库区/货位/三色）'),
+        ('status', 'VARCHAR', '已创建/盘点中/待复核/差异处理/已调账/已关闭'),
+        ('started_at', 'DATETIME', '开始'),
+        ('finished_at', 'DATETIME', '结束'),
+        ('creator_id', 'BIGINT', '创建人'),
+        ('reviewer_id', 'BIGINT', '复核人'),
+    ]),
+    'inv_count_line': ('inv', 'InvCountLine', False, [
+        ('count_id', 'BIGINT', '盘点单'),
+        ('location_id', 'BIGINT', '货位'),
+        ('material_id', 'BIGINT', '物料'),
+        ('batch_no', 'VARCHAR', '批次'),
+        ('book_qty', 'DECIMAL', '账面'),
+        ('actual_qty', 'DECIMAL', '实盘'),
+        ('diff_qty', 'DECIMAL', '差异'),
+        ('diff_amount', 'DECIMAL', '差异金额'),
+        ('cause', 'VARCHAR', 'E-37 六类归因'),
+        ('remark', 'VARCHAR', '说明'),
+    ]),
+    'inv_diff': ('inv', 'InvDiff', True, [
+        ('diff_no', 'VARCHAR', 'DF-{YYYYMM}-{4位}'),
+        ('count_id', 'BIGINT', '盘点单'),
+        ('material_id', 'BIGINT', '物料'),
+        ('location_id', 'BIGINT', '货位'),
+        ('book_qty', 'DECIMAL', '账面'),
+        ('actual_qty', 'DECIMAL', '实盘'),
+        ('diff_qty', 'DECIMAL', '差异'),
+        ('diff_amount', 'DECIMAL', '差异金额'),
+        ('cause', 'VARCHAR', 'E-37（无归因不调账）'),
+        ('approval_level', 'VARCHAR', 'L1 库房主管/L2 计划/L3 财务双签'),
+        ('approved_by', 'BIGINT', '审批人'),
+        ('approved_at', 'DATETIME', '审批时间'),
+        ('closed_at', 'DATETIME', '关闭时间'),
+        ('close_days', 'INT', '关闭天数'),
+    ]),
+    'inv_slow_moving': ('inv', 'InvSlowMoving', False, [
+        ('material_id', 'BIGINT', '物料'),
+        ('location_id', 'BIGINT', '货位'),
+        ('qty', 'DECIMAL', '数量'),
+        ('amount', 'DECIMAL', '金额'),
+        ('age_days', 'INT', '账龄'),
+        ('status', 'VARCHAR', 'CANDIDATE/CONFIRMED/DISPOSING/DISPOSED'),
+        ('responsibility', 'VARCHAR', 'E-38 责任归属'),
+        ('source_ecn_id', 'BIGINT', '来源 ECN'),
+        ('first_seen_date', 'DATE', '首次识别日期'),
+    ]),
+    'inv_disposal': ('inv', 'InvDisposal', False, [
+        ('disposal_no', 'VARCHAR', 'DP-{YYYYMM}-{4位}'),
+        ('slow_moving_id', 'BIGINT', '呆滞 id'),
+        ('method', 'VARCHAR', 'E-39 处置方式'),
+        ('qty', 'DECIMAL', '数量'),
+        ('expect_amount', 'DECIMAL', '预计金额'),
+        ('actual_amount', 'DECIMAL', '实际金额'),
+        ('approval_level', 'VARCHAR', '分级审批'),
+        ('approved_by', 'BIGINT', '审批人'),
+        ('disposed_at', 'DATETIME', '处置时间'),
+        ('remark', 'VARCHAR', '备注'),
+    ]),
+    'inv_replenish': ('inv', 'InvReplenish', True, [
+        ('replenish_no', 'VARCHAR', 'RP-{YYYYMMDD}-{3位}'),
+        ('project_id', 'BIGINT', '执行项目（BR-03）'),
+        ('md_project_id', 'BIGINT', '项目档案'),
+        ('reason', 'VARCHAR', 'E-40 八类'),
+        ('urgency', 'VARCHAR', '紧急度'),
+        ('applicant_id', 'BIGINT', '申请人'),
+        ('amount', 'DECIMAL', '金额'),
+        ('approval_path', 'VARCHAR', '审批链'),
+        ('need_backfill', 'TINYINT', '需补签（安全件先发后签）'),
+        ('backfill_deadline', 'DATETIME', '补签期限（出库+24h）'),
+        ('backfilled_at', 'DATETIME', '补签时间'),
+        ('status', 'VARCHAR', '待审批/已审批/已出库/已补签/已关闭/已锁定'),
+        ('applicant_locked', 'TINYINT', '超时锁定申请人（BR-05）'),
+    ]),
+    'inv_replenish_line': ('inv', 'InvReplenishLine', False, [
+        ('replenish_id', 'BIGINT', '补货单'),
+        ('material_id', 'BIGINT', '物料'),
+        ('qty', 'DECIMAL', '数量'),
+        ('unit', 'VARCHAR', '单位'),
+        ('use_location', 'VARCHAR', '使用位置'),
+        ('remark', 'VARCHAR', '备注'),
+    ]),
+    'inv_reconcile': ('inv', 'InvReconcile', False, [
+        ('reconcile_date', 'DATE', '对账日'),
+        ('legal_entity_id', 'BIGINT', '法人'),
+        ('local_txn_count', 'INT', '本地事务笔数'),
+        ('t_plus_txn_count', 'INT', 'T+ 流水笔数'),
+        ('diff_count', 'INT', '差异数'),
+        ('diff_amount', 'DECIMAL', '差异金额'),
+        ('status', 'VARCHAR', 'E-02'),
+    ]),
     # ---------------- T-AI 复核反馈 ----------------
     'ai_feedback': ('ct', 'AiFeedback', False, [
         ('call_id', 'BIGINT', 'AI 调用 id'),
@@ -605,7 +843,7 @@ TABLES = {
 
 def gen_entity(table, module, entity, versioned, fields):
     pkg = PKG[module]
-    base = 'VersionedEntity' if versioned else 'BaseEntity'
+    base = 'VersionedEntity' if versioned is True else ('AuditedEntity' if versioned == 'AUDITED' else 'BaseEntity')
     imports = {
         'java.math.BigDecimal', 'java.time.LocalDate', 'java.time.LocalDateTime',
     }
@@ -676,7 +914,10 @@ def gen_mapper(table, module, entity):
 def main():
     check = '--check' in sys.argv
     changed = 0
-    for table, (module, entity, versioned, fields) in TABLES.items():
+    for table, spec in TABLES.items():
+        module, entity, versioned, fields = spec[0], spec[1], spec[2], spec[3]
+        if len(spec) > 4 and spec[4] == 'AUDITED':
+            versioned = 'AUDITED'
         base_dir = ROOT / MODULES[module]
         pkg = PKG[module]
         entity_path = base_dir / 'src' / 'main' / 'java' / 'com' / 'projlife' / pkg / 'entity' / f'{entity}.java'

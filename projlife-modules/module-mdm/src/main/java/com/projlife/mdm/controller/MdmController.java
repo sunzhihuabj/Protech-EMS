@@ -87,6 +87,15 @@ public class MdmController {
         return ApiResponse.ok();
     }
 
+    // ---------- 供应商（S4 经 scm 模块准入；md_supplier 建档在此） ----------
+
+    @PostMapping("/suppliers-register")
+    @RequirePermission("mdm:supplier:manage")
+    public ApiResponse<Long> registerSupplier(@RequestParam String name,
+                                              @RequestParam(required = false) String creditCode) {
+        return ApiResponse.ok(customerService.registerSupplier(name, creditCode));
+    }
+
     // ---------- 物料 ----------
 
     @GetMapping("/materials")
