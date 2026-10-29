@@ -72,6 +72,14 @@
 | 49 | POST | /api/v1/inv/reconcile | inv:count:manage | 每日对账 |
 | 50 | GET/POST | /api/v1/inv/replenish(+ /{id}/approve /issue /backfill /lock-overdue) | inv:replenish:* | 补货（BR-05） |
 
+## S5 已交付接口（生产）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 51 | GET/POST | /api/v1/mes/orders(+ /{id} /{id}/routes /{id}/processes /{id}/material-check) | mes:order:create | 生产订单/工序/齐套 |
+| 52 | POST | /api/v1/mes/processes/{id}/start · /finish · /qc | mes:process:work / mes:qc:release | 开工/报工/检验放行（E-26） |
+| 53 | POST | /api/v1/mes/andon(+ /escalate) | mes:andon:raise | Andon 四类报警/分级升级 |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

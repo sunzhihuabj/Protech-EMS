@@ -16,6 +16,7 @@
     <modules>
         <module>module-org</module>
         <module>module-project</module>
+        <module>module-mes</module>
         <module>module-scm</module>
         <module>module-inventory</module>
         <module>module-plm</module>
