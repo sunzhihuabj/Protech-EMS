@@ -1,0 +1,22 @@
+# 构建产物
+target/
+dist/
+node_modules/
+
+# 本地数据与日志
+data/
+logs/
+*.log
+
+# 环境与密钥（16 册 §八 第 14 条：禁止提交 .env 与密钥）
+.env
+.env.local
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# 测试临时
+mvn_test.log

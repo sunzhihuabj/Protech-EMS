@@ -1,0 +1,33 @@
+server:
+  port: 8090
+
+spring:
+  application:
+    name: projlife-ai-gateway
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:projlife}?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&useSSL=false&allowPublicKeyRetrieval=true
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+  global-config:
+    banner: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+projlife:
+  ai:
+    # 内网模型端点；为空即 mock 模式（S0 默认）。严禁配置任何公网 AI 服务地址（BR-AI-02）
+    model-endpoint: ${PROJLIFE_AI_MODEL_ENDPOINT:}
+    timeout-ms: 8000
+
+logging:
+  file:
+    name: logs/projlife-ai-gateway.log
