@@ -1,0 +1,24 @@
+{
+  "name": "projlife-web",
+  "version": "1.0.0-S0",
+  "private": true,
+  "description": "ProjLife Web 端（Vue 2.7 + Element UI 2.15，03 册 §6A 预编译 12 套主题）",
+  "scripts": {
+    "build:themes": "node scripts/build-themes.mjs",
+    "dev": "npm run build:themes && vite",
+    "build": "npm run build:themes && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "axios": "1.7.7",
+    "element-ui": "2.15.14",
+    "vue": "2.7.16",
+    "vue-router": "3.6.5",
+    "vuex": "3.6.2"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue2": "2.3.3",
+    "sass": "1.32.13",
+    "vite": "5.4.11"
+  }
+}

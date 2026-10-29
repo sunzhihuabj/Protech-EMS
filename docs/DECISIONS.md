@@ -9,8 +9,8 @@
 - **回滚**：无需回滚——release=11 不受验证 JDK 影响。
 
 ## ADR-002 集成测试使用 H2（MySQL 模式），生产仍为 GreatDB
-- **背景**：16 册允许"H2 或 Testcontainers"；本机无 Docker。
-- **决策**：单测/仓储层测试用 H2 `MODE=MySQL`；真实 MySQL 9.6 做一次 Flyway 脚本冒烟导入（不启用 Flyway 版本门，只验证语法被 MySQL 9 接受）。禁止使用 MySQL 8.0.30+ 专属语法，保证 GreatDB 兼容。
+- **背景**：16 册允许"H2 或 Testcontainers"；本机无 Docker；本机 MySQL 服务端实测为 **5.7.19**（Flyway 8.5 社区版不支持，CLI 9.6 亦缺 native_password 插件）。
+- **决策**：单测/仓储层测试用 H2 `MODE=MySQL` 走 Flyway 门禁；本机 MySQL 5.7 用 `scripts/ImportSql.java` 直导三个迁移脚本做真实库验证（已通过，证明 DDL 为 5.7/8.0 兼容子集）；生产 GreatDB(8.0 兼容) 由 Flyway 正常迁移。禁止使用 MySQL 8.0.30+ 专属语法，保证 GreatDB 兼容。
 - **回滚**：有 Docker 环境后切 Testcontainers MySQL 8。
 
 ## ADR-003 RabbitMQ 组件条件化，S0 默认关闭

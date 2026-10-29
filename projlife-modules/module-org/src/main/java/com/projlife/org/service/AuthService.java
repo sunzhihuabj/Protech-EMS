@@ -58,11 +58,13 @@ public class AuthService {
     private final LoginProtectionService loginProtection;
     private final SecurityProperties securityProps;
     private final KeyValStore cache;
+    private final com.projlife.org.service.ConfigService configService;
 
     public AuthService(SysUserMapper userMapper, SysPermissionMapper permissionMapper,
                        UserDetailsProvider userDetailsProvider, OrgUserDetailsService orgUserDetailsService,
                        PasswordEncoder passwordEncoder, JwtUtil jwtUtil, TokenBlacklistService blacklist,
-                       LoginProtectionService loginProtection, SecurityProperties securityProps, KeyValStore cache) {
+                       LoginProtectionService loginProtection, SecurityProperties securityProps, KeyValStore cache,
+                       com.projlife.org.service.ConfigService configService) {
         this.userMapper = userMapper;
         this.permissionMapper = permissionMapper;
         this.userDetailsProvider = userDetailsProvider;
@@ -73,6 +75,7 @@ public class AuthService {
         this.loginProtection = loginProtection;
         this.securityProps = securityProps;
         this.cache = cache;
+        this.configService = configService;
     }
 
     @Transactional
@@ -190,14 +193,14 @@ public class AuthService {
         log.info("密码修改成功 userId={}", userId);
     }
 
-    /** 个人主题持久化（03 册 §6A.1：覆盖系统默认；多端一致） */
+    /** 个人主题持久化（03 册 §6A.1：覆盖系统默认；空=清除个人偏好跟随系统默认） */
     @Transactional
     public void saveTheme(Long userId, ThemeReq req) {
         SysUser user = userMapper.selectById(userId);
         if (user == null) {
             throw BizException.notFound("用户不存在");
         }
-        user.setThemeCode(req.themeCode);
+        user.setThemeCode(req.themeCode == null || req.themeCode.isEmpty() ? null : req.themeCode);
         userMapper.updateById(user);
         orgUserDetailsService.evict(userId);
     }
@@ -219,6 +222,8 @@ public class AuthService {
         result.put("dataScope", loginUser.getDataScope());
         result.put("userType", loginUser.getUserType());
         result.put("themeCode", user == null ? null : user.getThemeCode());
+        // 系统默认主题（03 册 §6A.1：个人偏好覆盖系统默认；R03 经 sys_config 配置）
+        result.put("defaultTheme", configService.getValue("app.theme.default"));
         result.put("permissions", loginUser.getPermissions());
         result.put("menus", buildMenus(loginUser.getPermissions()));
         return result;

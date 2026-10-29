@@ -1,0 +1,76 @@
+/* ProjLife 全局基础样式（S0） */
+html, body, #app {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+.pl-page {
+  padding: 16px;
+}
+
+.pl-toolbar {
+  margin-bottom: 12px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.pl-toolbar .spacer {
+  flex: 1;
+}
+
+/* 页面水印层（W1，UC-SYS-08）：覆盖全窗口，不拦截交互 */
+.pl-watermark {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+}
+
+/* 主题卡片（S0-17 外观面板） */
+.pl-theme-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.pl-theme-card {
+  border: 2px solid transparent;
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  background: #fff;
+  transition: box-shadow 0.2s;
+}
+
+.pl-theme-card:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.pl-theme-card.is-active {
+  border-color: var(--el-color-primary, #1f7b8c);
+}
+
+.pl-theme-swatch {
+  height: 44px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.pl-theme-name {
+  font-weight: 600;
+}
+
+.pl-theme-grade {
+  float: right;
+  font-size: 12px;
+  color: #909399;
+}

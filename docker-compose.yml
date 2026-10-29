@@ -1,0 +1,55 @@
+# 生产部署编排（16 册 §十）：MySQL 8 + Redis + RabbitMQ + 主应用 + AI 网关 + 文件服务 + 任务进程
+version: "3.8"
+services:
+  mysql:
+    image: mysql:8.0.33
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: projlife
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+    volumes:
+      - mysql-data:/var/lib/mysql
+  redis:
+    image: redis:6-alpine
+  rabbitmq:
+    image: rabbitmq:3.12-management
+  app:
+    build: .
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      PROJLIFE_JWT_SECRET: ${PROJLIFE_JWT_SECRET}
+      PROJLIFE_AI_GATEWAY: http://ai-gateway:8090
+      PROJLIFE_REDIS_ENABLED: "true"
+      SPRING_RABBITMQ_HOST: rabbitmq
+    ports:
+      - "8080:8080"
+    depends_on: [mysql, redis, rabbitmq]
+  ai-gateway:
+    build: .
+    command: java -jar projlife-ai-gateway/target/projlife-ai-gateway.jar
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      PROJLIFE_AI_MODEL_ENDPOINT: ${PROJLIFE_AI_MODEL_ENDPOINT}
+    ports:
+      - "8090:8090"
+    depends_on: [mysql]
+  file-service:
+    build: .
+    command: java -jar projlife-file-service/target/projlife-file-service.jar
+    ports:
+      - "8091:8091"
+  job:
+    build: .
+    command: java -jar projlife-job/target/projlife-job.jar
+    environment:
+      DB_HOST: mysql
+      DB_USERNAME: root
+      DB_PASSWORD: ${DB_PASSWORD}
+      PROJLIFE_JOB_ENABLED: "true"
+    depends_on: [mysql, redis]
+volumes:
+  mysql-data:

@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="t1">
+<head>
+  <meta charset="utf-8" />
+  <title>ProjLife 企业级管理平台</title>
+  <!-- 首屏防闪烁：读本地缓存的主题偏好，先行写入 data-theme（03 册 §6A；theme-engine 同款策略） -->
+  <script>
+    try {
+      var s = localStorage.getItem('projlife:ui:pref:v1');
+      var p = s ? JSON.parse(s) : {};
+      var t = /^t(1[0-2]|[1-9])$/.test(p.theme) ? p.theme : 't1';
+      document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { /* 静默：缺省 t1 */ }
+  </script>
+  <link id="pl-theme-css" rel="stylesheet" href="/theme/t1.css" />
+</head>
+<body>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
