@@ -20,3 +20,5 @@ logs/
 
 # 测试临时
 mvn_test.log
+logs-app.txt
+logs-web.txt
