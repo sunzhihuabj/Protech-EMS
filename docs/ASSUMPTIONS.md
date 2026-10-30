@@ -22,3 +22,5 @@
 | A-30 | 2026-10-31 | S10 | 实体以 String 承载且需读回的 JSON 字段（bid_match.breakdown / agt_registration.allowed_identities）落 VARCHAR：H2 JSON 列 getString 会再包一层数组字面量（MySQL 原样），跨库一致性优先；写入仍保证合法 JSON 文本 | V4-05 M18 §3 / V4-06 M19 §5 |
 | A-28 | 2026-10-31 | S10 | Agent 异步写能力在无登录上下文执行（client_credentials 无用户）：crm_opportunity.owner_id NOT NULL，Agent 通道创建的商机 ownerId 落系统账号 E0001(id=1)；生产可配 AGT_SYSTEM_USER | V4-06 M19 |
 | A-29 | 2026-10-31 | S10 | eam_tool.precision 为 MySQL 5.7 保留字（H2 宽松通过）→ 改名 precision_class，实体同步 | 编码规范 |
+
+| A-31 | 2026-10-31 | S11 | 库存差异审批分级阈值：｜diff_amount｜<1 万 L1 / <10 万 L2 / ≥10 万 L3（04 册未给具体金额档，按行业惯例取值，生产可配）；档案借阅审批人缺省当前操作人 | V4-04 M07 / V4-02 M13 |

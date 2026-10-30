@@ -148,6 +148,21 @@ public final class CodeTypes {
         return new CodeRequest("SRC:" + category, "SRC-" + category + "-", 3);
     }
 
+    /** 25. 档案借阅：JY-{YYYYMM}-{3位}（S11 收尾） */
+    public static CodeRequest archiveBorrow(String yearMonth) {
+        return new CodeRequest("ARCJY:" + yearMonth, "JY-" + yearMonth + "-", 3);
+    }
+
+    /** 26. 档案销毁：XH-{YYYYMM}-{3位}（S11 收尾） */
+    public static CodeRequest archiveDestroy(String yearMonth) {
+        return new CodeRequest("ARCXH:" + yearMonth, "XH-" + yearMonth + "-", 3);
+    }
+
+    /** 27. 档案移交：YJ-{YYYYMM}-{3位}（S11 收尾） */
+    public static CodeRequest archiveTransfer(String yearMonth) {
+        return new CodeRequest("ARCYJ:" + yearMonth, "YJ-" + yearMonth + "-", 3);
+    }
+
     /** 22. Agent 任务：T-AGT-{YYYYMM}-{4位}（M19） */
     public static CodeRequest agentTask(String yearMonth) {
         return new CodeRequest("TAGT:" + yearMonth, "T-AGT-" + yearMonth + "-", 4);

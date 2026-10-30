@@ -132,6 +132,15 @@
 | 77 | POST | /api/agent/v1/messages | Agent Token+HMAC | 同步问答（FR-AGT-05，只读 ≤200 行，越权 AGT-FORBIDDEN） |
 | 78 | POST/GET | /api/agent/v1/tasks(+ /{taskId}) | Agent Token+HMAC | 异步任务（FR-AGT-06，202+code=0+状态机） |
 
+## S11 已交付接口（盘点 / 档案 收尾批）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 79 | POST/GET | /api/v1/inv/counts(+ /{id}/start /{id}/lines /{id}/entry /{id}/review) | inv:count:manage | 盘点全链路（CT 编号，E-37 无归因不调账） |
+| 80 | POST | /api/v1/inv/counts/diffs/{id}/approve | inv:diff:approve:L1/L2/L3 | 差异分级审批（A-31） |
+| 81 | POST | /api/v1/arc/archives · /borrows(+ /return /overdue-scan) | arc:manage | 建档 PRT/借阅 JY/归还/逾期扫描 |
+| 82 | POST | /api/v1/arc/destroys · /transfers(+ /confirm) | arc:manage | 销毁 XH（鉴定必填）/移交 YJ/确认 |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |
