@@ -167,6 +167,15 @@
 | 92 | POST | /api/v1/thd/evaluations | thd:portal | 四维考核评价（均分定级 A/B/C/D） |
 | 93 | POST | /api/v1/thd/blacklist(+ /{id}/release) | thd:portal | 黑名单（生效自动冻结授权）/解除 |
 
+## S15 已交付接口（APS 排产）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 94 | POST | /api/v1/aps/capacities | aps:schedule | 产能登记（日产能工时） |
+| 95 | POST | /api/v1/aps/schedules/l1 | aps:schedule | L1 顺排（冲突清单：CAPACITY_OVER/MATERIAL_SHORT） |
+| 96 | GET/POST | /api/v1/aps/schedules/{id}/details · /details/{id}/adjust | aps:schedule | 明细清单 / L2 拖拽（版本+1，已发布阻断） |
+| 97 | POST | /api/v1/aps/schedules/{id}/publish | aps:schedule | 发布（齐套缺料阻断 APS-MATERIAL-SHORT） |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

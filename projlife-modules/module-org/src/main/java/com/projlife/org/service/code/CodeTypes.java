@@ -148,6 +148,11 @@ public final class CodeTypes {
         return new CodeRequest("SRC:" + category, "SRC-" + category + "-", 3);
     }
 
+    /** 29. APS 排产单：SCH-{YYYYMM}-{3位}（S15 收尾） */
+    public static CodeRequest apsSchedule(String yearMonth) {
+        return new CodeRequest("APS:" + yearMonth, "SCH-" + yearMonth + "-", 3);
+    }
+
     /** 28. 第三方送货单：DN-{YYYYMM}-{3位}（S14 收尾） */
     public static CodeRequest deliveryNote(String yearMonth) {
         return new CodeRequest("THDDN:" + yearMonth, "DN-" + yearMonth + "-", 3);
