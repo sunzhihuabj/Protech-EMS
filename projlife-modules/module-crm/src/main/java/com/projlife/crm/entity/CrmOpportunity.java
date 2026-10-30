@@ -55,6 +55,15 @@ public class CrmOpportunity extends VersionedEntity {
     /** 成交合同 id */
     private Long convertedContractId;
 
+    /** 来源类型（BID/MANUAL/REFERRAL，FR-CRM-20/D-05） */
+    private String sourceType;
+
+    /** 来源 id（如标讯公告） */
+    private Long sourceId;
+
+    /** 来源说明 */
+    private String sourceNote;
+
     public String getOppNo() {
         return oppNo;
     }
@@ -165,6 +174,30 @@ public class CrmOpportunity extends VersionedEntity {
 
     public void setConvertedContractId(Long convertedContractId) {
         this.convertedContractId = convertedContractId;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public Long getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(Long sourceId) {
+        this.sourceId = sourceId;
+    }
+
+    public String getSourceNote() {
+        return sourceNote;
+    }
+
+    public void setSourceNote(String sourceNote) {
+        this.sourceNote = sourceNote;
     }
 
 }

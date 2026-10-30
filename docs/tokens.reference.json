@@ -2,7 +2,7 @@
  "meta": {
   "version": "1.0.0",
   "generated": "2026-10-29",
-  "storageKey": "projlife:ui:pref:v1",
+  "storageKey": "protech:ui:pref:v1",
   "defaultTheme": "t1",
   "defaultMode": "system",
   "rowH": {

@@ -133,6 +133,31 @@ public final class CodeTypes {
         return new CodeRequest("RP:" + date, "RP-" + date + "-", 3);
     }
 
+    /** 19. 报价单：QT-{YYYYMM}-{4位}（V4-01 §5.3，FR-CRM-17） */
+    public static CodeRequest quotation(String yearMonth) {
+        return new CodeRequest("QT:" + yearMonth, "QT-" + yearMonth + "-", 4);
+    }
+
+    /** 20. 标讯公告：BID-{YYYYMM}-{4位}（M18） */
+    public static CodeRequest bidNotice(String yearMonth) {
+        return new CodeRequest("BID:" + yearMonth, "BID-" + yearMonth + "-", 4);
+    }
+
+    /** 21. 数据源：SRC-{A|B|C|D}-{3位}（M18） */
+    public static CodeRequest bidSource(String category) {
+        return new CodeRequest("SRC:" + category, "SRC-" + category + "-", 3);
+    }
+
+    /** 22. Agent 任务：T-AGT-{YYYYMM}-{4位}（M19） */
+    public static CodeRequest agentTask(String yearMonth) {
+        return new CodeRequest("TAGT:" + yearMonth, "T-AGT-" + yearMonth + "-", 4);
+    }
+
+    /** 23. 看板卡片：CARD-{YYYYMMDD}-{3位}（M12） */
+    public static CodeRequest kbCard(String date) {
+        return new CodeRequest("CARD:" + date, "CARD-" + date + "-", 3);
+    }
+
     /** AI 调用流水：AI-{YYYYMMDD}-{6位}（T-AI-01 call_no） */
     public static CodeRequest aiCall(String date) {
         return new CodeRequest("AIC:" + date, "AI-" + date + "-", 6);

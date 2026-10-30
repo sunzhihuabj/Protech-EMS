@@ -112,6 +112,9 @@ public class CtContract extends VersionedEntity {
     /** 签章 PDF（sys_attachment） */
     private Long originalFileId;
 
+    /** 报价单来源（V4-03 M01 §3） */
+    private Long quotationId;
+
     public String getContractNo() {
         return contractNo;
     }
@@ -374,6 +377,14 @@ public class CtContract extends VersionedEntity {
 
     public void setOriginalFileId(Long originalFileId) {
         this.originalFileId = originalFileId;
+    }
+
+    public Long getQuotationId() {
+        return quotationId;
+    }
+
+    public void setQuotationId(Long quotationId) {
+        this.quotationId = quotationId;
     }
 
 }

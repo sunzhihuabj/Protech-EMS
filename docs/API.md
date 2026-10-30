@@ -89,6 +89,16 @@
 | 56 | GET/POST | /api/v1/qms/gauges/usable · /gauges/{id}/calibrate | qms:gauge:manage | 量具超期锁定/校准 |
 | 57 | GET | /api/v1/qms/assets/{id}/mtbf | 登录 | MTBF |
 
+## V4 对齐切片接口（报价单，FR-CRM-17~20）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 58 | GET/POST | /api/v1/crm/quotations(+ /{id}/lines) | opportunity:* | 报价单建档（QT 编号/版本递增/金额服务端算） |
+| 59 | POST | /api/v1/crm/quotations/{id}/submit · /decide | opportunity:edit | 提交/定标（WON 转合同草稿+回写） |
+| 60 | GET | /api/v1/crm/quotations/{id}/price-basis · /conversion-by-source | opportunity:* | 价格基准（FR-CRM-18）/来源转化统计（FR-CRM-20） |
+
+> FR 回填（V4-00 §8.2）：S0=FR-SYS-01~24 部分；S1=FR-CRM-01~20+FR-CT-01~38；S2=FR-PRJ-01~39；S3=FR-PLM-11~33+FR-PCS-01~13；S4=FR-SCM-01~17+FR-INV-07~14/33~41；S5=FR-MES-01~16/26/28/30；S6=质量 09 册 FR。未实现区间见 PROGRESS 台账 BACKLOG 列。
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

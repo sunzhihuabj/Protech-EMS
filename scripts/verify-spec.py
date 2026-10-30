@@ -32,8 +32,13 @@ REGISTERED = {
     'md_legal_entity', 'md_customer', 'md_customer_alias', 'md_wind_farm', 'md_project',
     'md_project_alias', 'md_project_product', 'md_project_change', 'md_material', 'md_code_map',
     'md_supplier', 'md_location',
-    # T-CRM 4
+    # T-CRM 6（V4.0：+报价单主表与行表）
     'crm_opportunity', 'crm_opportunity_followup', 'crm_customer_profile', 'crm_sales_funnel',
+    'crm_quotation', 'crm_quotation_line',
+    # T-BID 8（V4.0 M18 招标情报）
+    'bid_source', 'bid_raw', 'bid_notice', 'bid_match', 'bid_rule', 'bid_push', 'bid_subscribe', 'bid_feedback',
+    # T-AGT 3（V4.0 M19 Agent 接入）
+    'agt_registration', 'agt_session', 'agt_call_log',
     # T-CT 7
     'ct_contract', 'ct_contract_payment_plan', 'ct_contract_risk', 'ct_contract_change',
     'ct_contract_dispatch', 'ct_invoice', 'ct_receipt',
@@ -95,7 +100,7 @@ unregistered = (created - REGISTERED) - INFRA_WHITELIST
 if unregistered:
     FAIL.append(f"1.表完整性: 存在未登记表 {sorted(unregistered)}（02 册是唯一事实源，禁止多建）")
 else:
-    OK.append(f"1.表完整性: 已建 {len(created - INFRA_WHITELIST)} 张全部在 150 张登记清单内；"
+    OK.append(f"1.表完整性: 已建 {len(created - INFRA_WHITELIST)} 张全部在 V4.0 163 张登记清单内；"
               f"未建 {len(REGISTERED - created)} 张属后续切片（S1 起逐片创建）")
 
 # ---------- 2. 枚举一致性（02 册 §六 E-01~E-42） ----------
@@ -109,20 +114,24 @@ EXPECTED_TYPE_CODES = {
     'card_status', 'dispatch_status', 'cost_type', 'po_status', 'data_scope',
     'supplier_level', 'diff_cause', 'slow_responsibility', 'disposal_method', 'replenish_reason',
     'arc_category', 'retention',
+    # V4.0 E-43—E-52
+    'bid_source_category', 'bid_source_status', 'bid_parse_status', 'bid_notice_status',
+    'bid_match_level', 'bid_push_channel',
+    'agt_identity_type', 'agt_task_status', 'agt_call_result',
+    'kb_card_light',
 }
 seeded_types = set()
-v3 = (ROOT / 'db' / 'migration' / 'V3__seed_dicts.sql')
-if v3.exists():
-    body = v3.read_text(encoding='utf-8')
+for vf in sorted((ROOT / 'db' / 'migration').glob('V*.sql')):
+    body = vf.read_text(encoding='utf-8')
     for match in re.finditer(r"INSERT INTO sys_dict_type[^;]*?VALUES\s*(.*?);", body, re.S | re.I):
         for row in re.finditer(r"\((\d+),'(\w+)'", match.group(1)):
             seeded_types.add(row.group(2))
 missing_types = EXPECTED_TYPE_CODES - seeded_types
 extra_types = seeded_types - EXPECTED_TYPE_CODES
 if missing_types or extra_types:
-    FAIL.append(f"2.枚举一致性: 缺 {sorted(missing_types)} 多 {sorted(extra_types)}（须与 02 册 §六 完全一致）")
+    FAIL.append(f"2.枚举一致性: 缺 {sorted(missing_types)} 多 {sorted(extra_types)}（须与 02 册 §六 + V4.0 E-43—E-52 完全一致）")
 else:
-    OK.append(f"2.枚举一致性: 42 组字典类型完全一致（{len(seeded_types)} 组）")
+    OK.append(f"2.枚举一致性: {len(seeded_types)} 组字典类型完全一致（E-01—E-52，V4.0 基线）")
 
 # ---------- 3. 编码引擎（02 册 §五 18 类） ----------
 code_types = ROOT / 'projlife-modules' / 'module-org' / 'src' / 'main' / 'java' / 'com' / 'projlife' / 'org' / 'service' / 'code' / 'CodeTypes.java'

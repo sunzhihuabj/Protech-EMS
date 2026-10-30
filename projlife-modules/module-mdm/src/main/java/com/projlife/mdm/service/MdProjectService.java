@@ -109,7 +109,7 @@ public class MdProjectService implements MdmApi {
         if (!hits.isEmpty() && (forceNewReason == null || forceNewReason.length() < 10)) {
             throw BizException.of(com.projlife.common.exception.ErrorCode.BLOCKED,
                             "三重查重命中 " + hits.size() + " 条疑似重复，请关联已有项目或填写新建理由")
-                    .with("blockCode", "MDM-DUP-CHECK").with("candidates", hits)
+                    .with("blockCode", "SYS-DUP-CHECK").with("candidates", hits)
                     .with("suggestion", "选择对比卡中的已有项目，或填写不少于 10 字的新建理由");
         }
         // FR-MDM-16：同 farm+phase 同产品线仅一条 ACTIVE 项目

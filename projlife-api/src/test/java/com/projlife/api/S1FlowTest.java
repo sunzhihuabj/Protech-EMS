@@ -237,7 +237,7 @@ class S1FlowTest {
         project.put("farmNameRaw", "竹子岭风电场（demo）一期");
         ResponseEntityMap dup = post("/api/v1/mdm/projects", mdmToken, project, null);
         assertEquals(5001, dup.code(), "三重查重命中应阻断");
-        assertEquals("MDM-DUP-CHECK", dup.blockCode());
+        assertEquals("SYS-DUP-CHECK", dup.blockCode());
         assertTrue(String.valueOf(dup.body()).contains("candidates"), "应返回对比卡候选");
     }
 

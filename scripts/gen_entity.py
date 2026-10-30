@@ -202,6 +202,9 @@ TABLES = {
         ('status', 'VARCHAR', 'TRACKING/WON/LOST'),
         ('lost_reason', 'VARCHAR', '丢单原因'),
         ('converted_contract_id', 'BIGINT', '成交合同 id'),
+        ('source_type', 'VARCHAR', '来源类型（BID/MANUAL/REFERRAL，FR-CRM-20/D-05）'),
+        ('source_id', 'BIGINT', '来源 id（如标讯公告）'),
+        ('source_note', 'VARCHAR', '来源说明'),
     ]),
     'crm_opportunity_followup': ('crm', 'CrmOpportunityFollowup', False, [
         ('opportunity_id', 'BIGINT', '商机 id'),
@@ -234,6 +237,32 @@ TABLES = {
         ('stay_days', 'INT', '停留天数'),
         ('amount', 'DECIMAL', '金额'),
         ('probability', 'DECIMAL', '概率'),
+    ]),
+    # ---------------- 报价单（V4.0 D-04，FR-CRM-17~19） ----------------
+    'crm_quotation': ('crm', 'CrmQuotation', False, [
+        ('quotation_no', 'VARCHAR', 'QT-{YYYYMM}-{4位} UK'),
+        ('opportunity_id', 'BIGINT', '商机（一商机多版报价 UK）'),
+        ('customer_id', 'BIGINT', '客户'),
+        ('project_id', 'BIGINT', '项目档案'),
+        ('product_line', 'VARCHAR', 'E-08'),
+        ('version', 'VARCHAR', 'V1/V2…，旧版只读'),
+        ('qty', 'DECIMAL', '数量'),
+        ('unit_price', 'DECIMAL', '单价'),
+        ('tax_rate', 'DECIMAL', '税率'),
+        ('amount', 'DECIMAL', '金额=数量×单价×(1±税率) 服务端算'),
+        ('delivery_terms', 'VARCHAR', '交付条件'),
+        ('valid_until', 'DATE', '有效期至'),
+        ('status', 'VARCHAR', 'DRAFT/SUBMITTED/WON/LOST/EXPIRED'),
+        ('price_basis_json', 'JSON', '价格基准（成本提示，FR-CRM-18）'),
+        ('converted_contract_id', 'BIGINT', '转合同回写（FR-CRM-19）'),
+    ]),
+    'crm_quotation_line': ('crm', 'CrmQuotationLine', False, [
+        ('quotation_id', 'BIGINT', '报价单'),
+        ('material_id', 'BIGINT', '物料'),
+        ('qty', 'DECIMAL', '数量'),
+        ('price', 'DECIMAL', '单价'),
+        ('amount', 'DECIMAL', '行金额'),
+        ('remark', 'VARCHAR', '备注'),
     ]),
     # ---------------- T-CT 合同 ----------------
     'ct_contract': ('ct', 'CtContract', True, [
@@ -270,6 +299,7 @@ TABLES = {
         ('ai_extracted', 'TINYINT', '是否经 AI 提取'),
         ('archive_no', 'VARCHAR', '档号'),
         ('original_file_id', 'BIGINT', '签章 PDF（sys_attachment）'),
+        ('quotation_id', 'BIGINT', '报价单来源（V4-03 M01 §3）'),
     ]),
     'ct_contract_payment_plan': ('ct', 'CtContractPaymentPlan', False, [
         ('contract_id', 'BIGINT', '合同 id'),
