@@ -37,6 +37,13 @@ public class SecurityConfig {
             "/actuator/info",
             "/v3/api-docs/**",
             "/swagger-ui/**",
+            // Agent 接入走自身 OAuth2 token + HMAC（V4-06 M19）；/register 仍走管理端 JWT
+            "/api/agent/v1/token",
+            "/api/agent/v1/messages",
+            "/api/agent/v1/tasks",
+            "/api/agent/v1/tasks/*",
+            "/api/agent/v1/capabilities",
+            "/api/internal/bid/**", // DMZ 拉模式任务接口（mTLS 占位，V4-05 M18）
             "/swagger-ui.html",
             "/doc.html",
             "/webjars/**",

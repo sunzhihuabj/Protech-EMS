@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # 模块 -> Java 包段
-PKG = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract', 'prj': 'project', 'plm': 'plm', 'pcs': 'plm', 'scm': 'scm', 'inv': 'inventory', 'mes': 'mes', 'qms': 'qms', 'eam': 'qms', 'eng': 'eng', 'thd': 'eng', 'cost': 'cost', 'kb': 'cost', 'arc': 'cost'}
+PKG = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract', 'prj': 'project', 'plm': 'plm', 'pcs': 'plm', 'scm': 'scm', 'inv': 'inventory', 'mes': 'mes', 'qms': 'qms', 'eam': 'qms', 'eng': 'eng', 'thd': 'eng', 'cost': 'cost', 'kb': 'cost', 'arc': 'cost', 'bid': 'bid', 'agt': 'agent'}
 
 # 类型映射：MySQL 列类型 -> Java
 JAVA = {
@@ -38,6 +38,8 @@ MODULES = {
     'cost': 'projlife-modules/module-cost',
     'kb': 'projlife-modules/module-cost',
     'arc': 'projlife-modules/module-cost',
+    'bid': 'projlife-modules/module-bid',
+    'agt': 'projlife-modules/module-agent',
 }
 
 # 表规格：表名 -> (模块, 实体名, 是否乐观锁, 字段列表 [(列名, 类型, 注释)])
@@ -1089,7 +1091,7 @@ TABLES = {
         ('gauge_code', 'VARCHAR', '量具编码'),
         ('gauge_name', 'VARCHAR', '名称'),
         ('model', 'VARCHAR', '型号'),
-        ('precision', 'VARCHAR', '精度'),
+        ('precision_class', 'VARCHAR', '精度（原 precision，MySQL 5.7 保留字改名 A-29）'),
         ('calibrate_cycle_days', 'INT', '校准周期天'),
         ('last_calibrate_date', 'DATE', '上次校准'),
         ('next_calibrate_date', 'DATE', '下次校准（超期锁定）'),
@@ -1572,6 +1574,127 @@ TABLES = {
         ('feedback_note', 'VARCHAR', '备注'),
         ('operator_id', 'BIGINT', '操作人'),
     ]),
+    # ---------------- T-BID 招标情报（V4-05 M18） ----------------
+    'bid_source': ('bid', 'BidSource', True, [
+        ('source_code', 'VARCHAR', 'SRC-{A|B|C|D}-{3位} UK'),
+        ('category', 'VARCHAR', 'A_OWNER/B_OEM/C_PORTAL/D_MANUAL'),
+        ('entry_url', 'VARCHAR', '入口 URL'),
+        ('fetch_template', 'JSON', '抓取模板'),
+        ('frequency', 'VARCHAR', '频次 DAILY_2 等'),
+        ('robots_checked_at', 'DATETIME', 'robots 检查留痕'),
+        ('status', 'VARCHAR', 'PENDING_REVIEW/ACTIVE/DISABLED'),
+        ('health_score', 'DECIMAL', '健康度'),
+        ('last_watermark', 'DATETIME', '上次水位'),
+    ]),
+    'bid_raw': ('bid', 'BidRaw', False, [
+        ('source_id', 'BIGINT', '数据源 id'),
+        ('batch_no', 'VARCHAR', '批次号'),
+        ('url', 'VARCHAR', '原文 URL'),
+        ('http_status', 'INT', 'HTTP 状态'),
+        ('content_hash', 'VARCHAR', 'SHA-256 UK'),
+        ('raw_path', 'VARCHAR', '原文暂存路径'),
+        ('fetched_at', 'DATETIME', '抓取时间'),
+    ], 'AUDITED'),
+    'bid_notice': ('bid', 'BidNotice', True, [
+        ('notice_code', 'VARCHAR', 'BID-{YYYYMM}-{4位} UK'),
+        ('source_id', 'BIGINT', '数据源 id'),
+        ('url', 'VARCHAR', 'URL'),
+        ('content_hash', 'VARCHAR', 'SHA-256 UK'),
+        ('title', 'VARCHAR', '标题'),
+        ('owner_name_raw', 'VARCHAR', '业主原始名'),
+        ('owner_id', 'BIGINT', '归并后客户 id'),
+        ('project_name', 'VARCHAR', '项目名'),
+        ('lot_no', 'VARCHAR', '标段号'),
+        ('budget_amount', 'DECIMAL', '预算金额'),
+        ('deadline_at', 'DATETIME', '投标截止'),
+        ('open_bid_at', 'DATETIME', '开标时间'),
+        ('qualification', 'JSON', '资质要求'),
+        ('region', 'VARCHAR', '区域'),
+        ('turbine_requirements', 'JSON', '机型要求'),
+        ('summary', 'VARCHAR', '摘要'),
+        ('parse_status', 'VARCHAR', 'PENDING/PARSED/MANUAL/INCOMPLETE'),
+        ('parse_by', 'VARCHAR', 'TEMPLATE/AI-015'),
+        ('confidence', 'JSON', '置信度四元组'),
+        ('status', 'VARCHAR', 'ACTIVE/SUPERSEDED/CONVERTED/CLOSED/EXCLUDED'),
+        ('parent_id', 'BIGINT', '变更/补遗关联原公告'),
+    ]),
+    'bid_match': ('bid', 'BidMatch', False, [
+        ('notice_id', 'BIGINT', '公告 id'),
+        ('rule_version', 'VARCHAR', '规则版本'),
+        ('score', 'DECIMAL', '总分 100 制'),
+        ('level', 'VARCHAR', 'HIGH/MEDIUM/ARCHIVED'),
+        ('breakdown', 'VARCHAR', '各维度得分明细 JSON 文本（A-30）'),
+        ('is_correct', 'TINYINT', '回训校准'),
+    ]),
+    'bid_rule': ('bid', 'BidRule', False, [
+        ('rule_version', 'VARCHAR', '版本 UK'),
+        ('keyword_positive', 'JSON', '正向关键词'),
+        ('keyword_negative', 'JSON', '负向关键词'),
+        ('region_list', 'JSON', '区域白名单'),
+        ('amount_min', 'DECIMAL', '金额下限'),
+        ('amount_max', 'DECIMAL', '金额上限'),
+        ('weights', 'JSON', '维度权重 25/25/15/15/10/10'),
+        ('hard_qualification', 'JSON', '硬性资质'),
+        ('status', 'VARCHAR', 'ACTIVE/ARCHIVED'),
+    ]),
+    'bid_push': ('bid', 'BidPush', False, [
+        ('notice_id', 'BIGINT', '公告 id'),
+        ('receiver_id', 'BIGINT', '接收人'),
+        ('channel', 'VARCHAR', 'INNER/DINGTALK'),
+        ('send_status', 'VARCHAR', 'SENT/FAILED'),
+        ('is_effective', 'TINYINT', '是否有效触达'),
+        ('sent_at', 'DATETIME', '发送时间'),
+    ]),
+    'bid_subscribe': ('bid', 'BidSubscribe', True, [
+        ('user_id', 'BIGINT', '用户 UK'),
+        ('regions', 'JSON', '区域'),
+        ('owners', 'JSON', '业主'),
+        ('keywords', 'JSON', '关键词'),
+        ('amount_min', 'DECIMAL', '金额下限'),
+        ('amount_max', 'DECIMAL', '金额上限'),
+        ('categories', 'VARCHAR', '源类别'),
+    ]),
+    'bid_feedback': ('bid', 'BidFeedback', False, [
+        ('notice_id', 'BIGINT', '公告 id'),
+        ('feedback_type', 'VARCHAR', 'EFFECTIVE/IRRELEVANT/BID_RESULT'),
+        ('bid_result', 'VARCHAR', '中标结果'),
+        ('note', 'VARCHAR', '备注'),
+        ('operator_id', 'BIGINT', '操作人'),
+    ]),
+    # ---------------- T-AGT Agent 接入（V4-06 M19） ----------------
+    'agt_registration': ('agt', 'AgtRegistration', True, [
+        ('client_id', 'VARCHAR', '客户端标识 UK'),
+        ('platform', 'VARCHAR', '平台名'),
+        ('public_key', 'VARCHAR', '公钥（HMAC 验签基础）'),
+        ('ip_whitelist', 'JSON', 'IP 白名单'),
+        ('allowed_identities', 'VARCHAR', '允许身份 JSON 文本（A-30）'),
+        ('quota_daily', 'INT', '日配额'),
+        ('quota_monthly_token', 'BIGINT', '月 token 配额'),
+        ('secret_cipher', 'VARCHAR', 'AES 密文'),
+        ('status', 'VARCHAR', 'ACTIVE/REVOKED'),
+    ]),
+    'agt_session': ('agt', 'AgtSession', False, [
+        ('session_ref', 'VARCHAR', '会话标识 UK'),
+        ('registration_id', 'BIGINT', '注册 id'),
+        ('identity_type', 'VARCHAR', 'EXPERT/WORKER/ASSISTANT'),
+        ('on_behalf_of', 'BIGINT', 'WORKER 强制代人'),
+        ('granted_role_code', 'VARCHAR', '授予角色'),
+        ('data_scope', 'VARCHAR', '数据范围'),
+        ('status', 'VARCHAR', 'ACTIVE/CLOSED/REVOKED'),
+        ('expires_at', 'DATETIME', '过期时间 2h'),
+    ]),
+    'agt_call_log': ('agt', 'AgtCallLog', False, [
+        ('registration_id', 'BIGINT', '注册 id'),
+        ('session_id', 'BIGINT', '会话 id'),
+        ('capability', 'VARCHAR', '能力标识'),
+        ('task_id', 'VARCHAR', '任务 id'),
+        ('request_digest', 'VARCHAR', '请求摘要'),
+        ('response_status', 'VARCHAR', 'OK/ACCEPTED/BLOCKED/ERROR'),
+        ('block_code', 'VARCHAR', 'AGT-FORBIDDEN 等'),
+        ('latency_ms', 'INT', '耗时'),
+        ('trace_id', 'VARCHAR', '追踪 id'),
+        ('tokens_used', 'BIGINT', 'token 消耗'),
+    ], 'AUDITED'),
 }
 
 

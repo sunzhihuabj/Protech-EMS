@@ -160,7 +160,7 @@ CREATE TABLE qms_gauge (
     gauge_code          VARCHAR(24)  NOT NULL,
     gauge_name          VARCHAR(100) NOT NULL,
     model               VARCHAR(60)  NULL,
-    precision           VARCHAR(60)  NULL,
+    precision_class     VARCHAR(60)  NULL,
     calibrate_cycle_days INT         NOT NULL DEFAULT 365,
     last_calibrate_date DATE         NULL,
     next_calibrate_date DATE         NULL,

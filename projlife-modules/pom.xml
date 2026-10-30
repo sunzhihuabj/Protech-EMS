@@ -28,5 +28,7 @@
         <module>module-contract</module>
         <module>module-file</module>
         <module>module-integration</module>
+        <module>module-bid</module>
+        <module>module-agent</module>
     </modules>
 </project>

@@ -116,6 +116,22 @@
 | 66 | POST | /api/v1/cost/evm · /snapshot | cost:budget | EVM/快照 |
 | 67 | GET/POST | /api/v1/kb/cards(+ /{id}/block /close /escalate) | kb:card:manage | 卡片（VAGUE/五要素/红灯升级） |
 
+## S9+S10 已交付接口（招标情报 / Agent）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 68 | POST/GET | /api/v1/bid/sources(+ /{id}/review) | bid:source:manage | 数据源（FR-BID-01/02，SRC 编号，robots 留痕启用） |
+| 69 | POST | /api/v1/bid/ingest | bid:notice:manual | 抓取入库+四层去重（FR-BID-06，URL 归一/content_hash UK/跨源合并/变更关联） |
+| 70 | GET/POST | /api/v1/bid/notices(+ /{id} /{id}/score /{id}/match) | bid:notice:view | 公告与打分（FR-BID-09，100 分制 25/25/15/15/10/10） |
+| 71 | POST | /api/v1/bid/notices/{id}/convert | bid:notice:convert | 一键转商机（FR-BID-12，source_type=BID 写回） |
+| 72 | POST | /api/v1/bid/notices/{id}/push · /api/v1/bid/subscribe | bid:push:subscribe | 订阅与推送（FR-BID-10/11） |
+| 73 | POST | /api/v1/bid/feedback | bid:notice:manual | 反馈回训（FR-BID-13，is_correct 校准） |
+| 74 | POST | /api/agent/v1/register | agt:register:manage | Agent 注册（FR-AGT-01，secret 仅返一次） |
+| 75 | POST | /api/agent/v1/token | Agent client_credentials | 会话（FR-AGT-02，2h，WORKER 强制 onBehalfOf） |
+| 76 | GET | /api/agent/v1/capabilities | Agent Token | 能力目录（FR-AGT-03，12 项按身份过滤） |
+| 77 | POST | /api/agent/v1/messages | Agent Token+HMAC | 同步问答（FR-AGT-05，只读 ≤200 行，越权 AGT-FORBIDDEN） |
+| 78 | POST/GET | /api/agent/v1/tasks(+ /{taskId}) | Agent Token+HMAC | 异步任务（FR-AGT-06，202+code=0+状态机） |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

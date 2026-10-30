@@ -22,8 +22,8 @@ public class QmsGauge extends BaseEntity {
     /** 型号 */
     private String model;
 
-    /** 精度 */
-    private String precision;
+    /** 精度（原 precision，MySQL 5.7 保留字改名 A-29） */
+    private String precisionClass;
 
     /** 校准周期天 */
     private Integer calibrateCycleDays;
@@ -64,12 +64,12 @@ public class QmsGauge extends BaseEntity {
         this.model = model;
     }
 
-    public String getPrecision() {
-        return precision;
+    public String getPrecisionClass() {
+        return precisionClass;
     }
 
-    public void setPrecision(String precision) {
-        this.precision = precision;
+    public void setPrecisionClass(String precisionClass) {
+        this.precisionClass = precisionClass;
     }
 
     public Integer getCalibrateCycleDays() {

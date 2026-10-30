@@ -15,4 +15,5 @@
 | 阶段 7.5 · V4.0 对齐（新 RPD） | ✅ 完成 | 报价单/商机来源/E-52 枚举/编码 24 类/blockCode 命名空间/SPEC-V4 同步 | mvn 58/58；真实库冒烟 | SPRINT-V4Align.md |
 | 阶段 8 · S7 工程与第三方 | ✅ 完成 | T-ENG/T-THD 21 表 + 派工 BR-03·04 + E-32/E-29 状态机 + 整改闭环 + FR-ENG-08 | mvn 64/64；真实库冒烟 | SPRINT-S7.md |
 | 阶段 9 · S8 成本看板治理 | ✅ 完成 | T-COST/T-KB/T-ARC 16 表 + 成本七项归集 + 超支预警 + EVM + 卡片五要素 VAGUE 拦截 + 红灯升级 + 三问闭环 | mvn 70/70；verify-spec 7/7；真实库冒烟 | SPRINT-S8.md |
-| 阶段 10 · S9 AI 真实接入 | 🚧 进行中 | — | — | — |
+| 阶段 10 · S9 AI 真实接入 | ✅ 完成 | 16 编号段 AI-001~016/20 能力点注册 + 降级链 + 四元组追溯 + M15 适配器（T+ FILE/API、钉钉主企微备） | ai-gateway 4/4；S1/S3 降级断言 | SPRINT-S9-S10.md |
+| 阶段 11 · S10 招标情报与 Agent | ✅ 完成 | T-BID 8 表 + T-AGT 3 表（累计 142 实体/141 表）+ 数据源/四层去重/100 分制/一键转商机 + Agent 注册/OAuth2 2h/HMAC/12 能力白名单/202 异步/AGT-FORBIDDEN | mvn 78/78 + 网关 4/4；verify-spec 7/7；真实 MySQL 冒烟 | SPRINT-S9-S10.md |

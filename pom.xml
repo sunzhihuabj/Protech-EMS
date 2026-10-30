@@ -128,6 +128,16 @@
                 <artifactId>module-contract</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.projlife</groupId>
+                <artifactId>module-bid</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.projlife</groupId>
+                <artifactId>module-agent</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- 三方（规格锁定版本，见 16 册 §二） -->
             <dependency>

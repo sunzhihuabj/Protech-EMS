@@ -18,3 +18,7 @@
 | A-22 | 2026-10-30 | V4 对齐 | 报价单主表金额=数量×单价×(1+税率)；行金额为不含税口径，×(1+税率)后须等于主表金额 | V4-03 M01 §3"金额=数量×单价×(1±税率)服务端算" |
 | A-23 | 2026-10-30 | V4 对齐 | E-43—E-51 各枚举取值按 M18/M19 字段定义与状态机推导种子（V4-01 §5.4 只给组名）；Q 清单如另有口径以 Q 为准 | V4-01 §5.4、V4-07 §8 |
 | A-24 | 2026-10-30 | V4 对齐 | agt:* 4 项权限码取 agt:register:manage/agt:call/agt:board:view/agt:feedback:view（V4-00 F-05 未列明细） | V4-02 M00 |
+
+| A-30 | 2026-10-31 | S10 | 实体以 String 承载且需读回的 JSON 字段（bid_match.breakdown / agt_registration.allowed_identities）落 VARCHAR：H2 JSON 列 getString 会再包一层数组字面量（MySQL 原样），跨库一致性优先；写入仍保证合法 JSON 文本 | V4-05 M18 §3 / V4-06 M19 §5 |
+| A-28 | 2026-10-31 | S10 | Agent 异步写能力在无登录上下文执行（client_credentials 无用户）：crm_opportunity.owner_id NOT NULL，Agent 通道创建的商机 ownerId 落系统账号 E0001(id=1)；生产可配 AGT_SYSTEM_USER | V4-06 M19 |
+| A-29 | 2026-10-31 | S10 | eam_tool.precision 为 MySQL 5.7 保留字（H2 宽松通过）→ 改名 precision_class，实体同步 | 编码规范 |
