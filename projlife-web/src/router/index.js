@@ -28,6 +28,7 @@ const routes = [
       { path: 'cost/center', name: 'costCenter', component: () => import('@/views/cost/CostCenter.vue'), meta: { title: '成本中心', permCode: 'menu:cost' } },
       { path: 'kb/kanban', name: 'kanban', component: () => import('@/views/kb/Kanban.vue'), meta: { title: '九板看板', permCode: 'menu:kb' } },
       { path: 'arc/archives', name: 'archives', component: () => import('@/views/arc/Archives.vue'), meta: { title: '档案管理', permCode: 'menu:arc' } },
+      { path: 'agent/console', name: 'agentConsole', component: () => import('@/views/agent/AgentConsole.vue'), meta: { title: 'Agent 接入台', permCode: 'menu:agt' } },
       { path: 'profile/appearance', name: 'appearance', component: () => import('@/views/profile/Appearance.vue'), meta: { title: '外观设置' } },
       { path: 'system/users', name: 'users', component: () => import('@/views/system/Users.vue'), meta: { title: '用户管理', permCode: 'menu:system:user' } },
       { path: 'system/roles', name: 'roles', component: () => import('@/views/system/Roles.vue'), meta: { title: '角色权限', permCode: 'menu:system:role' } },
