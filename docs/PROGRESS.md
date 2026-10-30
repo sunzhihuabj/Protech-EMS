@@ -18,3 +18,4 @@
 | 阶段 10 · S9 AI 真实接入 | ✅ 完成 | 16 编号段 AI-001~016/20 能力点注册 + 降级链 + 四元组追溯 + M15 适配器（T+ FILE/API、钉钉主企微备） | ai-gateway 4/4；S1/S3 降级断言 | SPRINT-S9-S10.md |
 | 阶段 11 · S10 招标情报与 Agent | ✅ 完成 | T-BID 8 表 + T-AGT 3 表（累计 142 实体/141 表）+ 数据源/四层去重/100 分制/一键转商机 + Agent 注册/OAuth2 2h/HMAC/12 能力白名单/202 异步/AGT-FORBIDDEN | mvn 78/78 + 网关 4/4；verify-spec 7/7；真实 MySQL 冒烟 | SPRINT-S9-S10.md |
 | 阶段 12 · S11 收尾批（盘点/差异/档案） | ✅ 完成 | 盘点全链路（E-37 无归因不调账/L1-L3 分级审批）+ 档案借/销/移闭环（在借守卫/鉴定必填/逾期扫描） | mvn 82/82 + 网关 4/4；verify-spec 7/7；真实 MySQL 冒烟 | SPRINT-S11.md |
+| 阶段 13 · S12 收尾批（呆滞/处置） | ✅ 完成 | 呆滞 CANDIDATE→DISPOSED 主链路（E-38 归因必填/E-39 处置/数量守卫/DP 编号/审批分级复用）+ S11 E-37 归因对齐字典修正 | mvn 85/85 + 网关 4/4；verify-spec 7/7；真实 MySQL 冒烟 | SPRINT-S12.md |

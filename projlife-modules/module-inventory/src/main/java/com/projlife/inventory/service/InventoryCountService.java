@@ -135,8 +135,8 @@ public class InventoryCountService {
                 throw BizException.blocked("INV-NO-CAUSE",
                         "差异行缺少归因，无归因不调账（E-37）：行 " + line.getId(), "请补充六类归因后重新复核");
             }
-            if (!line.getCause().matches("SCRAP|LOSS|OVER|PROCESS|SUPPLIER|OTHER")) {
-                throw BizException.of(ErrorCode.PARAM_INVALID, "归因必须为 E-37 六类: " + line.getCause());
+            if (!line.getCause().matches("DOC_LAG|REPLENISH_UNBOOKED|MIX_ENTITY|PICK_ERROR|LOST|MEASURE")) {
+                throw BizException.of(ErrorCode.PARAM_INVALID, "归因必须为 E-37 六类（DOC_LAG/REPLENISH_UNBOOKED/MIX_ENTITY/PICK_ERROR/LOST/MEASURE）: " + line.getCause());
             }
             BigDecimal amount = line.getDiffAmount() == null ? BigDecimal.ZERO : line.getDiffAmount();
             InvDiff diff = new InvDiff();

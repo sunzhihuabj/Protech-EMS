@@ -141,6 +141,14 @@
 | 81 | POST | /api/v1/arc/archives · /borrows(+ /return /overdue-scan) | arc:manage | 建档 PRT/借阅 JY/归还/逾期扫描 |
 | 82 | POST | /api/v1/arc/destroys · /transfers(+ /confirm) | arc:manage | 销毁 XH（鉴定必填）/移交 YJ/确认 |
 
+## S12 已交付接口（呆滞 / 处置）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 83 | POST | /api/v1/inv/slow-moving(+ /{id}/confirm) | inv:slow:manage | 呆滞登记/确认（E-38 归因必填） |
+| 84 | POST | /api/v1/inv/slow-moving/{id}/disposals | inv:slow:manage | 处置发起（E-39 方式，DP 编号，A-31 分级） |
+| 85 | POST | /api/v1/inv/slow-moving/disposals/{id}/approve · /complete | inv:diff:approve:L1-L3 | 处置审批/完成回填 |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

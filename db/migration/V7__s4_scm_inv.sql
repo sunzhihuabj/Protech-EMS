@@ -358,6 +358,7 @@ CREATE TABLE inv_disposal (
     actual_amount  DECIMAL(18,2) NULL,
     approval_level VARCHAR(8)    NULL,
     approved_by    BIGINT        NULL,
+    approved_at    DATETIME      NULL,
     disposed_at    DATETIME      NULL,
     remark         VARCHAR(300)  NULL,
     deleted        TINYINT       NOT NULL DEFAULT 0,

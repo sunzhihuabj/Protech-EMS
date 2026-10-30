@@ -831,6 +831,7 @@ TABLES = {
         ('actual_amount', 'DECIMAL', '实际金额'),
         ('approval_level', 'VARCHAR', '分级审批'),
         ('approved_by', 'BIGINT', '审批人'),
+        ('approved_at', 'DATETIME', '审批时间'),
         ('disposed_at', 'DATETIME', '处置时间'),
         ('remark', 'VARCHAR', '备注'),
     ]),

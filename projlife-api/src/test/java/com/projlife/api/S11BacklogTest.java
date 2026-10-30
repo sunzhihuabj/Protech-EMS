@@ -131,14 +131,14 @@ class S11BacklogTest {
         assertEquals("INV-NO-CAUSE", ((Map<?, ?>) blocked.body().get("data")).get("blockCode"));
         // 补归因（E-37 六类之一）后复核
         assertEquals(0, post("/api/v1/inv/counts/" + countId + "/entry",
-                List.of(Map.of("id", lineId, "actualQty", "98", "cause", "LOSS"))).code());
+                List.of(Map.of("id", lineId, "actualQty", "98", "cause", "LOST"))).code());
         Resp reviewed = post("/api/v1/inv/counts/" + countId + "/review", null);
         assertEquals(0, reviewed.code(), reviewed.body().toString());
         List<Map<String, Object>> diffs = reviewed.data();
         assertEquals(1, diffs.size());
         diffId = Long.valueOf(String.valueOf(diffs.get(0).get("id")));
         assertEquals("L1", diffs.get(0).get("approvalLevel"), "差异 <1 万应 L1");
-        assertEquals("LOSS", diffs.get(0).get("cause"));
+        assertEquals("LOST", diffs.get(0).get("cause"));
     }
 
     @Test

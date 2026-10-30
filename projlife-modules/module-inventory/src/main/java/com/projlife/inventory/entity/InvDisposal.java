@@ -37,6 +37,9 @@ public class InvDisposal extends BaseEntity {
     /** 审批人 */
     private Long approvedBy;
 
+    /** 审批时间 */
+    private LocalDateTime approvedAt;
+
     /** 处置时间 */
     private LocalDateTime disposedAt;
 
@@ -105,6 +108,14 @@ public class InvDisposal extends BaseEntity {
 
     public void setApprovedBy(Long approvedBy) {
         this.approvedBy = approvedBy;
+    }
+
+    public LocalDateTime getApprovedAt() {
+        return approvedAt;
+    }
+
+    public void setApprovedAt(LocalDateTime approvedAt) {
+        this.approvedAt = approvedAt;
     }
 
     public LocalDateTime getDisposedAt() {
