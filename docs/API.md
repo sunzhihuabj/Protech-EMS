@@ -158,6 +158,15 @@
 | 88 | POST | /api/v1/eng/records/material-issues(+ /{id}/return) | eng:expense | 现场领料/退料（累计守卫） |
 | 89 | POST/GET | /api/v1/eng/records/after-sales(+ /{id}/respond /{id}/close) | eng:after:manage | 售后 WO 闭环（方案必填+客户确认） |
 
+## S14 已交付接口（第三方门户 THD）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 90 | POST | /api/v1/thd/delivery-notes(+ /{id}/print) | thd:portal | 送货单 DN 编号/打印留痕（无价格 BR-06） |
+| 91 | POST | /api/v1/thd/worker-projects(+ /{id}/revoke) | thd:portal | 人员项目授权（黑名单拦截）/撤销 |
+| 92 | POST | /api/v1/thd/evaluations | thd:portal | 四维考核评价（均分定级 A/B/C/D） |
+| 93 | POST | /api/v1/thd/blacklist(+ /{id}/release) | thd:portal | 黑名单（生效自动冻结授权）/解除 |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

@@ -148,6 +148,11 @@ public final class CodeTypes {
         return new CodeRequest("SRC:" + category, "SRC-" + category + "-", 3);
     }
 
+    /** 28. 第三方送货单：DN-{YYYYMM}-{3位}（S14 收尾） */
+    public static CodeRequest deliveryNote(String yearMonth) {
+        return new CodeRequest("THDDN:" + yearMonth, "DN-" + yearMonth + "-", 3);
+    }
+
     /** 25. 档案借阅：JY-{YYYYMM}-{3位}（S11 收尾） */
     public static CodeRequest archiveBorrow(String yearMonth) {
         return new CodeRequest("ARCJY:" + yearMonth, "JY-" + yearMonth + "-", 3);
