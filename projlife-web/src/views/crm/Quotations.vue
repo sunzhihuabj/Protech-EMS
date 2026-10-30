@@ -110,7 +110,7 @@ export default {
   },
   mounted() {
     this.load()
-    http.get('/crm/customers', { params: { pageNum: 1, pageSize: 100 } })
+    http.get('/mdm/customers', { params: { pageNum: 1, pageSize: 100 } })
       .then(body => { this.customers = (body.data && body.data.records) || [] }).catch(() => {})
   },
   methods: {

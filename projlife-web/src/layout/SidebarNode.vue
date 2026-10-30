@@ -28,7 +28,7 @@ const ROUTE_BY_CODE = {
   'menu:kb': '/kb/kanban',
   'menu:arc': '/arc/archives',
   'menu:scm': '/inv/center',
-  'menu:mdm': '/crm/opportunities',
+  'menu:mdm': '/mdm/console',
   'menu:qms': '/eng/portal',
   'menu:eam': '/eng/portal',
   'menu:agt': '/agent/console',
