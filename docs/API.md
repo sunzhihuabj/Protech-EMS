@@ -182,6 +182,12 @@
 |---|---|---|---|---|
 | 98 | POST/GET | /api/v1/plm/bom/qc-batch · /bom/{id}/qc-result | bom:release | 13 条校验跑批（快照落 qc_result）/回查 |
 
+## S17 已交付接口（看板指标）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 99 | POST | /api/v1/kb/metrics(+ /{code}/snapshots /{code}/trend) | kb:metric:def | 指标口径/快照灯色（A-35）/趋势下钻 |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |
