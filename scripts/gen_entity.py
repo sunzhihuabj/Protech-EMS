@@ -526,6 +526,7 @@ TABLES = {
         ('param_json', 'JSON', 'B 类参数（塔高/节数/段长）'),
         ('point_json', 'JSON', 'C 类点位定义'),
         ('released_at', 'DATETIME', '发布时间'),
+        ('qc_result', 'VARCHAR', '13 条校验跑批结果快照 JSON 文本（A-34/A-30）'),
         ('released_by', 'VARCHAR', '发布人'),
         ('remark', 'VARCHAR', '备注'),
     ]),

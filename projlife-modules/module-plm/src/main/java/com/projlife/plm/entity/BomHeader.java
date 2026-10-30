@@ -61,6 +61,9 @@ public class BomHeader extends BaseEntity {
     /** 发布时间 */
     private LocalDateTime releasedAt;
 
+    /** 13 条校验跑批结果快照 JSON 文本（A-34/A-30） */
+    private String qcResult;
+
     /** 发布人 */
     private String releasedBy;
 
@@ -193,6 +196,14 @@ public class BomHeader extends BaseEntity {
 
     public void setReleasedAt(LocalDateTime releasedAt) {
         this.releasedAt = releasedAt;
+    }
+
+    public String getQcResult() {
+        return qcResult;
+    }
+
+    public void setQcResult(String qcResult) {
+        this.qcResult = qcResult;
     }
 
     public String getReleasedBy() {

@@ -264,6 +264,76 @@ public class BomService {
         issues.add(row);
     }
 
+    /**
+     * FR-PLM：13 条校验批量跑批（S5 BACKLOG 落地）。
+     * 逐 BOM 全量校验并把结果快照（issueCount/pass/fail + 明细 JSON）持久化到 bom_header.qc_result（A-34），
+     * 不在登记清单外建表；审计经 @Audited。
+     */
+    @Transactional
+    public Map<String, Object> runQcBatch(java.util.List<Long> bomIds) {
+        if (bomIds == null || bomIds.isEmpty()) {
+            throw com.projlife.common.exception.BizException.of(
+                    com.projlife.common.exception.ErrorCode.PARAM_INVALID, "BOM 清单必填");
+        }
+        int pass = 0;
+        int fail = 0;
+        java.util.List<Map<String, Object>> summaries = new ArrayList<>();
+        for (Long bomId : bomIds) {
+            BomHeader header = mustGet(bomId);
+            java.util.List<Map<String, Object>> issues = validate(bomId);
+            boolean ok = issues.stream().noneMatch(i -> "ERROR".equals(i.get("level")));
+            if (ok) {
+                pass++;
+            } else {
+                fail++;
+            }
+            Map<String, Object> summary = new HashMap<>();
+            summary.put("bomId", bomId);
+            summary.put("bomNo", header.getBomNo());
+            summary.put("pass", ok);
+            summary.put("issueCount", issues.size());
+            try {
+                header.setQcResult(new com.fasterxml.jackson.databind.ObjectMapper()
+                        .writeValueAsString(Map.of("pass", ok, "issueCount", issues.size(), "issues", issues)));
+            } catch (Exception e) {
+                throw new IllegalStateException("qc_result 序列化失败", e);
+            }
+            headerMapper.updateById(header);
+            summaries.add(summary);
+        }
+        Map<String, Object> result = new HashMap<>();
+        result.put("total", bomIds.size());
+        result.put("pass", pass);
+        result.put("fail", fail);
+        result.put("summaries", summaries);
+        return result;
+    }
+
+    /** 查询最近一次跑批快照 */
+    public Map<String, Object> qcResultOf(Long bomId) {
+        BomHeader header = mustGet(bomId);
+        if (header.getQcResult() == null) {
+            throw com.projlife.common.exception.BizException.notFound("该 BOM 尚无跑批记录: " + bomId);
+        }
+        try {
+            com.fasterxml.jackson.databind.ObjectMapper om = new com.fasterxml.jackson.databind.ObjectMapper();
+            String text = header.getQcResult();
+            // H2 JSON 列 getString 会把值再包一层数组字面量（A-30 同源），先解包
+            if (text.startsWith("[\"") && text.endsWith("\"]")) {
+                java.util.List<String> wrapped = om.readValue(text, java.util.List.class);
+                if (!wrapped.isEmpty()) {
+                    text = wrapped.get(0);
+                }
+            }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> result = om.readValue(text, java.util.Map.class);
+            result.put("bomNo", header.getBomNo());
+            return result;
+        } catch (Exception e) {
+            throw new IllegalStateException("qc_result 反序列化失败", e);
+        }
+    }
+
     /** FR-PLM-26 + BR-PLM-01：发布——全量校验无 ERROR 才可发布；原子切换现行 */
     @Audited(module = "bom", action = "release_bom", targetType = "bom_header", targetId = "{0}")
     @Transactional

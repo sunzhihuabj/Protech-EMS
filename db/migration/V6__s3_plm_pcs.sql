@@ -97,6 +97,7 @@ CREATE TABLE bom_header (
     param_json           JSON         NULL,
     point_json           JSON         NULL,
     released_at          DATETIME     NULL,
+    qc_result             VARCHAR(4000) NULL COMMENT '13 条校验跑批结果快照 JSON 文本（A-34/A-30）',
     released_by          VARCHAR(64)  NULL,
     remark               VARCHAR(500) NULL,
     deleted              TINYINT      NOT NULL DEFAULT 0,

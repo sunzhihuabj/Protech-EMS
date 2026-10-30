@@ -23,6 +23,7 @@
 | A-28 | 2026-10-31 | S10 | Agent 异步写能力在无登录上下文执行（client_credentials 无用户）：crm_opportunity.owner_id NOT NULL，Agent 通道创建的商机 ownerId 落系统账号 E0001(id=1)；生产可配 AGT_SYSTEM_USER | V4-06 M19 |
 | A-29 | 2026-10-31 | S10 | eam_tool.precision 为 MySQL 5.7 保留字（H2 宽松通过）→ 改名 precision_class，实体同步 | 编码规范 |
 
+| A-34 | 2026-10-31 | S16 | BOM 13 条校验跑批结果不建独立表（bom_qc_result 不在 V4.0 163 表登记清单内），落 bom_header.qc_result（VARCHAR 承载 JSON 文本，同 A-30 跨库口径）；全量 ERROR 类规则在 addLine 写入侧前置拦截，跑批对存量数据兜底 | FR-PLM-13 前置 |
 | A-31 | 2026-10-31 | S11 | 库存差异审批分级阈值：｜diff_amount｜<1 万 L1 / <10 万 L2 / ≥10 万 L3（04 册未给具体金额档，按行业惯例取值，生产可配）；档案借阅审批人缺省当前操作人 | V4-04 M07 / V4-02 M13 |
 
 | A-32 | 2026-10-31 | S14 | 第三方考核定级阈值：均分 A≥90/B≥75/C≥60/D（V4-05 M11 未给分档，按供应商考核惯例取值，生产可配）；黑名单审批人缺省当前操作人（R02 流程审批随批次） | V4-05 M11 |

@@ -176,6 +176,12 @@
 | 96 | GET/POST | /api/v1/aps/schedules/{id}/details · /details/{id}/adjust | aps:schedule | 明细清单 / L2 拖拽（版本+1，已发布阻断） |
 | 97 | POST | /api/v1/aps/schedules/{id}/publish | aps:schedule | 发布（齐套缺料阻断 APS-MATERIAL-SHORT） |
 
+## S16 已交付接口（BOM 校验跑批）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 98 | POST/GET | /api/v1/plm/bom/qc-batch · /bom/{id}/qc-result | bom:release | 13 条校验跑批（快照落 qc_result）/回查 |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

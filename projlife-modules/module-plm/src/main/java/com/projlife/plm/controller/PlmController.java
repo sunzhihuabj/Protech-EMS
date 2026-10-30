@@ -82,6 +82,24 @@ public class PlmController {
     }
 
     /** 13 条校验（保存实时） */
+    /** FR-PLM：13 条校验批量跑批（结果快照落 bom_header.qc_result，A-34） */
+    @PostMapping("/bom/qc-batch")
+    @RequirePermission("bom:release")
+    public ApiResponse<Map<String, Object>> runQcBatch(@RequestBody Map<String, Object> body) {
+        @SuppressWarnings("unchecked")
+        java.util.List<Object> ids = (java.util.List<Object>) body.get("bomIds");
+        java.util.List<Long> bomIds = new java.util.ArrayList<>();
+        for (Object id : ids) {
+            bomIds.add(Long.valueOf(String.valueOf(id)));
+        }
+        return ApiResponse.ok(bomService.runQcBatch(bomIds));
+    }
+
+    @GetMapping("/bom/{id}/qc-result")
+    public ApiResponse<Map<String, Object>> qcResult(@PathVariable Long id) {
+        return ApiResponse.ok(bomService.qcResultOf(id));
+    }
+
     @GetMapping("/bom/{id}/validate")
     @RequirePermission("bom:edit")
     public ApiResponse<List<Map<String, Object>>> validate(@PathVariable Long id) {
