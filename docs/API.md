@@ -149,6 +149,15 @@
 | 84 | POST | /api/v1/inv/slow-moving/{id}/disposals | inv:slow:manage | 处置发起（E-39 方式，DP 编号，A-31 分级） |
 | 85 | POST | /api/v1/inv/slow-moving/disposals/{id}/approve · /complete | inv:diff:approve:L1-L3 | 处置审批/完成回填 |
 
+## S13 已交付接口（工程日常记录）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 86 | POST | /api/v1/eng/records/daily-logs | eng:log | 施工日志（BR-03 关联，AI-009 降级不阻塞） |
+| 87 | POST | /api/v1/eng/records/quality-checks | eng:install | 质量检查（FAIL 必填缺陷） |
+| 88 | POST | /api/v1/eng/records/material-issues(+ /{id}/return) | eng:expense | 现场领料/退料（累计守卫） |
+| 89 | POST/GET | /api/v1/eng/records/after-sales(+ /{id}/respond /{id}/close) | eng:after:manage | 售后 WO 闭环（方案必填+客户确认） |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |
