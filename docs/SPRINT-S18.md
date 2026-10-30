@@ -15,7 +15,7 @@
 ## 二、验证
 
 - vite build ✓（2.5s）；端点/载荷逐一对齐后端控制器（create 行集结构 materialId/qty/price/remark、dedup 四态文案）。
-- GUI 走查随应用联调批次（本批以构建门 + 端点对齐为准）。
+- GUI 走查（S23 批次补记，vite dev :8088 + 真实 MySQL）：登录（强制改密弹窗跳过）→ 侧边栏出现「招标情报/经营看板/Agent 接入/档案管理」→ 招标情报台三页签与表格渲染 → Agent 台注册（clientId=agt-a313ecf7）→ Token 7200s/6 能力 → bid.notice.search 同步调用成功（返回 0 行为正常业务态）——全链路通过。
 
 ## 三、汇报四件事
 
