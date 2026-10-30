@@ -16,6 +16,7 @@
     <modules>
         <module>module-org</module>
         <module>module-project</module>
+        <module>module-cost</module>
         <module>module-eng</module>
         <module>module-qms</module>
         <module>module-mes</module>

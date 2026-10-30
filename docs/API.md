@@ -108,6 +108,14 @@
 | 63 | GET/POST | /api/v1/eng/units(+ /{id}/advance) | eng:install | 机组（E-29 一机一档） |
 | 64 | POST/GET | /api/v1/eng/rectifications(+ /{id}/advance) · /projects/{id}/rect-open-check | eng:rect:manage | 整改（FR-ENG-08） |
 
+## S8 已交付接口（成本 / 看板）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 65 | GET/POST | /api/v1/cost/items · /project/{id}/summary · /overrun | cost:view/budget | 成本归集/合计/超支预警 |
+| 66 | POST | /api/v1/cost/evm · /snapshot | cost:budget | EVM/快照 |
+| 67 | GET/POST | /api/v1/kb/cards(+ /{id}/block /close /escalate) | kb:card:manage | 卡片（VAGUE/五要素/红灯升级） |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |

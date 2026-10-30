@@ -1,0 +1,123 @@
+package com.projlife.cost.controller;
+
+import com.projlife.common.api.ApiResponse;
+import com.projlife.common.api.PageReq;
+import com.projlife.common.api.PageResp;
+import com.projlife.cost.entity.CostEvm;
+import com.projlife.cost.entity.CostItem;
+import com.projlife.cost.entity.CostSnapshot;
+import com.projlife.cost.entity.KbCard;
+import com.projlife.cost.service.CostService;
+import com.projlife.cost.service.KbCardService;
+import com.projlife.security.auth.RequirePermission;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
+import java.util.Map;
+
+/**
+ * 成本与看板接口（V4-05 M12-7 接口约定）。
+ */
+@RestController
+@RequestMapping("/api/v1")
+public class CostKbController {
+
+    private final CostService costService;
+    private final KbCardService cardService;
+
+    public CostKbController(CostService costService, KbCardService cardService) {
+        this.costService = costService;
+        this.cardService = cardService;
+    }
+
+    // ---------- 成本 ----------
+
+    @GetMapping("/cost/project/{projectId}/items")
+    @RequirePermission("cost:view")
+    public ApiResponse<PageResp<CostItem>> items(@PathVariable Long projectId, PageReq pageReq) {
+        return ApiResponse.ok(costService.items(pageReq, projectId));
+    }
+
+    @PostMapping("/cost/items")
+    @RequirePermission("cost:budget")
+    public ApiResponse<Long> createItem(@RequestBody CostItem item) {
+        return ApiResponse.ok(costService.createItem(item));
+    }
+
+    @GetMapping("/cost/project/{projectId}/summary")
+    @RequirePermission("cost:view")
+    public ApiResponse<Map<String, Object>> summary(@PathVariable Long projectId) {
+        return ApiResponse.ok(costService.summaryByType(projectId));
+    }
+
+    @GetMapping("/cost/project/{projectId}/overrun")
+    @RequirePermission("cost:view")
+    public ApiResponse<Map<String, Object>> overrun(@PathVariable Long projectId) {
+        return ApiResponse.ok(costService.overrunCheck(projectId));
+    }
+
+    @PostMapping("/cost/evm")
+    @RequirePermission("cost:budget")
+    public ApiResponse<CostEvm> evm(@RequestBody Map<String, String> body) {
+        return ApiResponse.ok(costService.computeEvm(Long.valueOf(body.get("projectId")),
+                LocalDate.parse(body.get("date")),
+                toDecimal(body.get("pv")), toDecimal(body.get("ev")), toDecimal(body.get("ac"))));
+    }
+
+    @PostMapping("/cost/snapshot")
+    @RequirePermission("cost:budget")
+    public ApiResponse<CostSnapshot> snapshot(@RequestBody Map<String, String> body) {
+        return ApiResponse.ok(costService.snapshot(Long.valueOf(body.get("projectId")),
+                LocalDate.parse(body.get("date"))));
+    }
+
+    // ---------- 看板卡片 ----------
+
+    @GetMapping("/kb/cards")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<PageResp<KbCard>> cards(PageReq pageReq,
+                                               @RequestParam(required = false) Long boardId,
+                                               @RequestParam(required = false) String status) {
+        return ApiResponse.ok(cardService.page(pageReq, boardId, status));
+    }
+
+    /** FR-KB-04 五要素 + FR-KB-05 VAGUE 拦截 */
+    @PostMapping("/kb/cards")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<Long> createCard(@RequestBody KbCard card) {
+        return ApiResponse.ok(cardService.create(card));
+    }
+
+    /** FR-KB-06 红灯必填卡点 */
+    @PostMapping("/kb/cards/{id}/block")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<Void> block(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        cardService.block(id, body.get("blockReason"));
+        return ApiResponse.ok();
+    }
+
+    /** FR-KB-07 红灯 3 天升级（job 入口） */
+    @PostMapping("/kb/cards/escalate")
+    public ApiResponse<Integer> escalate() {
+        return ApiResponse.ok(cardService.escalateRedCards());
+    }
+
+    /** FR-KB-10 三问过堂闭环 */
+    @PostMapping("/kb/cards/{id}/close")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<Void> close(@PathVariable Long id, @RequestBody Map<String, String> body) {
+        cardService.close(id, body.get("solution"));
+        return ApiResponse.ok();
+    }
+
+    private BigDecimal toDecimal(Object value) {
+        return value == null ? null : new BigDecimal(String.valueOf(value));
+    }
+}
