@@ -1,0 +1,70 @@
+package com.projlife.job.task;
+
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+
+/**
+ * 业务扫描任务装配（S24 轨道三）：把 S8-S17 已交付的 job 入口真正挂上调度。
+ * 各端点自带硬卡点与幂等；多副本经 ShedLock 保证不重复。
+ *
+ * <ul>
+ *   <li>02:00 九板红灯 3 天升级（UC-KB-03，FR-KB-07）</li>
+ *   <li>02:30 档案借阅逾期扫描（OVERDUE，V4-02 M13）</li>
+ *   <li>03:00 第三方人员授权到期扫描（EXPIRED，V4-05 M11）</li>
+ *   <li>每 10 分钟 Andon 分级升级（工位→班长→主任，FR-MES-30）</li>
+ * </ul>
+ */
+@Component
+public class BusinessScanTasks {
+
+    private static final Logger log = LoggerFactory.getLogger(BusinessScanTasks.class);
+
+    private final InternalJobInvoker invoker;
+
+    @Value("${projlife.job.enabled:false}")
+    private boolean enabled;
+
+    public BusinessScanTasks(InternalJobInvoker invoker) {
+        this.invoker = invoker;
+    }
+
+    @Scheduled(cron = "0 0 2 * * ?")
+    @SchedulerLock(name = "kb-red-escalate", lockAtMostFor = "PT5M", lockAtLeastFor = "PT1M")
+    public void escalateRedCards() {
+        int n = invoker.post("/api/v1/kb/cards/escalate");
+        if (enabled) {
+            log.info("红灯升级完成：{} 张", n);
+        }
+    }
+
+    @Scheduled(cron = "0 30 2 * * ?")
+    @SchedulerLock(name = "arc-overdue-scan", lockAtMostFor = "PT5M", lockAtLeastFor = "PT1M")
+    public void arcOverdueScan() {
+        int n = invoker.post("/api/v1/arc/borrows/overdue-scan");
+        if (enabled) {
+            log.info("档案逾期扫描完成：{} 条置 OVERDUE", n);
+        }
+    }
+
+    @Scheduled(cron = "0 0 3 * * ?")
+    @SchedulerLock(name = "thd-expire-scan", lockAtMostFor = "PT5M", lockAtLeastFor = "PT1M")
+    public void thdExpireScan() {
+        int n = invoker.post("/api/internal/jobs/thd/expire-scan");
+        if (enabled) {
+            log.info("人员授权到期扫描完成：{} 条置 EXPIRED", n);
+        }
+    }
+
+    @Scheduled(cron = "0 */10 * * * ?")
+    @SchedulerLock(name = "andon-escalate", lockAtMostFor = "PT5M", lockAtLeastFor = "PT1M")
+    public void andonEscalate() {
+        int n = invoker.post("/api/v1/mes/andon/escalate");
+        if (enabled) {
+            log.info("Andon 升级扫描完成：{} 条", n);
+        }
+    }
+}
