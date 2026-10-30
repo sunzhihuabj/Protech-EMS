@@ -99,6 +99,15 @@
 
 > FR 回填（V4-00 §8.2）：S0=FR-SYS-01~24 部分；S1=FR-CRM-01~20+FR-CT-01~38；S2=FR-PRJ-01~39；S3=FR-PLM-11~33+FR-PCS-01~13；S4=FR-SCM-01~17+FR-INV-07~14/33~41；S5=FR-MES-01~16/26/28/30；S6=质量 09 册 FR。未实现区间见 PROGRESS 台账 BACKLOG 列。
 
+## S7 已交付接口（工程交付）
+
+| # | 方法 | 路径 | 权限 | 说明 |
+|---|---|---|---|---|
+| 61 | POST | /api/v1/eng/workers(+ /{id}/activate) | eng:crew:manage | 人员建档/激活（UC-ENG-10） |
+| 62 | GET/POST | /api/v1/eng/dispatch(+ /{id}/send /start /accept /close) | eng:dispatch | 派工（BR-03/04，E-32） |
+| 63 | GET/POST | /api/v1/eng/units(+ /{id}/advance) | eng:install | 机组（E-29 一机一档） |
+| 64 | POST/GET | /api/v1/eng/rectifications(+ /{id}/advance) · /projects/{id}/rect-open-check | eng:rect:manage | 整改（FR-ENG-08） |
+
 ## AI 网关（独立进程 :8090）
 
 | # | 方法 | 路径 | 说明 |
