@@ -1,5 +1,5 @@
 <template>
-  <!-- 菜单节点：有子级递归，叶子项以 permCode 为路由高亮键 -->
+  <!-- 菜单节点：有子级递归，叶子项以 permCode 为路由高亮键（UID-02 §二 导航树） -->
   <el-submenu v-if="node.children && node.children.length" :index="node.permCode">
     <template slot="title">
       <span>{{ node.permName }}</span>
@@ -12,32 +12,33 @@
 </template>
 
 <script>
-/** permCode → 路由路径映射（S0 固定表；后续切片随菜单种子扩展） */
+/** permCode → 路由映射（UID-05 §二 路由总表；后端菜单码 → 一级落位页） */
 const ROUTE_BY_CODE = {
-  'menu:workbench': '/',
-  'menu:notification': '/notifications',
-  'menu:crm': '/crm/opportunities',
-  'menu:contract': '/contract',
-  'menu:project': '/project',
-  'menu:plm': '/plm/boms',
-  'menu:bid': '/bid/intel',
-  'menu:inv': '/inv/center',
-  'menu:eng': '/eng/portal',
-  'menu:mes': '/mes/production',
-  'menu:cost': '/cost/center',
-  'menu:kb': '/kb/kanban',
-  'menu:arc': '/arc/archives',
-  'menu:scm': '/inv/center',
-  'menu:mdm': '/mdm/console',
-  'menu:qms': '/eng/portal',
-  'menu:eam': '/eng/portal',
-  'menu:agt': '/agent/console',
-  'menu:system:user': '/system/users',
-  'menu:system:role': '/system/roles',
-  'menu:system:dept': '/system/depts',
-  'menu:system:dict': '/system/dicts',
-  'menu:system:config': '/system/configs',
-  'menu:system:log': '/system/logs'
+  'menu:workbench': '/workbench',
+  'menu:crm': '/crm/opportunity',
+  'menu:contract': '/ct/contract',
+  'menu:project': '/prj/project',
+  'menu:bid': '/bid/notice',
+  'menu:plm': '/plm/bom',
+  'menu:scm': '/scm/po',
+  'menu:inv': '/inv/txn',
+  'menu:mes': '/mes/order',
+  'menu:qms': '/qms/inspection',
+  'menu:eam': '/eam/asset',
+  'menu:eng': '/eng/dispatch',
+  'menu:cost': '/cost/report',
+  'menu:kb': '/kb/board/TOTAL',
+  'menu:mdm': '/mdm/project',
+  'menu:arc': '/arc/archive',
+  'menu:agt': '/agt/app',
+  'menu:notification': '/workbench/message',
+  'menu:system': '/sys/user',
+  'menu:system:user': '/sys/user',
+  'menu:system:role': '/sys/role',
+  'menu:system:dept': '/sys/dept',
+  'menu:system:dict': '/sys/dict',
+  'menu:system:config': '/sys/config',
+  'menu:system:log': '/sys/log'
 }
 
 export default {
@@ -47,7 +48,14 @@ export default {
   },
   methods: {
     routeFor(code) {
-      return ROUTE_BY_CODE[code] || '/'
+      // 未登记的菜单码回落工作台（开发环境 console.error，UID-04 §五 fail-closed）
+      if (!ROUTE_BY_CODE[code]) {
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('[sidebar] 未登记菜单码:', code)
+        }
+        return '/workbench'
+      }
+      return ROUTE_BY_CODE[code]
     }
   }
 }

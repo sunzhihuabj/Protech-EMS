@@ -1,5 +1,7 @@
 /**
- * 路由（S0-14）：登录 + 主布局；meta.permCode 用于直达 URL 的菜单级校验。
+ * 路由总表（UID-05 §二，131 条口径；本批落"完整"档中已实现页 + 旧路径兼容重定向）。
+ * 命名唯一来源 UID-05：/{域}/{资源}；禁止组件内硬编码路径字符串（统一 router.push({name})）。
+ * 菜单按权限动态渲染（FR-SYS-03）；meta.permCode 为侧栏高亮键。
  */
 import Vue from 'vue'
 import VueRouter from 'vue-router'
@@ -9,43 +11,77 @@ Vue.use(VueRouter)
 
 const routes = [
   { path: '/login', name: 'login', component: () => import('@/views/Login.vue') },
+  { path: '/auth/change-password', name: 'changePassword', component: () => import('@/views/auth/ChangePassword.vue'), meta: { title: '修改密码' } },
+  { path: '/403', name: 'forbidden', component: () => import('@/views/error/Forbidden.vue'), meta: { title: '无权访问' } },
   {
     path: '/',
     component: () => import('@/layout/MainLayout.vue'),
     children: [
-      { path: '', name: 'workbench', component: () => import('@/views/Workbench.vue'), meta: { title: '个人工作台', permCode: 'menu:workbench' } },
-      { path: 'notifications', name: 'notifications', component: () => import('@/views/Notifications.vue'), meta: { title: '消息中心', permCode: 'menu:notification' } },
-      { path: 'crm/opportunities', name: 'opportunities', component: () => import('@/views/crm/Opportunities.vue'), meta: { title: '商机管理', permCode: 'menu:crm' } },
-      { path: 'contract', name: 'contracts', component: () => import('@/views/contract/Contracts.vue'), meta: { title: '合同管理', permCode: 'menu:contract' } },
-      { path: 'project', name: 'projects', component: () => import('@/views/project/Projects.vue'), meta: { title: '项目管理', permCode: 'menu:project' } },
-      { path: 'plm/boms', name: 'boms', component: () => import('@/views/plm/Boms.vue'), meta: { title: '研发与BOM', permCode: 'menu:plm' } },
-      { path: 'crm/quotations', name: 'quotations', component: () => import('@/views/crm/Quotations.vue'), meta: { title: '报价单', permCode: 'menu:crm' } },
-      { path: 'bid/intel', name: 'bidIntel', component: () => import('@/views/bid/BidIntel.vue'), meta: { title: '招标情报', permCode: 'menu:bid' } },
-      { path: 'eng/portal', name: 'engPortal', component: () => import('@/views/eng/EngPortal.vue'), meta: { title: '工程交付', permCode: 'menu:eng' } },
-      { path: 'eng/thd', name: 'thdPortal', component: () => import('@/views/eng/ThdPortal.vue'), meta: { title: '第三方门户', permCode: 'menu:eng' } },
-      { path: 'mes/production', name: 'production', component: () => import('@/views/mes/Production.vue'), meta: { title: '生产与排产', permCode: 'menu:mes' } },
-      { path: 'mes/aps', name: 'aps', component: () => import('@/views/mes/Aps.vue'), meta: { title: 'APS 排产', permCode: 'menu:mes' } },
-      { path: 'cost/center', name: 'costCenter', component: () => import('@/views/cost/CostCenter.vue'), meta: { title: '成本中心', permCode: 'menu:cost' } },
-      { path: 'kb/kanban', name: 'kanban', component: () => import('@/views/kb/Kanban.vue'), meta: { title: '九板看板', permCode: 'menu:kb' } },
-      { path: 'arc/archives', name: 'archives', component: () => import('@/views/arc/Archives.vue'), meta: { title: '档案管理', permCode: 'menu:arc' } },
-      { path: 'agent/console', name: 'agentConsole', component: () => import('@/views/agent/AgentConsole.vue'), meta: { title: 'Agent 接入台', permCode: 'menu:agt' } },
-      { path: 'mdm/console', name: 'mdmConsole', component: () => import('@/views/mdm/MdmConsole.vue'), meta: { title: '主数据台账', permCode: 'menu:mdm' } },
-      { path: 'profile/appearance', name: 'appearance', component: () => import('@/views/profile/Appearance.vue'), meta: { title: '外观设置' } },
-      { path: 'system/users', name: 'users', component: () => import('@/views/system/Users.vue'), meta: { title: '用户管理', permCode: 'menu:system:user' } },
-      { path: 'system/roles', name: 'roles', component: () => import('@/views/system/Roles.vue'), meta: { title: '角色权限', permCode: 'menu:system:role' } },
-      { path: 'system/depts', name: 'depts', component: () => import('@/views/system/Depts.vue'), meta: { title: '组织部门', permCode: 'menu:system:dept' } },
-      { path: 'system/dicts', name: 'dicts', component: () => import('@/views/system/Dicts.vue'), meta: { title: '数据字典', permCode: 'menu:system:dict' } },
-      { path: 'system/configs', name: 'configs', component: () => import('@/views/system/Configs.vue'), meta: { title: '系统参数', permCode: 'menu:system:config' } },
-      { path: 'system/logs', name: 'logs', component: () => import('@/views/system/Logs.vue'), meta: { title: '审计日志', permCode: 'menu:system:log' } }
+      // ① 工作台
+      { path: '', redirect: '/workbench' },
+      { path: 'workbench', name: 'workbench', component: () => import('@/views/Workbench.vue'), meta: { title: '个人工作台', permCode: 'menu:workbench' } },
+      { path: 'workbench/message', name: 'workbenchMessage', component: () => import('@/views/Notifications.vue'), meta: { title: '消息中心', permCode: 'menu:workbench' } },
+      // ② 合同与项目
+      { path: 'crm/opportunity', name: 'crmOpportunity', component: () => import('@/views/crm/Opportunities.vue'), meta: { title: '商机台账', permCode: 'menu:crm' } },
+      { path: 'crm/quotation', name: 'crmQuotation', component: () => import('@/views/crm/Quotations.vue'), meta: { title: '报价单台账', permCode: 'menu:crm' } },
+      { path: 'ct/contract', name: 'ctContract', component: () => import('@/views/contract/Contracts.vue'), meta: { title: '合同台账', permCode: 'menu:contract' } },
+      { path: 'prj/project', name: 'prjProject', component: () => import('@/views/project/Projects.vue'), meta: { title: '项目台账', permCode: 'menu:project' } },
+      { path: 'bid/notice', name: 'bidNotice', component: () => import('@/views/bid/BidIntel.vue'), meta: { title: '标讯台账', permCode: 'menu:bid' } },
+      // ③ 研发工艺
+      { path: 'plm/bom', name: 'plmBom', component: () => import('@/views/plm/Boms.vue'), meta: { title: 'BOM 台账', permCode: 'menu:plm' } },
+      // ④ 供应链
+      { path: 'inv/txn', name: 'invTxn', component: () => import('@/views/inv/Inventory.vue'), meta: { title: '出入库作业', permCode: 'menu:inv' } },
+      // ⑤ 生产质量
+      { path: 'mes/order', name: 'mesOrder', component: () => import('@/views/mes/Production.vue'), meta: { title: '生产订单', permCode: 'menu:mes' } },
+      { path: 'aps/schedule', name: 'apsSchedule', component: () => import('@/views/mes/Aps.vue'), meta: { title: '排产', permCode: 'menu:mes' } },
+      // ⑥ 工程交付
+      { path: 'eng/dispatch', name: 'engDispatch', component: () => import('@/views/eng/EngPortal.vue'), meta: { title: '派工单台账', permCode: 'menu:eng' } },
+      { path: 'thd/delivery-note', name: 'thdDeliveryNote', component: () => import('@/views/eng/ThdPortal.vue'), meta: { title: '第三方协同', permCode: 'menu:eng' } },
+      // ⑦ 成本与看板（九板共用 1 套规格，boardCode 由 kb_board 配置驱动）
+      { path: 'kb/board/:boardCode', name: 'kbBoard', component: () => import('@/views/kb/Kanban.vue'), meta: { title: '经营看板', permCode: 'menu:kb' } },
+      { path: 'cost/report', name: 'costReport', component: () => import('@/views/cost/CostCenter.vue'), meta: { title: '成本报表', permCode: 'menu:cost' } },
+      // ⑧ 主数据与治理
+      { path: 'mdm/project', name: 'mdmProject', component: () => import('@/views/mdm/MdmConsole.vue'), meta: { title: '项目档案', permCode: 'menu:mdm' } },
+      { path: 'arc/archive', name: 'arcArchive', component: () => import('@/views/arc/Archives.vue'), meta: { title: '档案管理', permCode: 'menu:arc' } },
+      { path: 'sys/user', name: 'sysUser', component: () => import('@/views/system/Users.vue'), meta: { title: '用户管理', permCode: 'menu:system:user' } },
+      { path: 'sys/role', name: 'sysRole', component: () => import('@/views/system/Roles.vue'), meta: { title: '角色权限', permCode: 'menu:system:role' } },
+      { path: 'sys/dept', name: 'sysDept', component: () => import('@/views/system/Depts.vue'), meta: { title: '组织部门', permCode: 'menu:system:dept' } },
+      { path: 'sys/dict', name: 'sysDict', component: () => import('@/views/system/Dicts.vue'), meta: { title: '数据字典', permCode: 'menu:system:dict' } },
+      { path: 'sys/config', name: 'sysConfig', component: () => import('@/views/system/Configs.vue'), meta: { title: '系统参数', permCode: 'menu:system:config' } },
+      { path: 'sys/log', name: 'sysLog', component: () => import('@/views/system/Logs.vue'), meta: { title: '审计日志', permCode: 'menu:system:log' } },
+      // Agent 平台（M19，骨架档）
+      { path: 'agt/app', name: 'agtApp', component: () => import('@/views/agent/AgentConsole.vue'), meta: { title: 'Agent 应用注册', permCode: 'menu:agt' } },
+      // 个人（仅用户菜单入口，"仅内链"）
+      { path: 'profile/appearance', name: 'appearance', component: () => import('@/views/profile/Appearance.vue'), meta: { title: '外观设置' } }
     ]
   },
-  { path: '*', redirect: '/' }
+  // 旧路径兼容重定向（UID-05 路由命名迁移，旧书签不 404）
+  { path: '/crm/opportunities', redirect: '/crm/opportunity' },
+  { path: '/crm/quotations', redirect: '/crm/quotation' },
+  { path: '/contract', redirect: '/ct/contract' },
+  { path: '/project', redirect: '/prj/project' },
+  { path: '/plm/boms', redirect: '/plm/bom' },
+  { path: '/bid/intel', redirect: '/bid/notice' },
+  { path: '/inv/center', redirect: '/inv/txn' },
+  { path: '/eng/portal', redirect: '/eng/dispatch' },
+  { path: '/eng/thd', redirect: '/thd/delivery-note' },
+  { path: '/mes/production', redirect: '/mes/order' },
+  { path: '/mes/aps', redirect: '/aps/schedule' },
+  { path: '/cost/center', redirect: '/cost/report' },
+  { path: '/kb/kanban', redirect: '/kb/board/TOTAL' },
+  { path: '/arc/archives', redirect: '/arc/archive' },
+  { path: '/mdm/console', redirect: '/mdm/project' },
+  { path: '/agent/console', redirect: '/agt/app' },
+  { path: '/notifications', redirect: '/workbench/message' },
+  { path: '*', redirect: '/workbench' }
 ]
 
 const router = new VueRouter({ routes })
 
+// 登录守卫：公开页之外要求 token（FR-SYS-02）；首登强制改密由 Login 流程跳 /auth/change-password
+const PUBLIC_PATHS = ['/login', '/403', '/auth/change-password']
 router.beforeEach(async (to, from, next) => {
-  if (to.name === 'login') {
+  if (PUBLIC_PATHS.indexOf(to.path) !== -1) {
     return next()
   }
   if (!store.getters.isLoggedIn) {

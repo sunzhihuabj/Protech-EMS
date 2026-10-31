@@ -1,18 +1,19 @@
-/* ProjLife 全局基础样式（S0） */
+/* Protech 全局基础样式（UID-01 令牌口径：颜色/字号/间距一律引用令牌，禁自创 hex） */
 html, body, #app {
   height: 100%;
   margin: 0;
   padding: 0;
-  font-family: "Helvetica Neue", "PingFang SC", "Microsoft YaHei", sans-serif;
+  /* 字族（UID-01 §二）：微软雅黑族 + 等宽 */
+  font-family: var(--sans, "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif);
+  color: var(--ink, #1C1D1F);
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
-.pl-page {
-  padding: 16px;
-}
+/* 禁止 body 滚动（UID-02 §一.2：内容区是唯一滚动容器；body 滚动会错位水印与 sticky） */
+body { overflow: hidden; }
+
+.pl-page { padding: 0; }
 
 .pl-toolbar {
   margin-bottom: 12px;
@@ -22,20 +23,9 @@ html, body, #app {
   flex-wrap: wrap;
 }
 
-.pl-toolbar .spacer {
-  flex: 1;
-}
+.pl-toolbar .spacer { flex: 1; }
 
-/* 页面水印层（W1，UC-SYS-08）：覆盖全窗口，不拦截交互 */
-.pl-watermark {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 9999;
-  opacity: 0.5;
-}
-
-/* 主题卡片（S0-17 外观面板） */
+/* 主题卡片（外观面板，UID-01 §一 令牌引用） */
 .pl-theme-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -43,34 +33,40 @@ html, body, #app {
 }
 
 .pl-theme-card {
-  border: 2px solid transparent;
-  border-radius: 8px;
+  border: 2px solid var(--line-2);
+  border-radius: var(--r-3, 6px);
   padding: 12px;
   cursor: pointer;
-  background: #fff;
-  transition: box-shadow 0.2s;
+  background: var(--surface);
+  transition: box-shadow 180ms ease, border-color 180ms ease;
 }
 
-.pl-theme-card:hover {
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-}
+.pl-theme-card:hover { box-shadow: var(--elev-2); }
 
-.pl-theme-card.is-active {
-  border-color: var(--el-color-primary, #1f7b8c);
-}
+.pl-theme-card.is-active { border-color: var(--pri-500, #1F7B8C); }
 
-.pl-theme-swatch {
-  height: 44px;
-  border-radius: 6px;
-  margin-bottom: 8px;
-}
+.pl-theme-swatch { height: 44px; border-radius: var(--r-2, 4px); margin-bottom: 8px; }
 
-.pl-theme-name {
-  font-weight: 600;
-}
+.pl-theme-name { font-weight: 600; }
 
-.pl-theme-grade {
-  float: right;
-  font-size: 12px;
-  color: #909399;
+.pl-theme-grade { float: right; font-size: 12px; color: var(--ink-3); }
+
+/* 空值/脱敏统一 formatter 出口的兜底视觉（UID-01 §七.2 三态：
+   无值 —（--ink-3）/ 无权限 ***（--ink-2）/ 计算中 …；页面级用 PtTable 后由组件承载） */
+.pl-empty-val { color: var(--ink-3); }
+.pl-masked-val { color: var(--ink-2); letter-spacing: 2px; }
+
+/* 卡点阻断条（422 三段式，UID-01 §七.4 / UID-03 §2.4(d)）：内联态 */
+.pl-block-alert {
+  display: flex; align-items: center; gap: 10px; min-height: 40px;
+  padding: 8px 12px; border-radius: var(--r-2);
+  background: var(--danger-bg); border-left: 3px solid var(--danger);
+  margin: 8px 0;
 }
+.pl-block-alert .pl-block-code {
+  font-family: var(--mono); font-size: 12px; color: var(--btn-pri-ink);
+  background: var(--danger-ink); border-radius: var(--r-1); padding: 2px 8px;
+  flex-shrink: 0;
+}
+.pl-block-alert .pl-block-reason { color: var(--danger-ink); font-size: 14px; font-weight: 600; }
+.pl-block-alert .pl-block-link { margin-left: auto; flex-shrink: 0; }

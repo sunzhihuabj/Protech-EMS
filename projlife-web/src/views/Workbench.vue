@@ -28,13 +28,13 @@
           <el-empty v-if="redCards.length === 0 && !cardLoading" description="无红灯卡，绿灯运行" :image-size="50" />
           <el-divider content-position="left">快捷入口</el-divider>
           <div class="quick-grid">
-            <el-button size="small" plain @click="$router.push('/crm/opportunities')">商机</el-button>
+            <el-button size="small" plain @click="$router.push('/crm/opportunity')">商机</el-button>
             <el-button size="small" plain @click="$router.push('/crm/quotations')">报价</el-button>
-            <el-button size="small" plain @click="$router.push('/bid/intel')">标讯</el-button>
-            <el-button size="small" plain @click="$router.push('/inv/center')">库存</el-button>
-            <el-button size="small" plain @click="$router.push('/eng/portal')">工程</el-button>
-            <el-button size="small" plain @click="$router.push('/mes/aps')">排产</el-button>
-            <el-button size="small" plain @click="$router.push('/kb/kanban')">九板</el-button>
+            <el-button size="small" plain @click="$router.push('/bid/notice')">标讯</el-button>
+            <el-button size="small" plain @click="$router.push('/inv/txn')">库存</el-button>
+            <el-button size="small" plain @click="$router.push('/eng/dispatch')">工程</el-button>
+            <el-button size="small" plain @click="$router.push('/aps/schedule')">排产</el-button>
+            <el-button size="small" plain @click="$router.push('/kb/board/TOTAL')">九板</el-button>
             <el-button size="small" plain @click="$router.push('/profile/appearance')">外观（12 主题）</el-button>
           </div>
         </el-card>
