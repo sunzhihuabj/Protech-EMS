@@ -26,6 +26,7 @@ export const CODE_RULES: CodeRuleDef[] = [
     remark: 'TGL 停用统一 TLD（Q-01）',
   },
   { bizType: 'ecn', pattern: 'ECN{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '新增' },
+  { bizType: 'bom', pattern: 'BOM{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '新增（Q-10 补位）' },
   { bizType: 'work_order', pattern: 'WO{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '新增' },
   { bizType: 'purchase_req', pattern: 'PR{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '新增' },
   { bizType: 'purchase_order', pattern: 'PO{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '新增' },

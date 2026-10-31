@@ -13,6 +13,7 @@ import QuoteList from './pages/QuoteList';
 import ContractList from './pages/ContractList';
 import ContractDetail from './pages/ContractDetail';
 import BoardView from './pages/BoardView';
+import StockMoveWork from './pages/StockMoveWork';
 import ExecutiveBoard from './pages/ExecutiveBoard';
 import Stub from './pages/Stub';
 import 'dayjs/locale/zh-cn';
@@ -28,7 +29,8 @@ const router = createBrowserRouter([
       { path: 'project', element: <ProjectList /> },
       { path: 'project/:id', element: <ProjectDetail /> },
       { path: 'supply/material', element: <MaterialList /> },
-      { path: 'supply', element: <Stub title="BOM / 采购 / 库房 / 工单" slice="S3" /> },
+      { path: 'supply', element: <Stub title="BOM / 采购 / 工单（S3 深化页）" slice="S3" /> },
+      { path: 'supply/stock-move', element: <StockMoveWork /> },
       { path: 'biz/quote', element: <QuoteList /> },
       { path: 'biz/contract', element: <ContractList /> },
       { path: 'biz/contract/:id', element: <ContractDetail /> },

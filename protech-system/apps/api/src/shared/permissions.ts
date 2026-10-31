@@ -69,6 +69,21 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'kb:card:urge', name: '升级清单催办', type: 'button', module: 'M10' },
   { code: 'kb:meeting:run', name: '会议模式（过堂/纪要）', type: 'button', module: 'M10' },
   { code: 'kb:admin', name: '看板配置（板/指标/词库）', type: 'button', module: 'M10' },
+  // ---- M05 BOM ----
+  { code: 'bom:view', name: 'BOM 查询', type: 'menu', module: 'M05' },
+  { code: 'bom:create', name: 'BOM 新建/加行', type: 'button', module: 'M05' },
+  { code: 'bom:release', name: 'BOM 发布/ECN 审批', type: 'button', module: 'M05' },
+  // ---- M06 采购库房 ----
+  { code: 'wo:create', name: '工单创建（BR-03）', type: 'button', module: 'M06' },
+  { code: 'wo:kit-check', name: '齐套检查', type: 'button', module: 'M06' },
+  { code: 'wo:transition', name: '工单状态推进', type: 'button', module: 'M06' },
+  { code: 'pr:create', name: '请购创建', type: 'button', module: 'M06' },
+  { code: 'pr:review', name: '请购审批', type: 'button', module: 'M06' },
+  { code: 'po:create', name: '采购单创建', type: 'button', module: 'M06' },
+  { code: 'inv:scan', name: '扫码过账', type: 'button', module: 'M06' },
+  { code: 'inv:view', name: '库存/流水查询', type: 'menu', module: 'M06' },
+  { code: 'tplus:queue', name: 'T+ 推送队列查看/导出', type: 'button', module: 'M06' },
+  { code: 'tplus:confirm', name: 'T+ 回执确认', type: 'button', module: 'M06' },
 ];
 
 /** 各权限默认授予的角色（FR-M00-002 九角色矩阵；R-SYS 恒为全量 '*'） */
@@ -127,4 +142,17 @@ export const PERM_ROLES: Record<string, string[]> = {
   'kb:card:urge': ['R-EXEC', 'R-CHAIN', 'R-SYS'],
   'kb:meeting:run': ['R-CHAIN', 'R-DEPT', 'R-GA', 'R-SYS'],
   'kb:admin': ['R-GA', 'R-SYS'],
+  'bom:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-OP', 'R-QA', 'R-GA', 'R-SYS'],
+  'bom:create': ['R-CHAIN', 'R-DEPT', 'R-GA', 'R-SYS'],
+  'bom:release': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'wo:create': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'wo:kit-check': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'wo:transition': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'pr:create': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'pr:review': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'po:create': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'inv:scan': ['R-OP', 'R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'inv:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
+  'tplus:queue': ['R-FIN', 'R-EXEC', 'R-SYS'],
+  'tplus:confirm': ['R-FIN', 'R-SYS'],
 };

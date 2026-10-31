@@ -295,6 +295,199 @@ model KbMeetingItem {
   @@map("kb_meeting_item")
 }
 
+// ============================ 供应链域（T-15~T-25） ============================
+
+/// T-15 BOM（三类形态 E-19；版本管理；golden 基线）
+model Bom {
+  id          BigInt    @id @default(autoincrement())
+  bomCode     String    @unique // BOM{YYYY}-{NNNN}
+  bomType     String    @default("full") // full 完整 / param 参数化 / eng 工程
+  productLine String
+  name        String
+  version     Int       @default(1)
+  status      String    @default("draft") // draft / published / void
+  parentBomId BigInt? // 两级结构（整机→总成）
+  goldenFlag  Boolean   @default(false)
+  remark      String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy   BigInt?
+  updatedBy   BigInt?
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([productLine, status])
+  @@map("bom")
+}
+
+/// T-16 BOM 行（qty DECIMAL(14,3)；C 类点位 position_code；套件包引用）
+model BomLine {
+  id           BigInt    @id @default(autoincrement())
+  bomId        BigInt
+  materialId   BigInt
+  qty          Decimal   @db.Decimal(14, 3)
+  positionCode String? // C 类：机舱/塔底/塔筒/升压站
+  kitRefId     BigInt? // T-19 套件包
+  sort         Int       @default(0)
+  remark       String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy    BigInt?
+  updatedBy    BigInt?
+  deletedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([bomId])
+  @@index([materialId])
+  @@map("bom_line")
+}
+
+/// T-17 ECN 变更单（BR-05：不走 ECN 禁止改 BOM；旧料处置方案必填）
+model Ecn {
+  id               BigInt    @id @default(autoincrement())
+  ecnCode          String    @unique // ECN{YYYY}-{NNNN}
+  bomId            BigInt
+  fromVersion      Int
+  toVersion        Int
+  reason           String    @db.Text
+  oldMaterialLines String?   @db.Text // JSON 旧料清单
+  disposalPlan     String    @db.Text // 旧料处置方案（BR-05 必填）
+  status           String    @default("pending") // pending / approved / rejected / published
+  approverId       BigInt?
+  reviewedAt       DateTime? @db.Timestamptz(6)
+  publishedAt      DateTime? @db.Timestamptz(6)
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy        BigInt?
+  updatedAt        DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy        BigInt?
+  deletedAt        DateTime? @db.Timestamptz(6)
+
+  @@index([bomId])
+  @@map("ecn")
+}
+
+/// T-21 生产工单（最小闭环：工单-齐套-报工；E-10 状态机）
+model WorkOrder {
+  id          BigInt    @id @default(autoincrement())
+  woCode      String    @unique // WO{YYYY}-{NNNN}
+  projectId   BigInt? // BR-03 无项目编码不排产
+  contractId  BigInt?
+  bomId       BigInt?
+  qty         Int
+  planStart   DateTime? @db.Timestamptz(6)
+  planEnd     DateTime? @db.Timestamptz(6)
+  kitStatus   String? // 齐套结果：pass / short（附 kb 红灯联动）
+  kitShortLines String? @db.Text // JSON 缺料清单
+  status      String    @default("planned") // E-10 planned/kit_checked/started/reported/finished/closed
+  remark      String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy   BigInt?
+  updatedBy   BigInt?
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([status])
+  @@map("work_order")
+}
+
+/// T-22 请购单（齐套缺料自动生成/手工；审批后转采购）
+model PurchaseReq {
+  id        BigInt    @id @default(autoincrement())
+  prCode    String    @unique // PR{YYYY}-{NNNN}
+  source    String    @default("manual") // kit_short / manual
+  projectId BigInt?
+  workOrderId BigInt?
+  lines     String    @db.Text // JSON [{materialId, qty, note}]
+  status    String    @default("pending") // pending / approved / rejected / converted
+  approverId BigInt?
+  reviewedAt DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@map("purchase_req")
+}
+
+/// T-23 采购单（E-11 状态机；准交率统计口径）
+model PurchaseOrder {
+  id           BigInt    @id @default(autoincrement())
+  poCode       String    @unique // PO{YYYY}-{NNNN}
+  supplierId   BigInt
+  projectId    BigInt?
+  reqId        BigInt?
+  promisedAt   DateTime? @db.Timestamptz(6) // 到货承诺日（准交率基准）
+  lines        String    @db.Text // JSON [{materialId, qty, arrivedQty, priceCents}]
+  status       String    @default("draft") // E-11 draft/ordered/partial_arrived/arrived/closed
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy    BigInt?
+  deletedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([supplierId])
+  @@index([status])
+  @@map("purchase_order")
+}
+
+/// T-24 库存（legal_entity 两司隔离；三色标识 E-20；安全库存告警）
+model Inventory {
+  id            BigInt    @id @default(autoincrement())
+  materialId    BigInt
+  warehouse     String    @default("YL") // 仓库码
+  locationCode  String? // {仓库}-{库区}-{排}-{列}-{层}
+  batch         String?
+  legalEntity   String    @default("PRT") // E-15 PRT/TLD
+  qty           Decimal   @default(0) @db.Decimal(14, 3)
+  threeColor    String    @default("blue") // blue/yellow/red
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy     BigInt?
+  updatedBy     BigInt?
+  deletedAt     DateTime? @db.Timestamptz(6)
+
+  @@unique([materialId, warehouse, locationCode, batch, legalEntity])
+  @@index([materialId])
+  @@map("inventory")
+}
+
+/// T-25 出入库流水（源头单据驱动；幂等键防重；T+ 推送状态 FR-M06-007）
+model StockMove {
+  id            BigInt    @id @default(autoincrement())
+  moveType      String // in / out
+  sourceType    String // arrival(到货入库) / ship(发货) / pick(领料) / adjust(调整) / return(退料)
+  sourceId      String
+  sourceLine    String?
+  materialId    BigInt
+  qty           Decimal   @db.Decimal(14, 3)
+  projectId     BigInt?
+  workOrderId   BigInt?
+  legalEntity   String    @default("PRT")
+  operatorId    BigInt
+  idempotencyKey String   @unique // 单据行+批号（断网重传去重）
+  tPlusStatus   String    @default("pending") // pending / pushed / confirmed（FR-M06-007 推送队列）
+  tPlusRef      String?
+  movedAt       DateTime  @default(now()) @db.Timestamptz(6)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([materialId])
+  @@index([tPlusStatus])
+  @@index([movedAt])
+  @@map("stock_move")
+}
+
+/// 库存每日快照（FR-M06-019：日终快照供对账与趋势）
+model InventorySnapshot {
+  id         BigInt   @id @default(autoincrement())
+  period     String // YYYY-MM-DD
+  payload    String   @db.Text // JSON [{materialId, warehouse, legalEntity, qty}]
+  totalSkus  Int
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([period])
+  @@map("inventory_snapshot")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）
