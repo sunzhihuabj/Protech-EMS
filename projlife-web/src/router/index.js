@@ -57,6 +57,7 @@ const routes = [
       { path: 'workbench/my-task', name: 'workbenchMyTask', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '我的任务', permCode: 'menu:workbench', stub: true } },
       { path: 'scm/supplier', name: 'scmSupplier', component: () => import('@/views/scm/Supplier.vue'), meta: { title: '供应商台账', permCode: 'menu:scm' } },
       { path: 'scm/po', name: 'scmPo', component: () => import('@/views/scm/PurchaseOrder.vue'), meta: { title: 'PO 台账', permCode: 'menu:scm' } },
+      { path: 'scm/requirement', name: 'scmRequirement', component: () => import('@/views/scm/Requirement.vue'), meta: { title: '采购需求', permCode: 'menu:scm' } },
       { path: 'qms/inspection', name: 'qmsInspection', component: () => import('@/views/qms/Inspection.vue'), meta: { title: '检验台账', permCode: 'menu:qms' } },
       { path: 'qms/8d', name: 'qms8d', component: () => import('@/views/qms/EightD.vue'), meta: { title: '8D 报告', permCode: 'menu:qms' } },
       { path: 'qms/spc', name: 'qmsSpc', component: () => import('@/views/qms/SpcChart.vue'), meta: { title: 'SPC 控制图', permCode: 'menu:qms' } },
