@@ -36,25 +36,18 @@
           </el-select>
           <el-button size="small" type="primary" icon="el-icon-upload2" @click="ingestDialog = true">入库（四层去重）</el-button>
         </div>
-        <el-table :data="notices" v-loading="noticeLoading" size="small">
-          <el-table-column prop="noticeCode" label="公告编号" width="150" />
-          <el-table-column prop="title" label="标题" min-width="240" show-overflow-tooltip />
-          <el-table-column prop="region" label="区域" width="90" />
-          <el-table-column prop="budgetAmount" label="预算(元)" width="120" />
-          <el-table-column prop="deadlineAt" label="截止" width="160" />
-          <el-table-column prop="status" label="状态" width="110">
-            <template slot-scope="{ row }">
-              <el-tag size="mini" :type="row.status === 'ACTIVE' ? '' : row.status === 'CONVERTED' ? 'success' : 'info'">{{ noticeStatus(row.status) }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="200">
-            <template slot-scope="{ row }">
-              <el-button size="mini" type="text" @click="openMatch(row)">打分</el-button>
-              <el-button v-if="row.status === 'ACTIVE'" v-permission="'bid:notice:convert'" size="mini" type="text" @click="convert(row)">转商机</el-button>
-              <el-button v-if="row.status === 'ACTIVE'" size="mini" type="text" @click="push(row)">推送订阅</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <pt-table :columns="noticeCols" :data="notices" :loading="noticeLoading"
+                      :total="0" aria-label="标讯台账" empty-type="no-data"
+                      empty-label="标讯公告" empty-action-text="去入库" @empty-action="ingestDialog = true">
+          <template slot="cell-status" slot-scope="{ row }">
+            <pt-status-tag :value="row.status" :dict="noticeDict" />
+          </template>
+          <template slot="actions" slot-scope="{ row }">
+            <el-button size="mini" type="text" @click.stop="openMatch(row)">打分</el-button>
+            <el-button v-if="row.status === 'ACTIVE'" v-permission="'bid:notice:convert'" size="mini" type="text" @click.stop="convert(row)">转商机</el-button>
+            <el-button v-if="row.status === 'ACTIVE'" size="mini" type="text" @click.stop="push(row)">推送订阅</el-button>
+          </template>
+        </pt-table>
       </el-tab-pane>
 
       <!-- 订阅 -->
@@ -140,11 +133,22 @@
 <script>
 import http from '@/api/request'
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'BidIntel',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+noticeCols: [
+        { prop: 'noticeCode', label: '公告编号', width: 150 },
+        { prop: 'title', label: '标题', minWidth: 240 },
+        { prop: 'region', label: '区域', width: 90 },
+        { prop: 'budgetAmount', label: '预算(元)', type: 'money', align: 'right' },
+        { prop: 'deadlineAt', label: '截止', width: 160 },
+        { prop: 'status', label: '状态', width: 110 }
+      ],
+      noticeDict: 'ACTIVE:有效,SUPERSEDED:已被变更,CONVERTED:已转商机,CLOSED:已关闭,EXCLUDED:已排除',
       tab: 'notices',
       sources: [], srcLoading: false, srcDialog: false,
       srcForm: { category: 'A_OWNER', frequency: 'DAILY_2' },

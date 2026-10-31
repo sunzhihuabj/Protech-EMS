@@ -7,24 +7,16 @@
           <el-button v-permission="'eng:dispatch'" size="small" type="primary" icon="el-icon-plus" @click="dpDialog = true">新建派工（BR-03/04）</el-button>
           <el-button size="small" icon="el-icon-refresh" @click="loadDispatch">刷新</el-button>
         </div>
-        <el-table :data="dispatchList" v-loading="dpLoading" size="small">
-          <el-table-column prop="dispatchNo" label="派工单" width="150" />
-          <el-table-column prop="mdProjectId" label="项目" width="80" />
-          <el-table-column prop="farmId" label="风场" width="80" />
-          <el-table-column prop="leaderId" label="负责人" width="80" />
-          <el-table-column prop="planStart" label="计划开始" width="110" />
-          <el-table-column prop="planEnd" label="计划结束" width="110" />
-          <el-table-column prop="status" label="状态" width="110">
-            <template slot-scope="{ row }">
-              <el-tag size="mini" :type="row.status === 'CLOSED' ? 'info' : row.status === 'ACCEPTED' || row.status === 'STARTED' ? 'success' : ''">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="状态推进（E-32）" width="280">
-            <template slot-scope="{ row }">
-              <el-button v-for="a in nextActions(row.status)" :key="a" size="mini" type="text" @click="advance(row, a)">{{ actionLabel(a) }}</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <pt-table :columns="dpCols" :data="dispatchList" :loading="dpLoading"
+                  :total="0" aria-label="派工单台账" empty-type="no-data"
+                  empty-label="派工单" empty-action-text="新建派工" @empty-action="dpDialog = true">
+        <template slot="cell-status" slot-scope="{ row }">
+          <pt-status-tag :value="row.status" :dict="'CREATED:创建,SENT:已下发,ACCEPTED:已接单,STARTED:已开工,CLOSED:已完工'" />
+        </template>
+        <template slot="actions" slot-scope="{ row }">
+          <el-button v-for="a in nextActions(row.status)" :key="a" v-permission="'eng:dispatch'" size="mini" type="text" @click.stop="advance(row, a)">{{ actionLabel(a) }}</el-button>
+        </template>
+      </pt-table>
       </el-tab-pane>
 
       <!-- 施工日志 / 质检 / 物料 -->
@@ -43,26 +35,18 @@
           <el-button v-permission="'eng:after:manage'" size="small" type="primary" icon="el-icon-bell" @click="woDialog = true">报修登记</el-button>
           <el-button size="small" icon="el-icon-refresh" @click="loadWo">刷新</el-button>
         </div>
-        <el-table :data="woList" v-loading="woLoading" size="small">
-          <el-table-column prop="orderNo" label="工单号" width="160" />
-          <el-table-column prop="faultType" label="故障类型" width="130" />
-          <el-table-column prop="urgency" label="紧急度" width="90">
-            <template slot-scope="{ row }">
-              <el-tag size="mini" :type="row.urgency === 'HIGH' ? 'danger' : row.urgency === 'LOW' ? 'info' : 'warning'">{{ row.urgency }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="warrantyFlag" label="保内" width="70">
-            <template slot-scope="{ row }">{{ row.warrantyFlag === 1 ? '是' : '否' }}</template>
-          </el-table-column>
-          <el-table-column prop="status" label="状态" width="120" />
-          <el-table-column prop="solution" label="方案" min-width="180" show-overflow-tooltip />
-          <el-table-column label="操作" width="150">
-            <template slot-scope="{ row }">
-              <el-button v-if="row.status === 'TO_DISPATCH'" size="mini" type="text" @click="respondWo(row)">响应</el-button>
-              <el-button v-if="row.status === 'RESPONDED'" size="mini" type="text" @click="closeWo(row)">闭环</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <pt-table :columns="woCols" :data="woList" :loading="woLoading"
+                  :total="0" aria-label="售后工单台账" empty-type="no-data"
+                  empty-label="售后工单" empty-action-text="报修登记" @empty-action="woDialog = true">
+        <template slot="cell-urgency" slot-scope="{ row }">
+          <pt-status-tag :value="row.urgency" :dict="'HIGH:高,NORMAL:中,LOW:低'" />
+        </template>
+        <template slot="cell-warrantyFlag" slot-scope="{ row }">{{ row.warrantyFlag === 1 ? '是' : '否' }}</template>
+        <template slot="actions" slot-scope="{ row }">
+          <el-button v-if="row.status === 'TO_DISPATCH'" v-permission="'eng:after:manage'" size="mini" type="text" @click.stop="respondWo(row)">响应</el-button>
+          <el-button v-if="row.status === 'RESPONDED'" v-permission="'eng:after:manage'" size="mini" type="text" @click.stop="closeWo(row)">闭环</el-button>
+        </template>
+      </pt-table>
       </el-tab-pane>
     </el-tabs>
 
@@ -154,11 +138,31 @@
 <script>
 import http from '@/api/request'
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'EngPortal',
+  components: { PtTable, PtStatusTag },
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+woCols: [
+        { prop: 'orderNo', label: '工单号', width: 160 },
+        { prop: 'faultType', label: '故障类型', width: 130 },
+        { prop: 'urgency', label: '紧急度', width: 90 },
+        { prop: 'warrantyFlag', label: '保内', width: 70 },
+        { prop: 'status', label: '状态', width: 120 },
+        { prop: 'solution', label: '方案', minWidth: 180 }
+      ],
+dpCols: [
+        { prop: 'dispatchNo', label: '派工单', width: 150 },
+        { prop: 'mdProjectId', label: '项目', width: 80 },
+        { prop: 'farmId', label: '风场', width: 80 },
+        { prop: 'leaderId', label: '负责人', width: 80 },
+        { prop: 'planStart', label: '计划开始', width: 112 },
+        { prop: 'planEnd', label: '计划结束', width: 112 },
+        { prop: 'status', label: '状态', width: 120 }
+      ],
       tab: 'dispatch',
       dispatchList: [], dpLoading: false, dpDialog: false, dpForm: {},
       logDialog: false, logForm: {},

@@ -6,19 +6,13 @@
           <el-button v-permission="'mdm:customer:create'" size="small" type="primary" icon="el-icon-plus" @click="custDialog = true">新建客户（C 编号）</el-button>
           <el-button size="small" icon="el-icon-refresh" @click="loadCustomers">刷新</el-button>
         </div>
-        <el-table :data="customers" v-loading="custLoading" size="small">
-          <el-table-column prop="customerCode" label="编码" width="100" />
-          <el-table-column prop="customerName" label="规范全称" min-width="220" show-overflow-tooltip />
-          <el-table-column prop="shortName" label="简称" width="120" />
-          <el-table-column prop="level" label="层级" width="100" />
-          <el-table-column prop="customerType" label="类型" width="110" />
-          <el-table-column prop="levelAbc" label="分级" width="80" />
-          <el-table-column prop="status" label="状态" width="90">
-            <template slot-scope="{ row }">
-              <el-tag size="mini" :type="row.status === 'ACTIVE' ? 'success' : 'info'">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
+        <pt-table :columns="custCols" :data="customers" :loading="custLoading"
+                      :total="0" aria-label="客户主体台账" empty-type="no-data"
+                      empty-label="客户" empty-action-text="新建客户" @empty-action="custDialog = true">
+          <template slot="cell-status" slot-scope="{ row }">
+            <pt-status-tag :value="row.status" :dict="'ACTIVE:启用,FROZEN:停用,PENDING:待激活'" />
+          </template>
+        </pt-table>
       </el-tab-pane>
 
       <el-tab-pane label="项目档案" name="projects">
@@ -94,14 +88,25 @@
 <script>
 import http from '@/api/request'
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 /** E-20 受控计量单位 8 种（FR-PLM-15 同口径） */
 const UNITS = ['PCS', 'M', 'M2', 'KG', 'T', 'L', 'SET', 'ROOT']
 
 export default {
   name: 'MdmConsole',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+custCols: [
+        { prop: 'customerCode', label: '编码', width: 100 },
+        { prop: 'customerName', label: '规范全称', minWidth: 220 },
+        { prop: 'shortName', label: '简称', width: 120 },
+        { prop: 'level', label: '层级', width: 100 },
+        { prop: 'customerType', label: '类型', width: 110 },
+        { prop: 'levelAbc', label: '分级', width: 80 },
+        { prop: 'status', label: '状态', width: 90 }
+      ],
       tab: 'customers',
       units: UNITS,
       customers: [], custLoading: false, custDialog: false, custForm: {},

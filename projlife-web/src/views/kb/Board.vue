@@ -112,7 +112,9 @@ export default {
       meetingIndex: 0,
       threeQ: { where: '', who: '', when: '' },
       now: Date.now(),
-      nowTimer: null
+      nowTimer: null,
+      saveTimer: null,
+      _lastSave: 0
     }
   },
   computed: {
@@ -150,6 +152,16 @@ export default {
     doingFlex() { return '0 0 45%' }
   },
   watch: {
+    threeQ: {
+      handler() {
+        if (!this.saveTimer) {
+          this.saveTimer = setTimeout(() => { this.saveTimer = null; this.saveThreeQ() }, 500)
+        }
+        this._lastSave = this._lastSave || 0
+        if (Date.now() - this._lastSave > 30000) { this._lastSave = Date.now(); this.saveThreeQ() }
+      },
+      deep: true
+    },
     '$route.params.boardCode'() {
       this.boardCode = this.$route.params.boardCode || 'TOTAL'
       this.load()
@@ -161,7 +173,7 @@ export default {
     if (this.isMeeting || this.isWall) this.resetMeeting()
     this.nowTimer = setInterval(() => { this.now = Date.now() }, 1000)
   },
-  beforeDestroy() { clearInterval(this.nowTimer) },
+  beforeDestroy() { clearInterval(this.nowTimer); if (this.saveTimer) clearTimeout(this.saveTimer) },
   methods: {
     segOvertime(seg) {
       if (!this.isMeeting || !this.meetingStartedAt) return false
@@ -172,7 +184,24 @@ export default {
     resetMeeting() {
       this.meetingStartedAt = (this.isMeeting || this.isWall) ? Date.now() : null
       this.meetingIndex = 0
-      this.threeQ = { where: '', who: '', when: '' }
+      // 三问自动暂存恢复（UID-03 §2.2(g)：逐字段本地暂存，刷新后恢复并提示）
+      try {
+        const saved = JSON.parse(sessionStorage.getItem('pl:kb:threeq') || 'null')
+        if (saved && saved.boardCode === this.boardCode) {
+          this.meetingIndex = saved.index || 0
+          this.threeQ = saved.threeQ || { where: '', who: '', when: '' }
+          this.$message.info('已恢复未提交的过堂内容')
+        }
+      } catch (e) { /* 忽略 */ }
+      this.threeQ = Object.assign({}, this.threeQ)
+    },
+    saveThreeQ() {
+      // 30s 自动暂存（键含板编码；切段/刷新后恢复）
+      try {
+        sessionStorage.setItem('pl:kb:threeq', JSON.stringify({
+          boardCode: this.boardCode, index: this.meetingIndex, threeQ: this.threeQ, at: Date.now()
+        }))
+      } catch (e) { /* 忽略 */ }
     },
     /** 三问齐 → 闭环当前红灯卡（FR-KB-10），进入下一张 */
     resolveCurrent() {

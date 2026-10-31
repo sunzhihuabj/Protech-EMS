@@ -6,24 +6,17 @@
           <el-button v-permission="'kb:card:manage'" size="small" type="primary" icon="el-icon-plus" @click="cardDialog = true">建卡（五要素，VAGUE 拦截）</el-button>
           <el-button size="small" icon="el-icon-time" @click="escalate">红灯 3 天升级扫描</el-button>
         </div>
-        <el-table :data="cards" v-loading="loading" size="small">
-          <el-table-column prop="id" label="卡" width="60" />
-          <el-table-column prop="boardId" label="板" width="60" />
-          <el-table-column prop="title" label="标题" min-width="220" show-overflow-tooltip />
-          <el-table-column prop="ownerId" label="责任人" width="80" />
-          <el-table-column prop="promiseDate" label="承诺日" width="110" />
-          <el-table-column prop="status" label="状态" width="110">
-            <template slot-scope="{ row }">
-              <el-tag size="mini" :type="row.status === 'RED' ? 'danger' : row.status === 'GREEN' ? 'success' : row.status === 'BLOCKED' ? 'danger' : 'warning'">{{ row.status }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column label="操作" width="180">
-            <template slot-scope="{ row }">
-              <el-button v-if="row.status !== 'CLOSED'" v-permission="'kb:card:manage'" size="mini" type="text" @click="block(row)">红灯</el-button>
-              <el-button v-if="row.status === 'BLOCKED'" v-permission="'kb:card:manage'" size="mini" type="text" @click="close(row)">三问闭环</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <pt-table :columns="cardCols" :data="cards" :loading="loading"
+                  :total="0" aria-label="卡片台账" empty-type="no-data"
+                  empty-label="看板卡" empty-action-text="建卡" @empty-action="cardDialog = true">
+        <template slot="cell-status" slot-scope="{ row }">
+          <pt-status-tag :value="row.status" :dict="'TODO:待办,GREEN:绿灯,YELLOW:关注,RED:红灯,BLOCKED:阻塞,CLOSED:已闭环'" />
+        </template>
+        <template slot="actions" slot-scope="{ row }">
+          <el-button v-if="row.status !== 'CLOSED'" v-permission="'kb:card:manage'" size="mini" type="text" @click.stop="block(row)">红灯</el-button>
+          <el-button v-if="row.status === 'BLOCKED'" v-permission="'kb:card:manage'" size="mini" type="text" @click.stop="close(row)">三问闭环</el-button>
+        </template>
+      </pt-table>
       </el-tab-pane>
 
       <el-tab-pane label="指标灯" name="metrics">
@@ -80,11 +73,21 @@
 <script>
 import http from '@/api/request'
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'Kanban',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+cardCols: [
+        { prop: 'id', label: '卡', width: 60 },
+        { prop: 'boardId', label: '板', width: 60 },
+        { prop: 'title', label: '标题', minWidth: 240 },
+        { prop: 'ownerId', label: '责任人', width: 80 },
+        { prop: 'promiseDate', label: '承诺日', width: 112 },
+        { prop: 'status', label: '状态', width: 110 }
+      ],
       tab: 'cards',
       cards: [], loading: false,
       cardDialog: false, cardForm: {},

@@ -11,32 +11,28 @@
         <el-button v-permission="'contract:create'" size="small" type="primary" icon="el-icon-plus" @click="openCreate">合同起草</el-button>
       </div>
 
-      <el-table :data="records" v-loading="loading" size="small">
-        <el-table-column prop="contractNo" label="合同编号" width="190">
-          <template slot-scope="{ row }">{{ row.contractNo || '（未用印）' }}</template>
-        </el-table-column>
-        <el-table-column prop="contractName" label="名称" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="nature" label="性质" width="70" />
-        <el-table-column prop="amount" label="金额(元)" width="110" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template slot-scope="{ row }">
-            <el-tag size="mini" :type="statusType(row.status)">{{ statusLabel(row.status) }}</el-tag>
-            <el-tag v-if="row.invoiceFrozen" size="mini" type="danger">冻结</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="signDate" label="签订日" width="100" />
-        <el-table-column label="操作" min-width="330">
-          <template slot-scope="{ row }">
-            <el-button v-if="row.status === 'DRAFT'" size="mini" type="text" @click="submitReview(row)">提交评审</el-button>
-            <el-button v-if="row.status === 'REVIEWED'" size="mini" type="text" @click="seal(row)">用印登记</el-button>
-            <el-button v-if="row.status === 'SIGNED'" size="mini" type="text" @click="filing(row)">建档备案</el-button>
-            <el-button size="mini" type="text" @click="aiRisk(row)">AI 风险</el-button>
-            <el-button size="mini" type="text" @click="aiExtract(row)">AI 提取</el-button>
-            <el-button v-if="row.contractNo" size="mini" type="text" @click="change(row)">变更</el-button>
-            <el-button v-if="row.status === 'PERFORMING'" size="mini" type="text" @click="receipt(row)">录入收款</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <pt-table :columns="columns" :data="records" :loading="loading" :total="total"
+                :page.sync="page" aria-label="合同台账" empty-type="no-result"
+                empty-label="合同" empty-action-text="新建合同" @empty-action="dialog = true"
+                @page-change="load">
+        <template slot="toolbar">
+          <el-button v-permission="'contract:create'" size="small" type="primary" icon="el-icon-plus" @click="dialog = true">新建合同</el-button>
+        </template>
+        <template slot="cell-contractNo" slot-scope="{ value }">{{ value || '（未用印）' }}</template>
+        <template slot="cell-status" slot-scope="{ row }">
+          <pt-status-tag :value="row.status" :dict="statusDict" />
+          <el-tag v-if="row.invoiceFrozen" size="mini" type="danger" style="margin-left: 4px">冻结</el-tag>
+        </template>
+        <template slot="actions" slot-scope="{ row }">
+          <el-button v-if="row.status === 'DRAFT'" size="mini" type="text" @click.stop="submitReview(row)">提交评审</el-button>
+          <el-button v-if="row.status === 'REVIEWED'" size="mini" type="text" @click.stop="seal(row)">用印登记</el-button>
+          <el-button v-if="row.status === 'SIGNED'" size="mini" type="text" @click.stop="filing(row)">建档备案</el-button>
+          <el-button size="mini" type="text" @click.stop="aiRisk(row)">AI 风险</el-button>
+          <el-button size="mini" type="text" @click.stop="aiExtract(row)">AI 提取</el-button>
+          <el-button v-if="row.contractNo" size="mini" type="text" @click.stop="change(row)">变更</el-button>
+          <el-button v-if="row.status === 'PERFORMING'" size="mini" type="text" @click.stop="receipt(row)">录入收款</el-button>
+        </template>
+      </pt-table>
       <el-pagination background layout="total, prev, pager, next" :total="total"
                      :page-size="query.pageSize" :current-page.sync="query.pageNum" @current-change="load" />
     </el-card>
@@ -204,11 +200,23 @@
 
 <script>
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'ContractsPage',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+      columns: [
+        { prop: 'contractNo', label: '合同编号', width: 190 },
+        { prop: 'contractName', label: '名称', minWidth: 220 },
+        { prop: 'nature', label: '性质', width: 70 },
+        { prop: 'amount', label: '金额(元)', type: 'money', align: 'right' },
+        { prop: 'status', label: '状态', width: 120 },
+        { prop: 'signDate', label: '签订日', width: 112 }
+      ],
+      statusDict: 'DRAFT:编辑中,REVIEWED:已评审,SIGNED:已签署,PERFORMING:履行中,ACCEPTED:已验收,WARRANTY:质保期中,CLOSED:已关闭,CHANGED:已变更',
+      page: { pageNum: 1, pageSize: 20 },
       records: [], total: 0, loading: false,
       query: { pageNum: 1, pageSize: 20, keyword: '', status: '' },
       statuses: [

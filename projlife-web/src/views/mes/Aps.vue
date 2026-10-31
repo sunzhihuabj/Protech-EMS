@@ -47,21 +47,12 @@
           <div class="spacer"></div>
           <el-button v-permission="'aps:schedule'" size="small" type="success" :disabled="!scheduleId" @click="publish">发布（齐套门禁）</el-button>
         </div>
-        <el-table :data="details" v-loading="detailLoading" size="small">
-          <el-table-column prop="id" label="明细" width="70" />
-          <el-table-column prop="productionOrderId" label="订单" width="80" />
-          <el-table-column prop="processOrderId" label="工序单" width="90" />
-          <el-table-column prop="resourceId" label="资源" width="80" />
-          <el-table-column prop="plannedStart" label="计划开始" width="160" />
-          <el-table-column prop="plannedEnd" label="计划结束" width="160" />
-          <el-table-column prop="runMinutes" label="工时(分)" width="90" />
-          <el-table-column prop="status" label="状态" width="100" />
-          <el-table-column label="操作" width="110">
-            <template slot-scope="{ row }">
-              <el-button v-permission="'aps:schedule'" size="mini" type="text" @click="adjust(row)">拖拽调整</el-button>
-            </template>
-          </el-table-column>
-        </el-table>
+        <pt-table :columns="detailCols" :data="details" :loading="detailLoading"
+                  :total="0" aria-label="排产明细" empty-type="no-result" empty-label="排产明细">
+        <template slot="actions" slot-scope="{ row }">
+          <el-button v-permission="'aps:schedule'" size="mini" type="text" @click.stop="adjust(row)">拖拽调整</el-button>
+        </template>
+      </pt-table>
       </el-tab-pane>
     </el-tabs>
 
@@ -86,11 +77,23 @@
 <script>
 import http from '@/api/request'
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'ApsBoard',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+detailCols: [
+        { prop: 'id', label: '明细', width: 70 },
+        { prop: 'productionOrderId', label: '订单', width: 80 },
+        { prop: 'processOrderId', label: '工序单', width: 90 },
+        { prop: 'resourceId', label: '资源', width: 80 },
+        { prop: 'plannedStart', label: '计划开始', width: 160 },
+        { prop: 'plannedEnd', label: '计划结束', width: 160 },
+        { prop: 'runMinutes', label: '工时(分)', width: 90, align: 'right' },
+        { prop: 'status', label: '状态', width: 100 }
+      ],
       tab: 'capacity',
       capForm: { resourceType: 'EQUIPMENT' },
       l1Form: { orderIds: '', startDate: '' },

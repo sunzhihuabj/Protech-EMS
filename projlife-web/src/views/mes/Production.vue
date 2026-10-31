@@ -7,19 +7,14 @@
           <el-button v-permission="'mes:order:create'" size="small" type="primary" icon="el-icon-plus" @click="moDialog = true">新建 MO（三类型）</el-button>
           <el-button size="small" icon="el-icon-refresh" @click="loadOrders">刷新</el-button>
         </div>
-        <el-table :data="orders" v-loading="moLoading" size="small" @row-click="loadProcesses">
-          <el-table-column prop="moNo" label="MO 编号" width="160" />
-          <el-table-column prop="moType" label="类型" width="100">
-            <template slot-scope="{ row }">
-              <el-tag size="mini">{{ row.moType }}</el-tag>
-            </template>
-          </el-table-column>
-          <el-table-column prop="planQty" label="计划量" width="90" />
-          <el-table-column prop="finishedQty" label="完工量" width="90" />
-          <el-table-column prop="planStart" label="计划开始" width="110" />
-          <el-table-column prop="planEnd" label="计划结束" width="110" />
-          <el-table-column prop="status" label="状态" width="110" />
-        </el-table>
+        <pt-table :columns="moCols" :data="orders" :loading="moLoading"
+                  :total="0" aria-label="生产订单台账" empty-type="no-data"
+                  empty-label="生产订单" empty-action-text="新建 MO" @empty-action="moDialog = true"
+                  @row-click="loadProcesses">
+        <template slot="cell-moType" slot-scope="{ row }">
+          <pt-status-tag :value="row.moType" :dict="'STANDARD:标准,BATCH:批量,ENGINEERING:工程'" />
+        </template>
+      </pt-table>
       </el-tab-pane>
 
       <!-- 工序 -->
@@ -99,11 +94,22 @@
 <script>
 import http from '@/api/request'
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'Production',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+moCols: [
+        { prop: 'moNo', label: 'MO 编号', width: 160 },
+        { prop: 'moType', label: '类型', width: 110 },
+        { prop: 'planQty', label: '计划量', width: 90, align: 'right' },
+        { prop: 'finishedQty', label: '完工量', width: 90, align: 'right' },
+        { prop: 'planStart', label: '计划开始', width: 112 },
+        { prop: 'planEnd', label: '计划结束', width: 112 },
+        { prop: 'status', label: '状态', width: 120 }
+      ],
       tab: 'orders',
       orders: [], moLoading: false, moDialog: false, moForm: { moType: 'BATCH' },
       currentMo: null, processes: [], procLoading: false,

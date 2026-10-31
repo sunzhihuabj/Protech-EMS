@@ -10,26 +10,19 @@
         <div class="spacer"></div>
         <el-button v-permission="'project:create'" size="small" type="primary" icon="el-icon-plus" @click="openCreate">手动立项</el-button>
       </div>
-      <el-table :data="records" v-loading="loading" size="small">
-        <el-table-column prop="projectNo" label="执行号" width="150" />
-        <el-table-column prop="projectName" label="项目名称" min-width="220" show-overflow-tooltip />
-        <el-table-column prop="status" label="状态" width="100">
-          <template slot-scope="{ row }">
-            <el-tag size="mini" :type="row.status === 'IN_PROGRESS' ? '' : row.status === 'COMPLETED' ? 'success' : 'info'">
-              {{ statusLabel(row.status) }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="planStart" label="计划开始" width="100" />
-        <el-table-column prop="planEnd" label="计划结束" width="100" />
-        <el-table-column label="操作" min-width="260">
-          <template slot-scope="{ row }">
-            <el-button size="mini" type="text" @click="openDetail(row)">任务/甘特</el-button>
-            <el-button v-permission="'project:eco:create'" size="mini" type="text" @click="openEco(row)">发起 ECO</el-button>
-            <el-button size="mini" type="text" @click="loadEcos(row)">ECO 列表</el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+      <pt-table :columns="columns" :data="records" :loading="loading" :total="total"
+                :page.sync="page" aria-label="项目台账" empty-type="no-result"
+                empty-label="项目" empty-action-text="新建项目" @empty-action="dialog = true"
+                @page-change="load">
+        <template slot="cell-status" slot-scope="{ row }">
+          <pt-status-tag :value="row.status" :dict="statusDict" />
+        </template>
+        <template slot="actions" slot-scope="{ row }">
+          <el-button size="mini" type="text" @click.stop="openDetail(row)">任务/甘特</el-button>
+          <el-button v-permission="'project:eco:create'" size="mini" type="text" @click.stop="openEco(row)">发起 ECO</el-button>
+          <el-button size="mini" type="text" @click.stop="loadEcos(row)">ECO 列表</el-button>
+        </template>
+      </pt-table>
       <el-pagination background layout="total, prev, pager, next" :total="total"
                      :page-size="query.pageSize" :current-page.sync="query.pageNum" @current-change="load" />
     </el-card>
@@ -140,11 +133,22 @@
 
 <script>
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'ProjectsPage',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
+columns: [
+        { prop: 'projectNo', label: '执行号', width: 150 },
+        { prop: 'projectName', label: '项目名称', minWidth: 220 },
+        { prop: 'status', label: '状态', width: 110 },
+        { prop: 'planStart', label: '计划开始', width: 112 },
+        { prop: 'planEnd', label: '计划结束', width: 112 }
+      ],
+      statusDict: 'CREATED:已建档,SIGNED_PENDING:签约待执行,IN_PROGRESS:进行中,COMPLETED:已完工,CLOSED:已关闭',
+      page: { pageNum: 1, pageSize: 20 },
       records: [], total: 0, loading: false,
       query: { pageNum: 1, pageSize: 20, keyword: '', status: '' },
       statuses: [
