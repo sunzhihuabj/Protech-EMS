@@ -9,3 +9,4 @@ data/uploads/
 .env.local
 prisma/schema.mysql.prisma
 test-results/
+packages/shared-types/dist/

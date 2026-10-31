@@ -61,3 +61,18 @@
 - [ ] FR-M00-008 钉钉 Webhook 推送（M15 事件总线就绪后接）
 - [ ] FR-M00-012 操作手册（R2）、FR-M00-014 主题（R2）
 - [ ] Playwright E2E（S7）
+
+## S0-9 · Web 外壳（React 18 + Vite 5 + antd 5）
+
+- 登录页（错误含 blockCode → BlockCodeAlert 统一红线展示，07 册 I-05）
+- BasicLayout：8 项一级导航（07 册 §1.1）+ 通知铃 + 用户菜单；刷新后 /auth/me 恢复上下文
+- /home 工作台：角色化引导（03 册三角色三套文案）+ 待办/通知 + 我的项目
+- /project 项目档案 P1 列表族（搜索/状态筛选/分页/空态引导）+ 建档抽屉（名称生成器 4 进 3 出
+  实时预览、编码建议、BR-08 下拉、BR-10 整数分提示、三重查重 force 二次确认）
+- /project/:id P2 详情族：状态时间线 + 关键 12 项完整度 + 27 字段分组卡 + 产品子项
+- /supply/material 物料 P1；未到切片路由用 Stub 页标注交付切片
+- API client：响应包解包 + 401 refresh 轮换重试一次（旧审计 F5 项修复）
+- 共享包 @protech/shared-types 以 ESM 构建输出（Node24 require(esm) 兼容 API CJS 消费）
+- 端口：api 9090（8080 被旧 Java 服务占用）/ web dev 5173（proxy /api→9090）
+- 浏览器冒烟：登录 → 项目建档 → 生成器出「三峡新能源-姚安大龙口-二期」（S-02 口径）→
+  编码引擎发 PJ2026-0001 → 列表可见，全链路 PASS

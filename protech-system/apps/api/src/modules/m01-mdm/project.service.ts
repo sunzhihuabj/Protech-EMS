@@ -51,6 +51,7 @@ export class ProjectService {
   /** FR-M01-009 名称自动生成器（4 进 3 出：标准名+查重结果+编码建议） */
   async namePreview(input: {
     ownerName?: string;
+    ownerPartyId?: unknown;
     farmName?: string;
     phase?: string;
     orderType?: string;
@@ -65,8 +66,16 @@ export class ProjectService {
       farmName = farm.fullName;
     }
     if (!farmName) throw BizException.param('farmName 或 windFarmId 必填');
+    // 业主名：显式入参优先，否则按主体档案解析（S-02 口径：业主规范名）
+    let ownerName = input.ownerName;
+    if (!ownerName && input.ownerPartyId) {
+      const party = await this.prisma.customerParty.findFirst({
+        where: { id: parseId(input.ownerPartyId), deletedAt: null },
+      });
+      ownerName = party?.shortName ?? party?.name ?? undefined;
+    }
     const gen = generateStandardName({
-      ownerName: input.ownerName,
+      ownerName,
       farmName,
       phase: input.phase,
       orderType: input.orderType,
