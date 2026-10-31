@@ -38,7 +38,8 @@ const routes = [
       { path: 'eng/dispatch', name: 'engDispatch', component: () => import('@/views/eng/EngPortal.vue'), meta: { title: '派工单台账', permCode: 'menu:eng' } },
       { path: 'thd/delivery-note', name: 'thdDeliveryNote', component: () => import('@/views/eng/ThdPortal.vue'), meta: { title: '第三方协同', permCode: 'menu:eng' } },
       // ⑦ 成本与看板（九板共用 1 套规格，boardCode 由 kb_board 配置驱动）
-      { path: 'kb/board/:boardCode', name: 'kbBoard', component: () => import('@/views/kb/Kanban.vue'), meta: { title: '经营看板', permCode: 'menu:kb' } },
+      { path: 'kb/board/:boardCode', name: 'kbBoard', component: () => import('@/views/kb/Board.vue'), meta: { title: '经营看板', permCode: 'menu:kb' } },
+      { path: 'kb/kanban-legacy', name: 'kbKanbanLegacy', component: () => import('@/views/kb/Kanban.vue'), meta: { title: '卡片台账', permCode: 'menu:kb' } },
       { path: 'cost/report', name: 'costReport', component: () => import('@/views/cost/CostCenter.vue'), meta: { title: '成本报表', permCode: 'menu:cost' } },
       // ⑧ 主数据与治理
       { path: 'mdm/project', name: 'mdmProject', component: () => import('@/views/mdm/MdmConsole.vue'), meta: { title: '项目档案', permCode: 'menu:mdm' } },
