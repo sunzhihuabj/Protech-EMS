@@ -4,13 +4,16 @@
  */
 import Vue from 'vue'
 import ElementUI from 'element-ui'
-import 'element-ui/lib/theme-chalk/index.css'
+import '@/styles/element-neutral.scss'
 import '@/styles/base.css'
+import '@/theme/protech-theme.css'
+import '@/theme/protech-components.css'
+import '@/styles/protech-element-bridge.css'
 import App from '@/App.vue'
 import router from '@/router'
 import store from '@/store'
 import permission from '@/directive/permission'
-import { applyTheme } from '@/theme/theme'
+import ProtechTheme from '@/theme'
 import http, { showError } from '@/api/request'
 
 Vue.use(ElementUI, { size: 'small' })
@@ -21,7 +24,6 @@ Vue.directive('permission', permission)
 Vue.config.productionTip = false
 
 // 首帧主题：本地缓存先行（index.html 已防闪烁，此处对齐运行时状态）
-applyTheme(document.documentElement.getAttribute('data-theme') || 't1', false)
 
 new Vue({
   router,

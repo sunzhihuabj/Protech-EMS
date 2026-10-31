@@ -1,0 +1,12 @@
+// L0 中性底座（UID-04 §一）：Element UI 2.15 编译期变量 → 中性灰。
+// 只设颜色；字号/圆角/间距归 UID-01 令牌层（protech-theme.css），混入会和密度层打架。
+// 顺序铁律：1 element-neutral → 2 protech-theme → 3 protech-components → 4 protech-element-bridge（必须最后）。
+$--color-primary: #5F656B;  $--color-info: #5C6771;                  // n-600 中性灰
+$--color-success: #2FA36B;  $--color-warning: #E08700;  $--color-danger: #E5484D;
+$--border-color-base: #80878E;   // = --ink-4：控件描边唯一达标值（3.40—3.84），不是 --line-2
+$--border-color-light: #E1E2E4;  $--border-color-lighter: #EEEFF0;   // 非交互分隔线，用 --line 系
+$--background-color-base: #F5F5F6;
+$--text-color-primary: #1C1D1F;  $--text-color-regular: #474B50;
+$--text-color-secondary: #5F656B;  $--text-color-placeholder: #5F656B;  // placeholder = --ink-3，禁 --ink-4
+$--disabled-fill-base: #F5F5F6;  $--disabled-color-base: #80878E;
+@import 'element-ui/packages/theme-chalk/src/index.scss';

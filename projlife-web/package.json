@@ -4,9 +4,8 @@
   "private": true,
   "description": "ProjLife Web 端（Vue 2.7 + Element UI 2.15，03 册 §6A 预编译 12 套主题）",
   "scripts": {
-    "build:themes": "node scripts/build-themes.mjs",
-    "dev": "npm run build:themes && vite",
-    "build": "npm run build:themes && vite build",
+    "dev": "vite",
+    "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {

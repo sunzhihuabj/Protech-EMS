@@ -1,0 +1,256 @@
+/* ============================================================================
+   Protech 组件级约定  v1.0.0
+   ----------------------------------------------------------------------------
+   定位：令牌层（protech-theme.css，自动生成）之上的【组件约定】。
+        只声明 CSS 变量与工具类，不含任何业务选择器（.contract-row / .bom-card
+        这类一律不写），全文件不使用 !important。
+
+   加载顺序（必须）：
+     element-plus/index.css  →  protech-theme.css  →  protech-components.css
+
+   依赖的令牌（全部由 protech-theme.css 提供，本文件不新增任何色值）：
+     --pri-500/--pri-700/--pri-soft/--pri-soft-2/--pri-text
+     --surface/--surface-2/--surface-3/--row-hover
+     --ink/--ink-2/--ink-3/--ink-4/--line/--line-2
+     --tag-pr-bd/--tag-pr-ink/--focus-ring/--wm/--scrim
+     --r-1/--mono
+   规范依据：spec/phase1-visual.md 二·3/二·4/二·6/二·8、spec/phase2-ux.md §6.3/§6.5
+   ========================================================================== */
+
+
+/* ===== 1. 显示密度（phase1 二·6） ==========================================
+   定案：标准 36 / 舒适 44 / 紧凑 32，表头 40 / 44 / 36（写进 tokens.json meta.rowH）。
+
+   ⚠ 为什么这里还要重述一遍三档 —— 生成器（protech-theme.css）其实已经产出
+     `html{--row-h:36px;--row-h-head:40px}`、`comfortable{44/44}`、`compact{32/36}`，
+     值完全一致。这里显式声明是【组件契约】，目的只有一个：
+     表格行高不再依赖生成器的默认值 —— 将来谁调 tokens.json 的 meta.rowH，
+     组件层不会被静默改掉，会先在 code review 里看到这份契约。
+
+   三档的用途（不要凭感觉选）：
+     标准 36 = 出厂默认，1440 下 20 行合同列表
+     舒适 44 = 60 岁以上 / 触屏巡检，也是 phase2 §7 的命中区下限
+     紧凑 32 = 财务、计划岗一次看 40+ 行
+   ⚠ 演示页只挂「标准 / 紧凑」两个入口（1440×900 画布里 44px 放不下 8 行会截断成半行），
+     但 comfortable 必须留在令牌与引擎的取值域里 —— 上线时按岗位开放，不能因为
+     演示页没有入口就从校验/类型里删掉。
+   注意 phase2 §7 的「可点元素 ≥44×44」是【命中区】而非【行高】，别把 --row-h 当命中区用。 */
+html[data-density="standard"]{
+  --row-h: 36px;
+  --row-h-head: 40px;
+}
+html[data-density="comfortable"]{
+  --row-h: 44px;
+  --row-h-head: 44px;      /* 与 tokens.json meta.rowH.comfortable 一致（表头同步 44） */
+}
+html[data-density="compact"]{
+  --row-h: 32px;
+  --row-h-head: 36px;
+}
+
+
+/* ===== 2. 焦点环（phase2 §6.3，24 组合硬约束） ============================
+   令牌层给了两个变量（12 套共用一份，不随主题变）：
+     亮态  --focus-ring #5C6771  +  --focus-ring-gap #FFFFFF
+     暗态  --focus-ring #A3A8AE  +  --focus-ring-gap #191B1C
+   写法 = 中性双环：[元素][2px gap][2px ring]。
+   · gap 用 --focus-ring-gap（不是 --surface）：环与底色之间恒定隔一层"已知中性色"，
+     所以「环 vs gap」的对比与 12 套主色无关，24 组合只需一组值。
+   · gap 兜底 var(--focus-ring-gap, var(--surface))：万一令牌层还没生成这个变量，
+     退化成单环也依然可见，不会整条 box-shadow 失效。
+
+   ⚠⚠ 绝对不允许把焦点环换成 --pri-500 / --el-color-primary。
+      t7 石墨金（pri-500 #3A4249）、t11 钨钢（pri-500 #262626）主色【就是中性色】，
+      浅底上焦点环会直接消失（灰环 ≈ 无环）。Element 的默认焦点色正是由主色驱动的，
+      所以下面 §2.1 必须显式覆盖，否则 t7/t11 下表现为"没聚焦"。
+
+   ⚠ 不得 outline:none 且无替代；只在 :focus-visible 出现（鼠标点击不显示）。 */
+.pl-focusable:focus-visible{
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--focus-ring-gap, var(--surface));
+}
+/* 深色容器（侧栏、投影条）上的焦点环：gap 改用容器自身底色，避免白圈外溢 */
+.pl-focusable--on-dark:focus-visible{
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 2px var(--sidebar-bg);
+}
+
+/* --- 2.1 Element 焦点环收口（变量声明，不是选择器覆盖） -------------------
+   Element 2.15 的焦点边框/轮廓由主色派生，在 t7/t11 下会隐形。把这几处指回
+   中性 --focus-ring 即可，不用改任何 `.el-*` 规则：
+     --el-button-outline-color       按钮 :focus-visible 的 outline（EP ≥2.2 用它，别再找 focus-*
+     --el-input-focus-border-color   输入/文本域聚焦边框
+     --el-input-focus-border         同上（简写别名，老版本用）
+     --el-checkbox-input-border      复选框聚焦态描边
+     --el-radio-input-border         单选框聚焦态描边
+     --el-switch-on-color 不动       —— 开关的"开"是状态语义，不是焦点
+   ⚠ 若要让控件拿到和 .pl-focusable 完全一致的双环，还需一条选择器规则，
+     放在 Element 覆盖层里（见 README §3.5），这条属集成层、不属组件约定层。 */
+:root{
+  --el-button-outline-color: var(--focus-ring);
+  --el-input-focus-border-color: var(--focus-ring);
+  --el-input-focus-border: 1px solid var(--focus-ring);
+  --el-checkbox-input-border: 1px solid var(--focus-ring);
+  --el-radio-input-border: 1px solid var(--focus-ring);
+}
+
+
+/* ===== 3. Tag：尺寸红线 + 流转态 outline（phase1 二·6 定案） ==============
+   红线（phase2 §7）：Tag 高 22 / 圆角 2 / 字号 12 在 24 组合下永不变化。
+   —— 这三项写死在 .pl-tag 上，任何主题都不许覆盖。 */
+.pl-tag{
+  display: inline-flex;
+  align-items: center;
+  height: 22px;                        /* 红线，勿改 */
+  padding: 0 8px;
+  border-radius: var(--r-1);           /* 2px，红线 */
+  font-size: 12px;                     /* 红线 */
+  line-height: 1;
+  font-weight: 400;
+  white-space: nowrap;
+  border: 1px solid transparent;
+  background: var(--surface-3);
+  color: var(--ink-2);
+}
+
+/* 流转态（「进行中/待审批」这类用主色表达的流程状态）：一律 outline。
+   理由：实心浅底方案下 pri-50 与 n-100 的 ΔL 只有 0.004–0.033（t10/t11 最差），
+   而 --tag-pr-bd 描边（亮 = pri-400）在 12 套里最低 3.42:1（t1），满足非文本 UI 3:1；
+   文字 --tag-pr-ink（亮 = pri-700 8.90–17.22:1；暗 = pri-200，压在暗面上同样有余量）。
+   透明底 → 任何行底色（含 hover / selected）下都不消失。 */
+.pl-tag-flow{
+  border: 1px solid var(--tag-pr-bd);
+  color: var(--tag-pr-ink);
+  background: transparent;
+}
+
+/* 实心兜底：只在「必须靠填充表达强调」的极少数位置使用（如 Gate 卡点计数）。
+   底用 --pri-soft-2（亮态 = pri-100），禁用 pri-50（与表头底几乎同色，等于没有底）。
+
+   ⚠⚠ 字色必须是 --tag-pr-ink，不能写死 --pri-700。
+      暗态 --pri-soft-2 是「主色 12% 叠在暗面上」的合成深色，--pri-700 也是深色
+      → 深压深，实测 12 套暗态只有 1.05–1.65：t11 钨钢 1.05（黑压黑，完全隐形）、
+      t7 石墨金 1.16。这不是"略低于区间"，是文字看不见。
+      --tag-pr-ink 是按明暗给好的一对（暗态 = pri-200），压在同一个 tinted 底上
+      实测 7.31–8.06，12 套全部有余量。
+      改回 --pri-700 会让亮态（6.13–11.28）依然正常、只在暗态崩掉 —— 这种"只在
+      一半组合里坏掉"的写法最难在验收时抓到，别改。
+      outline / solid 两个变体共用同一对令牌，不需要新增变量。 */
+.pl-tag-flow--solid{
+  background: var(--pri-soft-2);
+  color: var(--tag-pr-ink);
+  border-color: transparent;
+}
+
+
+/* ===== 4. 数据行三态（phase1 二·6） =======================================
+   【已取消斑马纹 —— 这是定案，不是没做完】
+   斑马纹(n-25) + hover + selected 三底叠加，再叠 Tag 浅底 = 四层近白；
+   实测最小 ΔL 只有 0.004（t10 的 pri-50 vs n-100），肉眼不可分。
+   36px 行高配 1px --line 行线已足够分隔，所以表体只用「行线 + hover + selected」。
+   若有人想加回来：请同时说明怎么处理 t10/t11 那 0.004 的 ΔL，否则不要加。
+
+   hover 值来自 --row-hover（= pri-500 6% 叠加在 --surface 上），
+   禁止直接拿 --pri-50 当 hover 底 —— pri-50 是不透明的，会盖掉行线并和 selected 撞色。
+   ⚠ 也不要用 color-mix() 现算「pri-500 6% + surface」：内网还有 Chrome <111，
+     取不到值会让整条 background 声明静默失效 —— 行 hover 直接消失且不报错，
+     比"颜色不准"严重。叠加色一律引生成时算好的实色令牌
+     （--row-hover / --pri-soft / --pri-soft-2），这条已写进 panel-data.md 当纪律。 */
+.pl-row{
+  transition:
+    background-color var(--pl-dur, 180ms) var(--pl-ease, ease),
+    color var(--pl-dur, 180ms) var(--pl-ease, ease),
+    border-color var(--pl-dur, 180ms) var(--pl-ease, ease);
+}
+.pl-row:hover{
+  background: var(--row-hover);
+}
+
+/* selected = pri-50 底 + 左侧 3px pri-500 竖条（双重编码）。
+   只靠底色不可靠：pri-50 与 n-100 的 ΔL 只有 0.004–0.033，t11 几乎完全同色。
+   竖条是真正的信号，底色只是辅助，所以 inset box-shadow 必须保留。 */
+.pl-row.is-selected{
+  background: var(--pri-soft);
+  box-shadow: inset 3px 0 0 var(--pri-500);
+}
+/* 选中行再 hover：加深一档（pri-soft-2），既保留 hover 反馈又不丢选中态 */
+.pl-row.is-selected:hover{
+  background: var(--pri-soft-2);
+  box-shadow: inset 3px 0 0 var(--pri-500);
+}
+
+
+/* ===== 5. 高对比模式（phase2 §6.5） =======================================
+   作用：正文/边框提到 ≥7:1 与 ≥4.5:1；浅底 Tag 全部改描边；去掉水印与半透明遮罩。
+   用变量重映射实现，业务组件零改动 —— 这是本文件唯一允许改令牌值的地方。 */
+html[data-contrast="high"]{
+  --line: var(--line-2);      /* 行分割线抬到次强线，≥4.5:1 */
+  --ink-3: var(--ink-2);      /* 表单 label / 辅助说明抬到正文级 */
+  --ink-4: var(--ink-3);      /* 占位符 / 单位 / 轴线各升一档（仍保持 4 级梯度） */
+  --wm: transparent;          /* 水印层：高对比下必须消失，否则干扰读数字 */
+  /* 半透明遮罩 → 近乎不透明的纯黑。
+     ⚠ 判断：这里【不删除】遮罩，只取消它的半透明。删除遮罩会让模态失去遮挡，
+       焦点会跑到背后页面，对比度反而更差；phase1「禁止叠彩色投影」同理。 */
+  --scrim: rgba(0, 0, 0, .82);
+}
+/* 水印节点：变量为 transparent 时可能仍有 DOM 占位，直接不参与渲染更彻底 */
+html[data-contrast="high"] .pl-wm{
+  display: none;
+}
+/* 浅底 Tag 一律改描边（含实心兜底），文字用各自 -ink/-bd 令牌，避免描边用主色 */
+html[data-contrast="high"] .pl-tag{
+  background: transparent;
+  border-color: currentColor;
+}
+html[data-contrast="high"] .pl-tag-flow--solid{
+  background: transparent;
+  border-color: var(--tag-pr-bd);
+  color: var(--tag-pr-ink);
+}
+/* 高对比下 selected 的底色可能被压掉，竖条加粗到 4px 保住信号 */
+html[data-contrast="high"] .pl-row.is-selected{
+  box-shadow: inset 4px 0 0 var(--pri-500);
+}
+
+
+/* ===== 6. 过渡（phase2 §3②） =============================================
+   只允许 background-color / color / border-color 三个属性，时长 180ms。
+   不做 transform/box-shadow 过渡：大面积颜色动画对前庭敏感用户不适，且
+   box-shadow 过渡会触发重绘而不走合成层。 */
+html{
+  --pl-dur: 180ms;
+  --pl-ease: ease;
+}
+.pl-tx{
+  transition:
+    background-color var(--pl-dur) var(--pl-ease),
+    color var(--pl-dur) var(--pl-ease),
+    border-color var(--pl-dur) var(--pl-ease);
+}
+@media (prefers-reduced-motion: reduce){
+  html{
+    --pl-dur: 0s;                       /* 归零：一处改动覆盖全站 */
+  }
+  .pl-tx,
+  .pl-row{
+    transition: none;
+  }
+}
+/* 注意：protech-theme.css 的 html.theme-switching 也是 180ms（生成器已对齐 phase2 §3②），
+   但那份规则带 !important 且作用于「整页换主题」的窗口期；常态交互由本节的 --pl-dur 负责。
+   两者时长一致、职责不同，不冲突。 */
+
+
+/* ===== 7. 数字与等宽（phase2 §7 红线） ==================================
+   表格数字列、金额、百分比、日期、编码必须 tabular-nums + 等宽，
+   否则换主题/换字体后数字不右对齐。这条是数据可读性红线，不随主题变。 */
+.pl-num{
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+.pl-mono{
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
