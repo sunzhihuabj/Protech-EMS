@@ -105,6 +105,7 @@ import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'OpportunitiesPage',
+  components: { PtTable, PtStatusTag },
   data() {
     return {
       columns: [

@@ -10,8 +10,8 @@
 | **UID-00 §三** | D-UI-01 CSS 变量令牌层（否决预编译切 link）；D-UI-04 24 组；A-01—07 口径裁决 | ✅ R1 全量落地 | SPRINT-UID-R1 |
 | **UID-01** | 令牌三层/字级 8 档/4pt 间距/R1-R4 圆角/图标/动效三档/组件视觉/暗态例外 10 条 | ✅ 资产原样引入（tokens.json+theme-engine）+ bridge 全组件接线；字级/间距由组件令牌承载 | R1 |
 | **UID-02** | 框架三区 232/64+56 sticky、导航树 8→18 模块、页签禁止、栅格、列表四段范式、登录/改密/403 三型 | ✅ R2（MainLayout/登录/改密/403/路由 24 条迁移+17 redirect）；131 路由中已实现页全迁，模板页随 R3 第二批 | SPRINT-UID-R2 |
-| **UID-03** | 12 页面族、9 交互状态、4 卡点流程走查、四区顺序（指标→红灯→进行→闭环，R-03） | 🔶 第一批：PtLight/StatusTag/Metric/BoardCard/BlockAlert + 九板 P3 页 + 会议/大屏骨架；P4 四段范式与空态三型随第二批 | SPRINT-UID-R3 |
-| **UID-04** | L0 中性底座+L1 令牌+L2 bridge；ProtechTheme 运行时；Pt 8 组件契约；权限呈现（***/403 三分/409）；无障碍（焦点环/读屏）；--pt-accent-graphic 派生别名 | 🔶 第一批 5/8 组件；PtTable/PtFilterBar/PtFormSection 随第二批；v-permission 移除节点已核（现有 directive 行为=移除 ✓） | R1/R3 |
+| **UID-03** | 12 页面族、9 交互状态、4 卡点流程走查、四区顺序（指标→红灯→进行→闭环，R-03） | ✅ 核心齐：Pt 套件 8 组件 + 九板 P3 页（四区+会议大屏+三问）+ P4 范式迁移 2 示范页（空态三型+URL 即状态）+ 阻断条/骨架屏/水印 | SPRINT-UID-R3/R3b |
+| **UID-04** | L0 中性底座+L1 令牌+L2 bridge；ProtechTheme 运行时；Pt 8 组件契约；权限呈现（***/403 三分/409）；无障碍（焦点环/读屏）；--pt-accent-graphic 派生别名 | ✅ 8/8 组件齐（R3b 补 PtTable/PtFilterBar/PtFormSection）；v-permission 移除节点已核 ✓ | R1/R3/R3b |
 | **UID-05** | 131 路由命名、62 完整+69 模板、验收 13 条 | 🔶 已实现页 24 条全按新命名+redirect；131 条全量路由注册与 62 份规格对照随第二批 | R2 |
 
 ## 二、后端同步整改（测试报告 P0，同属 RPD 合规）
@@ -36,13 +36,12 @@
 | 13 灯旁必有字 | ✅ PtLight 强制 aria-label=状态词（可访问名断言口径） |
 | 7 会议计时 / 6 卡点回跳 / 11 打印亮色 / 12 键盘 | 🔶 随 R3 第二批（会议三问+打印样式+焦点环抽查） |
 
-## 四、遗留（下一轮优先级）
+## 四、遗留（第三批，已排程）
 
-1. **P4 四段范式批量迁移**：12 页面接 PtTable/PtFilterBar（含空态三型+主行动、"已选："Tag 行、URL 即状态）——每页约 30 分钟改造量
-2. **会议三问**（FR-KB-10 强制录入：卡在哪多行/谁解决/何时解决 + 结束纪要）
-3. **PtTable/PtFilterBar/PtFormSection** 三组件（契约见 UID-04 §四，>200 行虚拟滚动）
-4. 131 路由中 69 条模板/骨架页批量生成（P4 模板 + Stub）
-5. 打印 t1 亮色强制（@media print 覆盖层）
-6. FileController.upload 权限注解收敛
+1. 其余 10 页面按 R3b 示范模式迁移 PtTable/PtFilterBar（机械替换，每页约 20 分钟）
+2. 会议模式三问**自动暂存 30s**（UID-03 §2.2(g)）与结束纪要页 /kb/meeting/:id
+3. 131 路由中模板/骨架页批量生成（P4 Stub）
+4. E2E 抽查：UID-05 验收 13 条逐条脚本化（灯可访问名断言/BR 回跳/主题 24 组）
+> 注：FileController.upload 注解已在本批补齐（file:upload，V2 码 20）；打印亮色已落地 print.css
 
 > 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。

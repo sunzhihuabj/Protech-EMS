@@ -84,6 +84,7 @@ import { PtFilterBar, PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'Quotations',
+  components: { PtFilterBar, PtTable, PtStatusTag },
   data() {
     return {
       filterFields: [

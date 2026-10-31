@@ -15,7 +15,8 @@
 | FileController.upload | 补 `file:upload` 注解（V2 种子码 20） | M00-5 |
 
 ## 二、验证
-- vite build ✓；P4 示范页构建通过（PtTable/PtFilterBar/PtStatusTag 集成）
+- vite build ✓；GUI 走查（biz@demo 暗态）：报价单台账 P4 四段全渲染——PtFilterBar/PtTable（金额 tabular 右对齐、状态流转 Tag"已定标"、空值"—"、分页共 N 条+跳页）/菜单级守卫（admin 无 menu:crm 回工作台）
+- 修复：示范页首迁时 Pt 组件未注册 components → 空白；已补注册并复测
 
 ## 三、待续（第三批）
 - 其余 9 页面迁移（同示范页模式）；会议模式三问自动暂存 30s；131 路由模板页批量；视觉走查截图对比
