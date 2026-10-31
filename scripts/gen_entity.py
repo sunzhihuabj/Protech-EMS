@@ -11,7 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 
 # 模块 -> Java 包段
-PKG = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract', 'prj': 'project', 'plm': 'plm', 'pcs': 'plm', 'scm': 'scm', 'inv': 'inventory', 'mes': 'mes', 'qms': 'qms', 'eam': 'qms', 'eng': 'eng', 'thd': 'eng', 'cost': 'cost', 'kb': 'cost', 'arc': 'cost', 'bid': 'bid', 'agt': 'agent'}
+PKG = {'mdm': 'mdm', 'crm': 'crm', 'ct': 'contract', 'prj': 'project', 'plm': 'plm', 'pcs': 'plm', 'scm': 'scm', 'inv': 'inventory', 'mes': 'mes', 'qms': 'qms', 'eam': 'qms', 'eng': 'eng', 'thd': 'eng', 'cost': 'cost', 'kb': 'cost', 'arc': 'cost', 'bid': 'bid', 'agt': 'agent', 'org': 'org'}
 
 # 类型映射：MySQL 列类型 -> Java
 JAVA = {
@@ -38,6 +38,7 @@ MODULES = {
     'cost': 'projlife-modules/module-cost',
     'kb': 'projlife-modules/module-cost',
     'arc': 'projlife-modules/module-cost',
+    'org': 'projlife-modules/module-org',
     'bid': 'projlife-modules/module-bid',
     'agt': 'projlife-modules/module-agent',
 }
@@ -1576,7 +1577,26 @@ TABLES = {
         ('feedback_note', 'VARCHAR', '备注'),
         ('operator_id', 'BIGINT', '操作人'),
     ]),
-    # ---------------- T-BID 招标情报（V4-05 M18） ----------------
+    'sys_approval': ('org', 'SysApproval', True, [
+        ('approval_no', 'VARCHAR', 'AP-{YYYYMM}-{4位} UK'),
+        ('approval_type', 'VARCHAR', 'CONTRACT_REVIEW/ECO/ARC_BORROW/BUDGET'),
+        ('target_id', 'BIGINT', '目标单据 id'),
+        ('target_desc', 'VARCHAR', '目标描述'),
+        ('submitter_id', 'BIGINT', '发起人'),
+        ('status', 'VARCHAR', 'PENDING/APPROVED/REJECTED/WITHDRAWN'),
+        ('current_node', 'INT', '当前节点序 1 起'),
+        ('total_nodes', 'INT', '总节点数'),
+    ]),
+    'sys_approval_node': ('org', 'SysApprovalNode', False, [
+        ('approval_id', 'BIGINT', '审批实例 id'),
+        ('node_seq', 'INT', '节点序 1 起'),
+        ('node_name', 'VARCHAR', '节点名'),
+        ('approver_id', 'BIGINT', '审批人'),
+        ('status', 'VARCHAR', 'PENDING/APPROVED/REJECTED/PENDING_ADDSIGN'),
+        ('comment', 'VARCHAR', '意见'),
+        ('acted_at', 'DATETIME', '操作时间'),
+    ]),
+        # ---------------- T-BID 招标情报（V4-05 M18） ----------------
     'bid_source': ('bid', 'BidSource', True, [
         ('source_code', 'VARCHAR', 'SRC-{A|B|C|D}-{3位} UK'),
         ('category', 'VARCHAR', 'A_OWNER/B_OEM/C_PORTAL/D_MANUAL'),
