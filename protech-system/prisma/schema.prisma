@@ -488,6 +488,177 @@ model InventorySnapshot {
   @@map("inventory_snapshot")
 }
 
+// ============================ 交付域（T-41~T-45）与回款域（T-31~T-33） ============================
+
+/// T-41 派工单（PG{YYYY}-{NNNN}；BR-04 风场必填；发货自动生成草稿 FR-M07-002）
+model Dispatch {
+  id          BigInt    @id @default(autoincrement())
+  pgCode      String    @unique
+  projectId   BigInt
+  windFarmId  BigInt // BR-04：不选风场不许提交
+  teamId      BigInt? // 区域组（工程技术部 7 组）
+  members     String?   @db.Text // JSON [{userId, role}]
+  planDays    Int?
+  source      String    @default("manual") // auto_ship / manual
+  shipMoveId  BigInt? // 来源发货流水
+  status      String    @default("draft") // draft / confirmed / in_progress / done
+  taskDesc    String?   @db.Text
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy   BigInt?
+  updatedBy   BigInt?
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@index([status])
+  @@map("dispatch")
+}
+
+/// T-43 交底记录（方案/安全；⑤板交底及时率口径）
+model Disclosure {
+  id         BigInt   @id @default(autoincrement())
+  projectId  BigInt
+  type       String   @default("plan") // plan 方案 / safety 安全
+  discloseAt DateTime @db.Timestamptz(6)
+  attendees  String? // JSON
+  fileId     BigInt?
+  content    String?  @db.Text
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  createdBy  BigInt?
+
+  @@index([projectId])
+  @@map("disclosure")
+}
+
+/// T-44 现场日志（当日 18:00 时限；挂项目与派工单；自动汇总到 BV-03 时间线）
+model SiteLog {
+  id         BigInt   @id @default(autoincrement())
+  projectId  BigInt
+  dispatchId BigInt?
+  authorId   BigInt
+  content    String   @db.Text
+  photos     String? // JSON fileId[]
+  logDate    DateTime @db.Timestamptz(6)
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([projectId, logDate])
+  @@map("site_log")
+}
+
+/// T-45 现场问题闭环（责任人/时限/闭环率 ⑤板口径）
+model SiteIssue {
+  id          BigInt    @id @default(autoincrement())
+  projectId   BigInt
+  description String    @db.Text
+  ownerId     BigInt
+  deadline    DateTime  @db.Timestamptz(6)
+  closedAt    DateTime? @db.Timestamptz(6)
+  status      String    @default("open") // open / closed
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+
+  @@index([projectId, status])
+  @@map("site_issue")
+}
+
+/// 项目里程碑（FR-M04-004：7 节点模板+自定义；逾期预警）
+model Milestone {
+  id          BigInt    @id @default(autoincrement())
+  projectId   BigInt
+  name        String
+  sort        Int       @default(0)
+  planDate    DateTime? @db.Timestamptz(6)
+  actualDate  DateTime? @db.Timestamptz(6)
+  status      String    @default("pending") // pending / done / overdue（worker 扫描）
+  ownerId     BigInt?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy   BigInt?
+  updatedBy   BigInt?
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@map("milestone")
+}
+
+/// T-31 开票（FR-M08-001；BR-02 冻结拦截）
+model Invoice {
+  id          BigInt    @id @default(autoincrement())
+  contractId  BigInt
+  projectId   BigInt?
+  amountCents BigInt
+  invoiceNo   String?
+  invoicedAt  DateTime? @db.Timestamptz(6)
+  status      String    @default("applied") // applied / issued / void
+  applicantId BigInt
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+
+  @@index([contractId])
+  @@map("invoice")
+}
+
+/// T-33 回款计划（按合同付款条件生成：到货款/验收款/质保金；FR-M08-002）
+model PaymentPlan {
+  id          BigInt    @id @default(autoincrement())
+  contractId  BigInt
+  node        String // advance 预付 / delivery 到货款 / acceptance 验收款 / warranty 质保金 / other
+  dueAt       DateTime? @db.Timestamptz(6)
+  amountCents BigInt
+  status      String    @default("pending") // pending / received / overdue
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+
+  @@index([contractId])
+  @@map("payment_plan")
+}
+
+/// T-32 回款登记（实收核销；双责任人 collector）
+model Receipt {
+  id          BigInt   @id @default(autoincrement())
+  contractId  BigInt
+  projectId   BigInt?
+  planId      BigInt?
+  amountCents BigInt
+  receivedAt  DateTime
+  method      String? // bank / acceptance / cash
+  collectorId BigInt? // 催款责任人（双责任人制）
+  remark      String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+
+  @@index([contractId])
+  @@map("receipt")
+}
+
+/// 验收单（FR-M08-005：验收触发质保期起算）
+model Acceptance {
+  id             BigInt   @id @default(autoincrement())
+  projectId      BigInt
+  contractId     BigInt?
+  acceptedAt     DateTime
+  conclusion     String // pass / conditional / fail
+  documents      String? // JSON 资料清单
+  createdAt      DateTime @default(now()) @db.Timestamptz(6)
+  createdBy      BigInt?
+
+  @@index([projectId])
+  @@map("acceptance")
+}
+
+/// 逾期催收记录（FR-M08-008 ⑧板口径）
+model Collection {
+  id         BigInt   @id @default(autoincrement())
+  contractId BigInt
+  method     String   @default("call") // call / letter / visit
+  content    String?  @db.Text
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  createdBy  BigInt?
+
+  @@index([contractId])
+  @@map("collection")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）

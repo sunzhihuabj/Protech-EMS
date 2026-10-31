@@ -48,7 +48,22 @@ async function schedule() {
     {},
     { repeat: { pattern: '30 7 * * 1-5' }, jobId: 'meeting-remind', removeOnComplete: 50 },
   );
-  console.log('[worker] 定时任务已注册（30m 扫描 ×2 / 2h 指标 / 06:00 全量 / 工作日 07:30 提醒）');
+  await queue.add(
+    'tplus-push',
+    {},
+    { repeat: { pattern: '*/30 * * * *' }, jobId: 'tplus-push', removeOnComplete: 50 },
+  );
+  await queue.add(
+    'inventory-snapshot',
+    {},
+    { repeat: { pattern: '30 23 * * *' }, jobId: 'inventory-snapshot', removeOnComplete: 50 },
+  );
+  await queue.add(
+    'receipt-remind',
+    {},
+    { repeat: { pattern: '0 8 * * 1-5' }, jobId: 'receipt-remind', removeOnComplete: 50 },
+  );
+  console.log('[worker] 定时任务已注册（30m 扫描×2/T+推送 / 2h 指标 / 06:00 全量 / 07:30 未开会 / 08:00 回款提醒 / 23:30 快照）');
 }
 
 const TASKS: Record<string, () => Promise<unknown>> = {
@@ -57,6 +72,9 @@ const TASKS: Record<string, () => Promise<unknown>> = {
   'metric-snapshot': () => call('internal/metrics/compute'),
   'metric-daily': () => call('internal/metrics/compute'),
   'meeting-remind': () => call('internal/scans/meeting-remind'),
+  'tplus-push': () => call('internal/tplus/push'),
+  'inventory-snapshot': () => call('internal/inventory/snapshot'),
+  'receipt-remind': () => call('internal/finance/remind-due'),
 };
 
 async function run() {

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma.service';
+import { DeliveryService } from '../m07-delivery/delivery.service';
 import { CodeEngineService } from '../../shared/code-engine.service';
 import { AuditService } from '../../shared/audit.service';
 import { NotifyService } from '../../shared/notify.service';
@@ -27,6 +28,7 @@ export class SupplyService {
     private readonly codes: CodeEngineService,
     private readonly audit: AuditService,
     private readonly notify: NotifyService,
+    private readonly delivery: DeliveryService,
   ) {}
 
   // ---------------- 工单与齐套（FR-M05-005） ----------------
@@ -366,7 +368,15 @@ export class SupplyService {
     });
 
     await this.audit.log({ action: 'stock_move', objectType: 'StockMove', objectId: move.id, after: { moveType, sourceId, materialCode, qty } });
-    return { id: move.id.toString(), duplicated: false, materialCode, tPlusStatus: move.tPlusStatus };
+
+    // FR-M07-002：发货确认后自动生成派工单草稿（服务级联动，S6 事件总线替代）
+    let dispatchDraftCode: string | null = null;
+    if (moveType === 'out' && sourceType === 'ship' && projectId) {
+      const draft = await this.delivery.autoDraftFromShip(projectId, move.id, userId);
+      dispatchDraftCode = draft?.pgCode ?? null;
+    }
+
+    return { id: move.id.toString(), duplicated: false, materialCode, tPlusStatus: move.tPlusStatus, dispatchDraftCode };
   }
 
   // ---------------- T+ 推送队列（FR-M06-007） ----------------

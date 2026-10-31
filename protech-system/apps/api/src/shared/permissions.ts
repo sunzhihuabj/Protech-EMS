@@ -84,6 +84,22 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'inv:view', name: '库存/流水查询', type: 'menu', module: 'M06' },
   { code: 'tplus:queue', name: 'T+ 推送队列查看/导出', type: 'button', module: 'M06' },
   { code: 'tplus:confirm', name: 'T+ 回执确认', type: 'button', module: 'M06' },
+  // ---- M07 交付 ----
+  { code: 'dispatch:create', name: '派工创建（BR-04）', type: 'button', module: 'M07' },
+  { code: 'dispatch:transition', name: '派工状态推进', type: 'button', module: 'M07' },
+  { code: 'dispatch:view', name: '派工查询', type: 'menu', module: 'M07' },
+  { code: 'milestone:view', name: '里程碑查看', type: 'menu', module: 'M04' },
+  { code: 'milestone:manage', name: '里程碑维护', type: 'button', module: 'M04' },
+  { code: 'disclosure:create', name: '交底登记', type: 'button', module: 'M07' },
+  { code: 'sitelog:create', name: '现场日志', type: 'button', module: 'M07' },
+  { code: 'issue:create', name: '现场问题登记/闭环', type: 'button', module: 'M07' },
+  // ---- M08 回款 ----
+  { code: 'invoice:apply', name: '开票申请（BR-02）', type: 'button', module: 'M08' },
+  { code: 'invoice:issue', name: '开票登记', type: 'button', module: 'M08' },
+  { code: 'receipt:manage', name: '回款计划/登记', type: 'button', module: 'M08' },
+  { code: 'finance:view', name: '账龄/回款率查询', type: 'menu', module: 'M08' },
+  { code: 'acceptance:create', name: '验收登记', type: 'button', module: 'M08' },
+  { code: 'collection:add', name: '催收记录', type: 'button', module: 'M08' },
 ];
 
 /** 各权限默认授予的角色（FR-M00-002 九角色矩阵；R-SYS 恒为全量 '*'） */
@@ -155,4 +171,18 @@ export const PERM_ROLES: Record<string, string[]> = {
   'inv:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
   'tplus:queue': ['R-FIN', 'R-EXEC', 'R-SYS'],
   'tplus:confirm': ['R-FIN', 'R-SYS'],
+  'dispatch:create': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'dispatch:transition': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'dispatch:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
+  'milestone:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
+  'milestone:manage': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-SYS'],
+  'disclosure:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],
+  'sitelog:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],
+  'issue:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],
+  'invoice:apply': ['R-FIN', 'R-CHAIN', 'R-SYS'],
+  'invoice:issue': ['R-FIN', 'R-SYS'],
+  'receipt:manage': ['R-FIN', 'R-SYS'],
+  'finance:view': ['R-EXEC', 'R-FIN', 'R-CHAIN', 'R-SYS'],
+  'acceptance:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-SYS'],
+  'collection:add': ['R-FIN', 'R-CHAIN', 'R-SYS'],
 };
