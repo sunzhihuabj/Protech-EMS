@@ -1,36 +1,21 @@
 <template>
   <div class="pl-page">
-    <el-card shadow="never">
-      <div class="pl-toolbar">
-        <el-input v-model="query.keyword" placeholder="报价单号" size="small" style="width: 200px" clearable @keyup.enter.native="load" />
-        <el-select v-model="query.status" size="small" style="width: 130px" clearable placeholder="状态" @change="load">
-          <el-option value="DRAFT" label="草稿" />
-          <el-option value="SUBMITTED" label="已提交" />
-          <el-option value="WON" label="已定标" />
-          <el-option value="LOST" label="未中标" />
-        </el-select>
-        <el-button size="small" type="primary" icon="el-icon-search" @click="load">查询</el-button>
-        <div class="spacer"></div>
-        <el-button v-permission="'opportunity:create'" size="small" type="primary" icon="el-icon-plus" @click="openCreate">新建报价单（FR-CRM-17）</el-button>
-        <el-button size="small" icon="el-icon-data-line" @click="loadConversion">来源转化统计（FR-CRM-20）</el-button>
-      </div>
+    <el-card shadow="never" :body-style="{ padding: '16px' }">
+      <pt-filter-bar :fields="filterFields" :model.sync="query" collapsed @search="onSearch" @reset="onSearch" />
 
-      <el-table :data="records" v-loading="loading" size="small" @row-click="openLines">
-        <el-table-column prop="quotationNo" label="报价单号" width="180" />
-        <el-table-column prop="version" label="版本" width="70" />
-        <el-table-column prop="amount" label="金额(元)" width="130" />
-        <el-table-column prop="status" label="状态" width="100">
-          <template slot-scope="{ row }">
-            <el-tag size="mini" :type="row.status === 'WON' ? 'success' : row.status === 'LOST' ? 'info' : ''">{{ statusLabel(row.status) }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="sourceType" label="来源" width="90" />
-        <el-table-column prop="deliveryTerms" label="交货条款" width="110" />
-        <el-table-column prop="validUntil" label="有效期至" width="110" />
-        <el-table-column prop="createdAt" label="创建时间" min-width="150" show-overflow-tooltip />
-      </el-table>
-      <el-pagination background layout="total, prev, pager, next" :total="total"
-                     :page-size="query.pageSize" :current-page.sync="query.pageNum" @current-change="load" />
+      <pt-table :columns="columns" :data="records" :loading="loading" :total="total"
+                :page.sync="page" aria-label="报价单台账" empty-type="no-result"
+                empty-label="报价单" empty-hint="调整筛选条件，或新建第一条报价单"
+                empty-action-text="新建报价单" @empty-action="openCreate"
+                @page-change="load" @row-click="openLines">
+        <template slot="toolbar">
+          <el-button v-permission="'opportunity:create'" size="small" type="primary" icon="el-icon-plus" @click="openCreate">新建报价单</el-button>
+          <el-button size="small" icon="el-icon-data-line" @click="loadConversion">来源转化统计</el-button>
+        </template>
+        <template slot="cell-status" slot-scope="{ value }">
+          <pt-status-tag :value="value" :dict="statusDict" />
+        </template>
+      </pt-table>
     </el-card>
 
     <!-- 明细抽屉 -->
@@ -95,12 +80,31 @@
 <script>
 import http from '@/api/request'
 import { showError } from '@/api/request'
+import { PtFilterBar, PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'Quotations',
   data() {
     return {
-      query: { pageNum: 1, pageSize: 10, keyword: '', status: '' },
+      filterFields: [
+        { prop: 'keyword', label: '报价单号' },
+        { prop: 'status', label: '状态', type: 'select', options: [
+          { value: 'DRAFT', label: '草稿' }, { value: 'SUBMITTED', label: '已提交' },
+          { value: 'WON', label: '已定标' }, { value: 'LOST', label: '未中标' }] }
+      ],
+      columns: [
+        { prop: 'quotationNo', label: '报价单号', width: 180 },
+        { prop: 'version', label: '版本', width: 70 },
+        { prop: 'amount', label: '金额(元)', type: 'money', align: 'right' },
+        { prop: 'status', label: '状态', width: 100 },
+        { prop: 'sourceType', label: '来源', width: 90 },
+        { prop: 'deliveryTerms', label: '交货条款', width: 110 },
+        { prop: 'validUntil', label: '有效期至', width: 112 },
+        { prop: 'createdAt', label: '创建时间', minWidth: 150 }
+      ],
+      statusDict: 'DRAFT:草稿,SUBMITTED:已提交,WON:已定标,LOST:未中标',
+      query: { pageNum: 1, pageSize: 20, keyword: '', status: '' },
+      page: { pageNum: 1, pageSize: 20 },
       records: [], total: 0, loading: false,
       drawer: false, detail: null, lines: [],
       dialog: false, form: {}, formLines: [{}],
@@ -119,11 +123,16 @@ export default {
     },
     load() {
       this.loading = true
+      this.query.pageNum = this.page.pageNum
+      this.query.pageSize = this.page.pageSize
       http.get('/crm/quotations', { params: this.query }).then(body => {
         this.records = body.data.records || []
         this.total = body.data.total || 0
+        // URL 即状态（UID-02 §五）：筛选与分页写入 query，刷新后重建
+        this.$router.replace({ query: { keyword: this.query.keyword || undefined, status: this.query.status || undefined, pageNum: this.page.pageNum > 1 ? this.page.pageNum : undefined } }).catch(() => {})
       }).catch(showError).finally(() => { this.loading = false })
     },
+    onSearch() { this.page.pageNum = 1; this.load() },
     openLines(row) {
       this.detail = row
       this.drawer = true

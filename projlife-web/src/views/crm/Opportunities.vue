@@ -14,29 +14,22 @@
             <div class="spacer"></div>
             <el-button v-permission="'opportunity:create'" size="small" type="primary" icon="el-icon-plus" @click="openCreate">商机登记</el-button>
           </div>
-          <el-table :data="records" v-loading="loading" size="small">
-            <el-table-column prop="oppNo" label="编号" width="150" />
-            <el-table-column prop="oppName" label="商机名称" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="intentionLevel" label="意向" width="70">
-              <template slot-scope="{ row }">
-                <el-tag size="mini" :type="row.intentionLevel === 'H' ? 'danger' : row.intentionLevel === 'M' ? 'warning' : 'info'">{{ row.intentionLevel }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="expectAmount" label="预计金额(元)" width="120" />
-            <el-table-column prop="status" label="状态" width="90">
-              <template slot-scope="{ row }">
-                <el-tag size="mini" :type="row.status === 'WON' ? 'success' : row.status === 'LOST' ? 'info' : ''">{{ statusLabel(row.status) }}</el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="expectSignDate" label="预计签约" width="110" />
-            <el-table-column label="操作" width="210">
-              <template slot-scope="{ row }">
-                <el-button size="mini" type="text" @click="openFollowup(row)">跟进</el-button>
-                <el-button v-if="row.status === 'TRACKING'" size="mini" type="text" @click="lose(row)">丢单</el-button>
-                <el-button v-if="row.status === 'LOST'" size="mini" type="text" @click="reopen(row)">重激活</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
+  <pt-table :columns="columns" :data="records" :loading="loading" :total="total"
+                :page.sync="page" aria-label="商机台账" empty-type="no-result"
+                empty-label="商机" empty-action-text="新建商机" @empty-action="openCreate"
+                @page-change="load" @row-click="openDetail">
+          <template slot="cell-intentionLevel" slot-scope="{ value }">
+            <el-tag size="mini" :type="value === 'H' ? 'danger' : value === 'M' ? 'warning' : 'info'">{{ value }}</el-tag>
+          </template>
+          <template slot="cell-status" slot-scope="{ value }">
+            <pt-status-tag :value="value" :dict="statusDict" />
+          </template>
+          <template slot="actions" slot-scope="{ row }">
+            <el-button size="mini" type="text" @click.stop="openFollowup(row)">跟进</el-button>
+            <el-button v-if="row.status === 'TRACKING'" size="mini" type="text" @click.stop="lose(row)">丢单</el-button>
+            <el-button v-if="row.status === 'LOST'" size="mini" type="text" @click.stop="reopen(row)">重激活</el-button>
+          </template>
+        </pt-table>
           <el-pagination background layout="total, prev, pager, next" :total="total"
                          :page-size="query.pageSize" :current-page.sync="query.pageNum" @current-change="load" />
         </el-card>
@@ -108,11 +101,23 @@
 
 <script>
 import { showError } from '@/api/request'
+import { PtTable, PtStatusTag } from '@/components/pt'
 
 export default {
   name: 'OpportunitiesPage',
   data() {
     return {
+      columns: [
+        { prop: 'oppNo', label: '编号', width: 150 },
+        { prop: 'oppName', label: '商机名称', minWidth: 200 },
+        { prop: 'intentionLevel', label: '意向', width: 70 },
+        { prop: 'expectAmount', label: '预计金额(元)', type: 'money', align: 'right' },
+        { prop: 'status', label: '状态', width: 96 },
+        { prop: 'expectSignDate', label: '预计签约', width: 112 }
+      ],
+      statusDict: 'TRACKING:跟踪中,WON:已成交,LOST:已关闭',
+      page: { pageNum: 1, pageSize: 20 },
+
       records: [], total: 0, loading: false,
       query: { pageNum: 1, pageSize: 20, keyword: '', status: '' },
       dialog: false, form: {},

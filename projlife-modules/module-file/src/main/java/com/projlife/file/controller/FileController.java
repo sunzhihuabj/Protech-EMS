@@ -33,6 +33,7 @@ public class FileController {
     }
 
     @PostMapping("/upload")
+    @com.projlife.security.auth.RequirePermission("file:upload")
     public ApiResponse<SysAttachment> upload(@RequestParam("file") MultipartFile file,
                                              @RequestParam(defaultValue = "COMMON") String bizType,
                                              @RequestParam(required = false) String bizId) throws IOException {

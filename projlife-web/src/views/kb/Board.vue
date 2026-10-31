@@ -37,8 +37,32 @@
     <div class="kb-zone kb-zone-red" :style="{ flex: redFlex }">
       <div class="kb-zone-head is-red">红灯（{{ redCards.length }}）</div>
       <div class="kb-cards">
-        <pt-board-card v-for="c in redCards" :key="c.id" :card="c" />
+        <pt-board-card v-for="(c, i) in redCards" :key="c.id" :card="c"
+                       :class="{ 'is-current': isMeeting && i === meetingIndex }" />
         <div v-if="redCards.length === 0" class="kb-empty-small" aria-label="无数据">今日无红灯</div>
+
+        <!-- 三问过堂（FR-KB-10 强制录入；卡在哪多行 min-h 88，另两问单行；三问纵向各占一行） -->
+        <div v-if="isMeeting && currentAgenda === '红灯过堂' && redCards.length" class="kb-three-q">
+          <div class="kb-three-q-title">三问过堂 · 第 {{ meetingIndex + 1 }}/{{ redCards.length }} 张：{{ redCards[meetingIndex].title }}</div>
+          <div class="kb-three-q-row">
+            <label>卡在哪</label>
+            <el-input v-model="threeQ.where" type="textarea" :rows="4" style="flex:1" />
+          </div>
+          <div class="kb-three-q-row">
+            <label>谁解决</label>
+            <el-input v-model="threeQ.who" style="width: 240px" :placeholder="redCards[meetingIndex].owner || '责任人'" />
+          </div>
+          <div class="kb-three-q-row">
+            <label>何时解决</label>
+            <el-date-picker v-model="threeQ.when" type="date" value-format="yyyy-MM-dd"
+                            style="width: 200px" :placeholder="redCards[meetingIndex].dueAt || '承诺日'" />
+          </div>
+          <div class="kb-three-q-actions">
+            <el-button type="primary" size="small" :disabled="!threeQ.where || !threeQ.who || !threeQ.when"
+                       @click="resolveCurrent">记录并下一张</el-button>
+            <el-button size="small" @click="skipCurrent">记为未闭环过堂</el-button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -66,6 +90,7 @@
 <script>
 import { PtMetric, PtBoardCard } from '@/components/pt'
 import http from '@/api/request'
+import { showError as showErrorDefault } from '@/api/request'
 
 const AGENDA = [
   { name: '指标速览', range: '0—3', start: 0 },
@@ -84,6 +109,8 @@ export default {
       dataAsOf: new Date().toLocaleString('zh-CN'),
       closedOpen: false,
       meetingStartedAt: null,
+      meetingIndex: 0,
+      threeQ: { where: '', who: '', when: '' },
       now: Date.now(),
       nowTimer: null
     }
@@ -144,6 +171,26 @@ export default {
     },
     resetMeeting() {
       this.meetingStartedAt = (this.isMeeting || this.isWall) ? Date.now() : null
+      this.meetingIndex = 0
+      this.threeQ = { where: '', who: '', when: '' }
+    },
+    /** 三问齐 → 闭环当前红灯卡（FR-KB-10），进入下一张 */
+    resolveCurrent() {
+      const card = this.redCards[this.meetingIndex]
+      const solution = `卡在哪：${this.threeQ.where}｜谁解决：${this.threeQ.who}｜何时解决：${this.threeQ.when}`
+      http.post(`/kb/cards/${card.id}/close`, { solution }).then(() => {
+        this.$message.success('已记录并闭环')
+        this.nextCard()
+      }).catch(showErrorDefault)
+    },
+    /** 三问不全 → 记为未闭环过堂（写纪要口径，不关单） */
+    skipCurrent() {
+      this.$message.info('已记为未闭环过堂（计入纪要）')
+      this.nextCard()
+    },
+    nextCard() {
+      this.threeQ = { where: '', who: '', when: '' }
+      this.meetingIndex = Math.min(this.meetingIndex + 1, Math.max(0, this.redCards.length - 1))
     },
     cycleMode() {
       // 会议 ↔ 日常（wall 只读由 URL 直达；主题切换在 meeting/wall 下锁定由 Appearance 页判断）
@@ -225,6 +272,12 @@ export default {
 .kb-metrics .pt-metric { flex: 1; }
 .kb-cards { flex: 1; overflow-y: auto; padding: 8px 16px 16px; }
 .kb-empty-small { text-align: center; color: var(--ink-3); font-size: 13px; padding: 24px 0; }
+.pt-board-card.is-current { box-shadow: inset 3px 0 0 var(--pt-accent-graphic, var(--pri-500)), var(--elev-2); }
+.kb-three-q { margin-top: 8px; padding: 12px 16px; border: 1px solid var(--line-2); border-radius: var(--r-3, 6px); background: var(--surface); }
+.kb-three-q-title { font-size: 14px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+.kb-three-q-row { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+.kb-three-q-row label { width: 72px; flex-shrink: 0; font-size: 14px; color: var(--ink-2); line-height: 32px; text-align: right; }
+.kb-three-q-actions { display: flex; gap: 8px; margin-top: 4px; }
 /* 会议模式：+2 档（正文 16/24、指标值 40/48），隐藏三问外录入控件 */
 .kb-board.is-meeting { font-size: 16px; }
 .kb-board.is-meeting .pt-metric-value { font-size: 40px; }

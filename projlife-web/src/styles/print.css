@@ -1,0 +1,79 @@
+/* 打印强制 t1 亮色（UID-01 §八.9）：暗态主题下打印输出白底黑字；水印 W2 每页生效由服务端/浏览器承载 */
+@media print {
+  :root {
+    --pri-50: #EAF4F6;
+    --pri-100: #CFE6EA;
+    --pri-200: #A3CFD6;
+    --pri-300: #6FB2BD;
+    --pri-400: #3E90A0;
+    --pri-500: #1F7B8C;
+    --pri-600: #14606F;
+    --pri-700: #0F4B57;
+    --pri-800: #0B3841;
+    --pri-900: #07262C;
+    --n-0: #FFFFFF;
+    --n-25: #FBFBFC;
+    --n-50: #F5F5F6;
+    --n-100: #EEEFF0;
+    --n-200: #E1E2E4;
+    --n-300: #CDD0D3;
+    --n-400: #AAAFB3;
+    --n-500: #80878E;
+    --n-600: #5F656B;
+    --n-700: #474B50;
+    --n-800: #2A2D2F;
+    --n-900: #1C1D1F;
+  }
+  :root {
+    --bg: #F5F5F6;
+    --surface: #FFFFFF;
+    --surface-2: #FBFBFC;
+    --surface-3: #EEEFF0;
+    --surface-4: #E1E2E4;
+    --ink: #1C1D1F;
+    --ink-2: #474B50;
+    --ink-3: #5F656B;
+    --ink-4: #80878E;
+    --line: #E1E2E4;
+    --line-2: #CDD0D3;
+    --sidebar-bg: #0B3841;
+    --sidebar-ink: rgba(255,255,255,.92);
+    --sidebar-ink-2: rgba(255,255,255,.72);
+    --sidebar-ink-3: rgba(255,255,255,.42);
+    --sidebar-on: rgba(255,255,255,.10);
+    --pri-text: #14606F;
+    --pri-soft: #EAF4F6;
+    --pri-soft-2: #CFE6EA;
+    --row-hover: #F2F7F8;
+    --btn-pri-bg: #1F7B8C;
+    --btn-pri-ink: #FFFFFF;
+    --tag-pr-bd: #3E90A0;
+    --tag-pr-ink: #0F4B57;
+    --focus-ring: #5C6771;
+    --focus-ring-gap: #FFFFFF;
+    --elev-1: 0 1px 2px rgba(16,24,40,.04);
+    --elev-2: 0 2px 6px rgba(16,24,40,.06),0 8px 24px rgba(16,24,40,.10);
+    --elev-3: 0 2px 6px rgba(16,24,40,.06),0 18px 48px rgba(16,24,40,.16);
+    --scrim: rgba(16,20,26,.42);
+    --wm: rgba(26,33,40,.10);
+  }
+  :root {
+    --up: #A81E16;
+    --up-bg: #F7E7E5;
+    --down: #0B6E4B;
+    --down-bg: #E5F2EC;
+    --flat: #5C6771;
+    --danger: #E5484D;
+    --danger-bg: #FDECEC;
+    --danger-ink: #C42B30;
+    --warn: #E08700;
+    --warn-bg: #FDF3E3;
+    --warn-ink: #8A5A00;
+    --ok: #2FA36B;
+    --ok-bg: #E8F6EE;
+    --ok-ink: #0E7A54;
+  }
+  .pl-aside, .pl-header, .pl-watermark, .pt-table-pager, .pt-filter, .pl-block-alert { display: none !important; }
+  .pl-main { overflow: visible !important; padding: 0 !important; }
+  .el-table { box-shadow: none !important; }
+}
