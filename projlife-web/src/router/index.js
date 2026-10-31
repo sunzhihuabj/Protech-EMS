@@ -25,6 +25,7 @@ const routes = [
       { path: 'crm/opportunity', name: 'crmOpportunity', component: () => import('@/views/crm/Opportunities.vue'), meta: { title: '商机台账', permCode: 'menu:crm' } },
       { path: 'crm/quotation', name: 'crmQuotation', component: () => import('@/views/crm/Quotations.vue'), meta: { title: '报价单台账', permCode: 'menu:crm' } },
       { path: 'ct/contract', name: 'ctContract', component: () => import('@/views/contract/Contracts.vue'), meta: { title: '合同台账', permCode: 'menu:contract' } },
+      { path: 'ct/contract/:id', name: 'ctContractDetail', component: () => import('@/views/contract/ContractDetail.vue'), meta: { title: '合同详情', permCode: 'menu:contract' } },
       { path: 'prj/project', name: 'prjProject', component: () => import('@/views/project/Projects.vue'), meta: { title: '项目台账', permCode: 'menu:project' } },
       { path: 'bid/notice', name: 'bidNotice', component: () => import('@/views/bid/BidIntel.vue'), meta: { title: '标讯台账', permCode: 'menu:bid' } },
       // ③ 研发工艺
@@ -39,6 +40,7 @@ const routes = [
       { path: 'thd/delivery-note', name: 'thdDeliveryNote', component: () => import('@/views/eng/ThdPortal.vue'), meta: { title: '第三方协同', permCode: 'menu:eng' } },
       // ⑦ 成本与看板（九板共用 1 套规格，boardCode 由 kb_board 配置驱动）
       { path: 'kb/board/:boardCode', name: 'kbBoard', component: () => import('@/views/kb/Board.vue'), meta: { title: '经营看板', permCode: 'menu:kb' } },
+      { path: 'kb/meeting/:id', name: 'kbMeeting', component: () => import('@/views/kb/MeetingMinutes.vue'), meta: { title: '会议纪要', permCode: 'menu:kb' } },
       { path: 'kb/kanban-legacy', name: 'kbKanbanLegacy', component: () => import('@/views/kb/Kanban.vue'), meta: { title: '卡片台账', permCode: 'menu:kb' } },
       { path: 'cost/report', name: 'costReport', component: () => import('@/views/cost/CostCenter.vue'), meta: { title: '成本报表', permCode: 'menu:cost' } },
       // ⑧ 主数据与治理
@@ -50,6 +52,20 @@ const routes = [
       { path: 'sys/dict', name: 'sysDict', component: () => import('@/views/system/Dicts.vue'), meta: { title: '数据字典', permCode: 'menu:system:dict' } },
       { path: 'sys/config', name: 'sysConfig', component: () => import('@/views/system/Configs.vue'), meta: { title: '系统参数', permCode: 'menu:system:config' } },
       { path: 'sys/log', name: 'sysLog', component: () => import('@/views/system/Logs.vue'), meta: { title: '审计日志', permCode: 'menu:system:log' } },
+      // 模板档占位（UID-05 模板条目：路由/菜单已登记，字段随切片细化——验收 1 无孤儿页面）
+      { path: 'workbench/todo', name: 'workbenchTodo', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '待办中心', permCode: 'menu:workbench', stub: true } },
+      { path: 'workbench/my-task', name: 'workbenchMyTask', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '我的任务', permCode: 'menu:workbench', stub: true } },
+      { path: 'scm/supplier', name: 'scmSupplier', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '供应商台账', permCode: 'menu:scm', stub: true } },
+      { path: 'scm/po', name: 'scmPo', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: 'PO 台账', permCode: 'menu:scm', stub: true } },
+      { path: 'qms/inspection', name: 'qmsInspection', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '检验台账', permCode: 'menu:qms', stub: true } },
+      { path: 'qms/8d', name: 'qms8d', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '8D 报告', permCode: 'menu:qms', stub: true } },
+      { path: 'eam/asset', name: 'eamAsset', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '设备台账', permCode: 'menu:eam', stub: true } },
+      { path: 'kb/my', name: 'kbMy', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '我的看板订阅', permCode: 'menu:kb', stub: true } },
+      { path: 'kb/metric', name: 'kbMetric', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '指标口径', permCode: 'menu:kb', stub: true } },
+      { path: 'bid/source', name: 'bidSource', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '数据源', permCode: 'menu:bid', stub: true } },
+      { path: 'bid/rule', name: 'bidRule', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '匹配规则', permCode: 'menu:bid', stub: true } },
+      { path: 'sys/code', name: 'sysCode', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '编码规则', permCode: 'menu:system:config', stub: true } },
+      { path: 'sys/import', name: 'sysImport', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '导入批次', permCode: 'menu:system:log', stub: true } },
       // Agent 平台（M19，骨架档）
       { path: 'agt/app', name: 'agtApp', component: () => import('@/views/agent/AgentConsole.vue'), meta: { title: 'Agent 应用注册', permCode: 'menu:agt' } },
       // 个人（仅用户菜单入口，"仅内链"）
