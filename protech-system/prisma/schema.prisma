@@ -15,6 +15,138 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+// ============================ 商务域（T-13 及关联；M02 报价标注新增 Q-10） ============================
+
+/// T-13 合同档案（25 要素四组；两卡点：BR-01 评审带码 / BR-02 用印 3 工作日建档冻结开票）
+model Contract {
+  id                  BigInt    @id @default(autoincrement())
+  contractCode        String    @unique // {主体码}-{YYYY}-{XS/CG/KJ}-{业务码}-{NNNN}；补充协议 -BCn
+  contractName        String
+  nature              String // E-06 XS/CG/KJ
+  bizType             String // 业务码（SB 设备/GC 工程/WX 维保…）
+  ourEntityId         BigInt
+  counterpartyId      BigInt // 对方主体（T-02，BR-08 下拉）
+  amountCents         BigInt // BR-10
+  taxRate             String? // DECIMAL(5,4) 文本，如 0.0900
+  currency            String    @default("CNY")
+  paymentTerms        String?   @db.Text
+  settlement          String?   @db.Text
+  invoiceReq          String?   @db.Text
+  contact             String?
+  phone               String?
+  deliveryAddr        String?
+  signedAt            DateTime? @db.Timestamptz(6)
+  effectiveAt         DateTime? @db.Timestamptz(6)
+  periodStart         DateTime? @db.Timestamptz(6)
+  periodEnd           DateTime? @db.Timestamptz(6)
+  warrantyMonths      Int?
+  warrantyDepositRate String?
+  docCopies           Int?
+  filePath            String?
+  archiveNo           String?
+  status              String    @default("drafting") // E-05 九态
+  reviewStatus        String    @default("none") // none / reviewing / approved / rejected
+  sealAt              DateTime? @db.Timestamptz(6) // 用印时间（BR-02 起算源）
+  sealCopies          Int?
+  filedAt             DateTime? @db.Timestamptz(6) // 25 要素建档完成时间
+  filedBy             BigInt?
+  archiveDeadlineAt   DateTime? @db.Timestamptz(6) // 用印+3 工作日（BR-02 判定源）
+  invoicingLocked     Boolean   @default(false) // BR-02 冻结开票
+  quotationId         BigInt? // 来源报价（FR-M02-005 中标转化）
+  parentContractId    BigInt? // 补充协议主合同
+  bcSeq               Int? // -BC{n} 序号
+  remark              String?
+  createdAt           DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy           BigInt?
+  updatedBy           BigInt?
+  deletedAt           DateTime? @db.Timestamptz(6)
+
+  @@index([status])
+  @@index([counterpartyId])
+  @@map("contract")
+}
+
+/// 合同-项目关联（FR-M03-003 一合同挂多项目；BR-01 前提 ≥1）
+model ContractProject {
+  id         BigInt   @id @default(autoincrement())
+  contractId BigInt
+  projectId  BigInt
+  orderLine  String? // 订单行→项目拆挂说明
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  createdBy  BigInt?
+
+  @@unique([contractId, projectId])
+  @@index([projectId])
+  @@map("contract_project")
+}
+
+/// 合同评审（FR-M03-004 会签：商务/财务/工程/生产四角色；全过→reviewed+自动立项）
+model ContractReview {
+  id         BigInt    @id @default(autoincrement())
+  contractId BigInt
+  round      Int       @default(1)
+  role       String // biz / fin / eng / mfg
+  reviewerId BigInt?
+  result     String? // approved / rejected
+  opinion    String?   @db.Text
+  reviewedAt DateTime? @db.Timestamptz(6)
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([contractId, round])
+  @@map("contract_review")
+}
+
+/// 合同变更（FR-M03-007 补充协议 -BCn；改前改后留痕）
+model ContractChange {
+  id          BigInt    @id @default(autoincrement())
+  contractId  BigInt
+  changeCode  String    @unique // 主合同号-BC{n}
+  content     String    @db.Text // JSON 变更字段 [{field,before,after}]
+  reason      String
+  status      String    @default("pending") // pending / approved / rejected
+  newContractId BigInt? // 通过后生成的补充协议合同
+  reviewedBy  BigInt?
+  reviewedAt  DateTime? @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy   BigInt?
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([contractId])
+  @@map("contract_change")
+}
+
+/// M02 报价单（05 册未列 T 号，标注新增 Q-10；FR-M02-001~008）
+model Quotation {
+  id                 BigInt    @id @default(autoincrement())
+  quotationCode      String    @unique // QT{YYYY}-{NNNN}
+  partyId            BigInt // 客户（下拉 BR-08）
+  groupId            BigInt?
+  projectId          BigInt? // 可暂"待定"
+  productLines       String // JSON E-03
+  qty                Int
+  unitPriceCents     BigInt // BR-10
+  totalCents         BigInt
+  validUntil         DateTime? @db.Timestamptz(6)
+  ownerId            BigInt // 报价人
+  status             String    @default("draft") // draft/sent/won/lost/expired
+  expectedSignAt     DateTime? @db.Timestamptz(6) // 中标必填（FR-M02-004）
+  convertedContractId BigInt?
+  lostReason         String?
+  remark             String?
+  createdAt          DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt          DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy          BigInt?
+  updatedBy          BigInt?
+  deletedAt          DateTime? @db.Timestamptz(6)
+
+  @@index([partyId])
+  @@index([status])
+  @@map("quotation")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）

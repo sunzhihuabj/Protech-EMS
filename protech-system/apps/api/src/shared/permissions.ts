@@ -47,6 +47,21 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'mdm:change:submit', name: '主数据变更提交', type: 'button', module: 'M01' },
   { code: 'mdm:change:review', name: '主数据变更审批', type: 'button', module: 'M01' },
   { code: 'mdm:export', name: '主数据导出', type: 'button', module: 'M01' },
+  // ---- M02 报价 ----
+  { code: 'quote:list', name: '报价查询', type: 'menu', module: 'M02' },
+  { code: 'quote:create', name: '报价登记', type: 'button', module: 'M02' },
+  { code: 'quote:send', name: '报价发出', type: 'button', module: 'M02' },
+  { code: 'quote:decide', name: '中标/未中标/失效', type: 'button', module: 'M02' },
+  { code: 'quote:convert', name: '中标转合同', type: 'button', module: 'M02' },
+  // ---- M03 合同 ----
+  { code: 'contract:list', name: '合同查询', type: 'menu', module: 'M03' },
+  { code: 'contract:create', name: '合同建档', type: 'button', module: 'M03' },
+  { code: 'contract:review:submit', name: '提交评审（BR-01）', type: 'button', module: 'M03' },
+  { code: 'contract:review:act', name: '评审会签', type: 'button', module: 'M03' },
+  { code: 'contract:seal', name: '用印登记', type: 'button', module: 'M03' },
+  { code: 'contract:filing', name: '建档备案（25 要素）', type: 'button', module: 'M03' },
+  { code: 'contract:change', name: '补充协议/变更', type: 'button', module: 'M03' },
+  { code: 'contract:export', name: '合同台账导出', type: 'button', module: 'M03' },
 ];
 
 /** 各权限默认授予的角色（FR-M00-002 九角色矩阵；R-SYS 恒为全量 '*'） */
@@ -86,4 +101,17 @@ export const PERM_ROLES: Record<string, string[]> = {
   'mdm:change:submit': ['R-CHAIN', 'R-GA', 'R-SYS'],
   'mdm:change:review': ['R-CHAIN', 'R-SYS'],
   'mdm:export': ['R-EXEC', 'R-CHAIN', 'R-GA', 'R-SYS'],
+  'quote:list': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-FIN', 'R-GA', 'R-SYS'],
+  'quote:create': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'quote:send': ['R-CHAIN', 'R-DEPT', 'R-OP', 'R-SYS'],
+  'quote:decide': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'quote:convert': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'contract:list': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-FIN', 'R-GA', 'R-SYS'],
+  'contract:create': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'contract:review:submit': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'contract:review:act': ['R-CHAIN', 'R-DEPT', 'R-FIN', 'R-SYS'],
+  'contract:seal': ['R-CHAIN', 'R-SYS'],
+  'contract:filing': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'contract:change': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'contract:export': ['R-EXEC', 'R-CHAIN', 'R-GA', 'R-SYS'],
 };

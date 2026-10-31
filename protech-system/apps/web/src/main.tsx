@@ -9,6 +9,9 @@ import Home from './pages/Home';
 import ProjectList from './pages/ProjectList';
 import ProjectDetail from './pages/ProjectDetail';
 import MaterialList from './pages/MaterialList';
+import QuoteList from './pages/QuoteList';
+import ContractList from './pages/ContractList';
+import ContractDetail from './pages/ContractDetail';
 import Stub from './pages/Stub';
 import 'dayjs/locale/zh-cn';
 
@@ -24,6 +27,9 @@ const router = createBrowserRouter([
       { path: 'project/:id', element: <ProjectDetail /> },
       { path: 'supply/material', element: <MaterialList /> },
       { path: 'supply', element: <Stub title="BOM / 采购 / 库房 / 工单" slice="S3" /> },
+      { path: 'biz/quote', element: <QuoteList /> },
+      { path: 'biz/contract', element: <ContractList /> },
+      { path: 'biz/contract/:id', element: <ContractDetail /> },
       { path: 'biz', element: <Stub title="报价 / 合同 / 评审（BR-01/02 卡点）" slice="S1" /> },
       { path: 'delivery', element: <Stub title="派工 / 销项 / 现场日志（BR-04）" slice="S4" /> },
       { path: 'kb', element: <Stub title="九板 / BV-01/02/03 / 红灯引擎 / 会议模式" slice="S2" /> },
