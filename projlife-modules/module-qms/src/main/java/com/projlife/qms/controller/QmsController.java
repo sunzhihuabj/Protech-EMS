@@ -29,11 +29,14 @@ public class QmsController {
 
     private final QmsService qmsService;
     private final com.projlife.qms.mapper.QmsSpcDataMapper spcDataMapper;
+    private final com.projlife.qms.mapper.Qms8dMapper eightDMapper;
 
     public QmsController(QmsService qmsService,
-                         com.projlife.qms.mapper.QmsSpcDataMapper spcDataMapper) {
+                         com.projlife.qms.mapper.QmsSpcDataMapper spcDataMapper,
+                         com.projlife.qms.mapper.Qms8dMapper eightDMapper) {
         this.qmsService = qmsService;
         this.spcDataMapper = spcDataMapper;
+        this.eightDMapper = eightDMapper;
     }
 
     @GetMapping("/inspections")
@@ -56,6 +59,17 @@ public class QmsController {
     public ApiResponse<Void> correct(@PathVariable Long id, @RequestBody Map<String, String> body) {
         qmsService.correct(id, body.get("result"), body.get("remark"));
         return ApiResponse.ok();
+    }
+
+    @GetMapping("/8ds")
+    @RequirePermission("qms:inspect")
+    public ApiResponse<PageResp<com.projlife.qms.entity.Qms8d>> list8d(PageReq pageReq) {
+        var wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.projlife.qms.entity.Qms8d>()
+                .eq(com.projlife.qms.entity.Qms8d::getDeleted, 0)
+                .orderByDesc(com.projlife.qms.entity.Qms8d::getId);
+        var page = eightDMapper.selectPage(
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
+        return ApiResponse.ok(new PageResp<>(page.getTotal(), 0, page.getRecords()));
     }
 
     @PostMapping("/8ds")

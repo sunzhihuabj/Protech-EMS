@@ -64,4 +64,10 @@ public class CodeSequenceService {
                 Long.class, request.getScopeKey());
         return value == null ? 0 : value;
     }
+
+    /** 列出全部编码序列（R10 Stub 页数据源） */
+    public java.util.List<java.util.Map<String, Object>> listAll() {
+        return jdbcTemplate.queryForList(
+            "SELECT code_key, prefix, current_value, updated_at FROM sys_code_sequence ORDER BY code_key LIMIT 200");
+    }
 }
