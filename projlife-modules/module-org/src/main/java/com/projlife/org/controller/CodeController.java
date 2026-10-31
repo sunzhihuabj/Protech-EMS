@@ -72,10 +72,4 @@ public class CodeController {
         result.put("next", codeSequenceService.next(request));
         return ApiResponse.ok(result);
     }
-
-    @GetMapping("/codes")
-    public ApiResponse<java.util.List<java.util.Map<String, Object>>> codes() {
-        var rows = codeSequenceService.listAll();
-        return ApiResponse.ok(rows);
-    }
 }
