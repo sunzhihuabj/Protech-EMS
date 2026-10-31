@@ -34,6 +34,7 @@ public class MesController {
     }
 
     @GetMapping("/orders")
+    @RequirePermission("mes:order:view")
     public ApiResponse<PageResp<MesProductionOrder>> page(PageReq pageReq,
                                                           @RequestParam(required = false) String status) {
         return ApiResponse.ok(mesService.page(pageReq, status));

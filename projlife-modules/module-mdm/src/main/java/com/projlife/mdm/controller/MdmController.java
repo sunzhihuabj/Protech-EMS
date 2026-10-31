@@ -51,6 +51,7 @@ public class MdmController {
     // ---------- 客户主体 ----------
 
     @GetMapping("/customers")
+    @RequirePermission("mdm:customer:view")
     public ApiResponse<PageResp<MdCustomer>> customers(PageReq pageReq,
                                                        @RequestParam(required = false) String keyword,
                                                        @RequestParam(required = false) String level) {
@@ -99,6 +100,7 @@ public class MdmController {
     // ---------- 物料 ----------
 
     @GetMapping("/materials")
+    @RequirePermission("mdm:material:view")
     public ApiResponse<com.projlife.common.api.PageResp<com.projlife.mdm.entity.MdMaterial>> materials(
             com.projlife.common.api.PageReq pageReq, @RequestParam(required = false) String keyword) {
         com.projlife.common.api.PageResp<com.projlife.mdm.entity.MdMaterial> page =
@@ -149,6 +151,7 @@ public class MdmController {
     // ---------- 项目档案 ----------
 
     @GetMapping("/projects")
+    @RequirePermission("mdm:project:view")
     public ApiResponse<PageResp<MdProject>> projects(PageReq pageReq,
                                                      @RequestParam(required = false) String keyword,
                                                      @RequestParam(required = false) String status,
