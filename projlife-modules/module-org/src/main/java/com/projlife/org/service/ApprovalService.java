@@ -11,6 +11,7 @@ import com.projlife.org.mapper.SysApprovalNodeMapper;
 import com.projlife.org.service.code.CodeSequenceService;
 import com.projlife.org.service.code.CodeTypes;
 import com.projlife.security.auth.RequirePermission;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,12 +32,14 @@ public class ApprovalService {
     private final SysApprovalMapper approvalMapper;
     private final SysApprovalNodeMapper nodeMapper;
     private final CodeSequenceService codeSequenceService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public ApprovalService(SysApprovalMapper approvalMapper, SysApprovalNodeMapper nodeMapper,
-                           CodeSequenceService codeSequenceService) {
+                           CodeSequenceService codeSequenceService, ApplicationEventPublisher eventPublisher) {
         this.approvalMapper = approvalMapper;
         this.nodeMapper = nodeMapper;
         this.codeSequenceService = codeSequenceService;
+        this.eventPublisher = eventPublisher;
     }
 
     /** 发起审批：chain = [{nodeName, approverId}...] 按序逐级 */
@@ -95,6 +98,8 @@ public class ApprovalService {
         SysApproval approval = mustApproval(node.getApprovalId());
         if (node.getNodeSeq() >= approval.getTotalNodes()) {
             approval.setStatus("APPROVED");
+            eventPublisher.publishEvent(new ApprovalCompletedEvent(
+                    approval.getApprovalType(), approval.getTargetId(), true));
         } else {
             approval.setCurrentNode(node.getNodeSeq() + 1);
             // 激活下一节点
@@ -127,6 +132,8 @@ public class ApprovalService {
         SysApproval approval = mustApproval(node.getApprovalId());
         approval.setStatus("REJECTED");
         approvalMapper.updateById(approval);
+        eventPublisher.publishEvent(new ApprovalCompletedEvent(
+                approval.getApprovalType(), approval.getTargetId(), false));
         return node;
     }
 

@@ -29,7 +29,6 @@ public class KbMetricService {
 
     private final KbMetricDefMapper defMapper;
     private final KbMetricSnapshotMapper snapshotMapper;
-
     public KbMetricService(KbMetricDefMapper defMapper, KbMetricSnapshotMapper snapshotMapper) {
         this.defMapper = defMapper;
         this.snapshotMapper = snapshotMapper;
@@ -134,4 +133,5 @@ public class KbMetricService {
         }
         return ratio.compareTo(yellowRatio) >= 0 ? "YELLOW" : "RED";
     }
+
 }

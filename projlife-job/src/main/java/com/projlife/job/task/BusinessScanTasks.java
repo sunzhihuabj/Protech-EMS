@@ -78,6 +78,29 @@ public class BusinessScanTasks {
         }
     }
 
+    @Scheduled(cron = "0 15 2 * * ?")
+    @SchedulerLock(name = "metric-auto-fetch", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    public void metricAutoFetch() {
+        try {
+            var ds = new org.springframework.jdbc.datasource.DriverManagerDataSource(
+                "jdbc:mysql://localhost:3306/projlife?useSSL=false", "root", "");
+            var jdbc = new org.springframework.jdbc.core.JdbcTemplate(ds);
+            Long total = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM mes_production_order WHERE deleted = 0", Long.class);
+            Long done = jdbc.queryForObject(
+                "SELECT COUNT(*) FROM mes_production_order WHERE deleted = 0 AND status = 'COMPLETED'", Long.class);
+            if (total != null && total > 0) {
+                String period = java.time.LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM"));
+                double rate = Math.round(done * 10000.0 / total) / 100.0;
+                String body = "{\"period\":\"" + period + "\",\"value\":\"" + rate + "\"}";
+                invoker.post("/api/v1/kb/metrics/S17.MO.DELIVERY/snapshots", body);
+                if (enabled) log.info("指标自动取数：交付率 {}%", rate);
+            }
+        } catch (Exception e) {
+            log.warn("指标自动取数失败：{}", e.getMessage());
+        }
+    }
+
     @Scheduled(cron = "0 0 4 * * ?")
     @SchedulerLock(name = "arc-appraisal-scan", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
     public void arcAppraisalScan() {

@@ -49,16 +49,21 @@ public class ContractService {
     private final CodeSequenceService codeSequenceService;
     private final MdmApi mdmApi;
     private final com.projlife.project.api.PrjApi prjApi;
+    private final com.projlife.org.service.ApprovalService approvalService;
+    @org.springframework.beans.factory.annotation.Value("${projlife.approval.enabled:false}")
+    private boolean approvalEnabled;
 
     public ContractService(CtContractMapper contractMapper, CtContractPaymentPlanMapper planMapper,
                            MdLegalEntityMapper legalEntityMapper, CodeSequenceService codeSequenceService,
-                           MdmApi mdmApi, com.projlife.project.api.PrjApi prjApi) {
+                           MdmApi mdmApi, com.projlife.project.api.PrjApi prjApi,
+            com.projlife.org.service.ApprovalService approvalService) {
         this.contractMapper = contractMapper;
         this.planMapper = planMapper;
         this.legalEntityMapper = legalEntityMapper;
         this.codeSequenceService = codeSequenceService;
         this.mdmApi = mdmApi;
         this.prjApi = prjApi;
+        this.approvalService = approvalService;
     }
 
     public PageResp<CtContract> page(PageReq pageReq, String keyword, String status) {
@@ -161,8 +166,30 @@ public class ContractService {
                     .with("suggestion", "请先建档取码")
                     .with("link", "/mdm/project/new");
         }
-        contract.setStatus("REVIEWED");
-        contract.setReviewerId(UserContextHolder.currentUserId());
+        if (approvalEnabled) {
+            // R8 审批流：两级（工程主管 → 总经理），末节点回调置 REVIEWED
+            List<long[]> chain = List.of(new long[]{0, 4}, new long[]{0, 1});
+            approvalService.submit("CONTRACT_REVIEW", id, contract.getContractName(), chain);
+            contract.setReviewerId(UserContextHolder.currentUserId());
+            contractMapper.updateById(contract);
+        } else {
+            // 旧流程直达（测试兼容开关，生产置 projlife.approval.enabled=true）
+            contract.setStatus("REVIEWED");
+            contract.setReviewerId(UserContextHolder.currentUserId());
+            contractMapper.updateById(contract);
+        }
+    }
+
+    /** 审批流回调：监听 ApprovalCompletedEvent（Spring 事件解耦） */
+    @org.springframework.context.event.EventListener
+    @Transactional
+    public void onApprovalComplete(com.projlife.org.service.ApprovalCompletedEvent event) {
+        if (!"CONTRACT_REVIEW".equals(event.getApprovalType())) return;
+        CtContract contract = mustGet(event.getTargetId());
+        contract.setStatus(event.isApproved() ? "REVIEWED" : "DRAFT");
+        if (!event.isApproved()) {
+            contract.setReviewerId(null);
+        }
         contractMapper.updateById(contract);
     }
 

@@ -37,7 +37,9 @@ public class InternalJobInvoker {
     private String password;
 
     /** 登录换取 JWT 后 POST 指定 job 端点，返回业务数字结果；失败不抛出（任务日志留痕） */
-    public int post(String path) {
+    public int post(String path) { return post(path, null); }
+
+    public int post(String path, String jsonBody) {
         if (!enabled) {
             return -1;
         }
@@ -57,8 +59,10 @@ public class InternalJobInvoker {
             if (token != null) {
                 headers.setBearerAuth(token);
             }
+            HttpEntity<String> entity = jsonBody != null
+                    ? new HttpEntity<>(jsonBody, headers) : new HttpEntity<>(null, headers);
             ResponseEntity<Map> resp = restTemplate.exchange(
-                    gateway + path, HttpMethod.POST, new HttpEntity<>(null, headers), Map.class);
+                    gateway + path, HttpMethod.POST, entity, Map.class);
             Map<?, ?> body = resp.getBody();
             Object data = body == null ? null : body.get("data");
             int result = data instanceof Number ? ((Number) data).intValue() : 0;

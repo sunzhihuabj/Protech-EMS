@@ -87,6 +87,7 @@ class S1FlowTest {
     private static Long projectId;
     private static Long contractId;
     private static String bizToken;
+    private static String adminToken;
     private static String mdmToken;
     private static String finToken;
 
@@ -166,6 +167,9 @@ class S1FlowTest {
     void createOpportunity() {
         Map<String, Object> login = login("biz@demo");
         bizToken = (String) login.get("accessToken");
+        var adminLogin = post("/api/v1/auth/login", null,
+                java.util.Map.of("username", "admin@demo", "password", "ProjLife@2026", "client", "web"), null);
+        adminToken = (String) ((java.util.Map<?, ?>) adminLogin.body().get("data")).get("accessToken");
         Map<String, Object> opp = new HashMap<>();
         opp.put("oppName", "竹子岭风场升降机采购（demo E2E）");
         opp.put("customerId", 6);
@@ -256,8 +260,11 @@ class S1FlowTest {
         assertEquals(0, created.code(), created.body().toString());
         contractId = created.longData();
 
-        // 提交评审（已带项目编码 → 放行）
+        // 提交评审（已带项目编码 → 放行；R8 走审批流，需两级通过后合同才到 REVIEWED）
         assertEquals(0, post("/api/v1/contract/" + contractId + "/review/submit", bizToken, null, null).code());
+
+        // 审批流两级通过（工程主管 → 总经理）
+        approveAll("CONTRACT_REVIEW", contractId);
 
         // 用印：生成编号 + 正本
         ResponseEntityMap sealed = post("/api/v1/contract/" + contractId + "/seal", bizToken, Map.of("copyCount", 2), null);
@@ -445,5 +452,21 @@ class S1FlowTest {
         elements.put("partyB", "天立达（demo）");
         elements.put("legacyNo", "CON-202610-9999");
         return elements;
+    }
+
+    /** R8：审批流两级通过（admin 代批所有 PENDING 节点） */
+    private void approveAll(String type, Long targetId) {
+        var byTarget = get("/api/v1/approval/target/" + type + "/" + targetId, adminToken);
+        if (byTarget.code() != 0 || byTarget.data() == null) return;
+        var approvalId = String.valueOf(((java.util.Map<?, ?>) byTarget.data()).get("id"));
+        var nodes = get("/api/v1/approval/" + approvalId + "/nodes", adminToken);
+        if (nodes.code() != 0 || nodes.data() == null) return;
+        for (var node : (java.util.List<?>) nodes.data()) {
+            var map = (java.util.Map<?, ?>) node;
+            if ("PENDING".equals(map.get("status"))) {
+                post("/api/v1/approval/nodes/" + map.get("id") + "/approve", adminToken,
+                        java.util.Map.of("comment", "E2E auto-approve"), null);
+            }
+        }
     }
 }
