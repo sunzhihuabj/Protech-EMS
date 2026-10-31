@@ -70,4 +70,50 @@ public class KbMeetingService {
         result.put("minutesText", meeting.getMinutes() == null ? "" : meeting.getMinutes());
         return result;
     }
+
+    /** 纪要 PDF 导出（FR-KB-11，PDFBox 亮色白底，验收 11） */
+    public byte[] meetingPdf(Long id) {
+        Map<String, Object> detail = detail(id);
+        @SuppressWarnings("unchecked")
+        Map<String, Object> m = (Map<String, Object>) detail.get("meeting");
+        try (org.apache.pdfbox.pdmodel.PDDocument doc = new org.apache.pdfbox.pdmodel.PDDocument()) {
+            org.apache.pdfbox.pdmodel.PDPage page = new org.apache.pdfbox.pdmodel.PDPage(
+                    org.apache.pdfbox.pdmodel.common.PDRectangle.A4);
+            doc.addPage(page);
+            try (org.apache.pdfbox.pdmodel.PDPageContentStream cs =
+                         new org.apache.pdfbox.pdmodel.PDPageContentStream(doc, page,
+                         org.apache.pdfbox.pdmodel.PDPageContentStream.AppendMode.OVERWRITE, true, true)) {
+                float y = 800;
+                cs.beginText();
+                cs.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA_BOLD, 16);
+                cs.newLineAtOffset(50, y);
+                cs.showText("Meeting Minutes");
+                cs.endText();
+                y -= 28;
+                String[][] rows = {
+                    {"Board ID", String.valueOf(m.get("boardId"))},
+                    {"Date", String.valueOf(m.get("meetingDate"))},
+                    {"Duration(min)", String.valueOf(m.get("durationMinutes"))},
+                    {"Attendees", String.valueOf(m.get("attendees"))},
+                    {"Red Cards", String.valueOf(m.get("redCount"))},
+                    {"Reviewed", String.valueOf(m.get("reviewedCount"))},
+                    {"Closed", String.valueOf(m.get("closedCount"))},
+                    {"Minutes", String.valueOf(detail.get("minutesText"))}
+                };
+                for (String[] row : rows) {
+                    cs.beginText();
+                    cs.setFont(org.apache.pdfbox.pdmodel.font.PDType1Font.HELVETICA, 11);
+                    cs.newLineAtOffset(50, y);
+                    cs.showText(row[0] + ": " + row[1]);
+                    cs.endText();
+                    y -= 20;
+                }
+            }
+            java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+            doc.save(out);
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new IllegalStateException("meeting PDF failed", e);
+        }
+    }
 }

@@ -77,4 +77,13 @@ public class BusinessScanTasks {
             log.info("库龄扫描完成：{} 条批次进呆滞候选", n);
         }
     }
+
+    @Scheduled(cron = "0 0 4 * * ?")
+    @SchedulerLock(name = "arc-appraisal-scan", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    public void arcAppraisalScan() {
+        int n = invoker.post("/api/v1/arc/appraisal-scan");
+        if (enabled) {
+            log.info("档案鉴定提醒扫描：{} 份距到期 ≤365 天", n);
+        }
+    }
 }

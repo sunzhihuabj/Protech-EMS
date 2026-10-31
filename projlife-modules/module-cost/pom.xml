@@ -31,6 +31,10 @@
             <artifactId>module-mdm</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+        </dependency>
+        <dependency>
             <groupId>com.projlife</groupId>
             <artifactId>module-contract</artifactId>
         </dependency>

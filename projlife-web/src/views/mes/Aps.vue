@@ -76,6 +76,8 @@
 
 <script>
 import http from '@/api/request'
+
+const GANTT_PX_PER_MIN = 0.4
 import { showError } from '@/api/request'
 import { PtTable, PtStatusTag } from '@/components/pt'
 
@@ -99,10 +101,60 @@ detailCols: [
       l1Form: { orderIds: '', startDate: '' },
       l1Result: null, scheduleId: null,
       details: [], detailLoading: false,
-      adjustDialog: false, adjustForm: {}, adjustRow: null
+      adjustDialog: false, adjustForm: {}, adjustRow: null,
+      dragging: null, dragStartX: 0, dragStartMin: 0, dragDeltaMin: 0
     }
   },
   methods: {
+    timeToMinutes(iso) {
+      if (!iso) return 0
+      const t = new Date(String(iso).replace(' ', 'T')).getTime()
+      return Math.max(0, (t - new Date().setHours(0, 0, 0, 0)) / 60000)
+    },
+    minutesToTime(min) {
+      const d = new Date(new Date().setHours(0, 0, 0, 0) + min * 60000)
+      const pad = n => String(n).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:00`
+    },
+    ganttBarStyle(d) {
+      const startMin = this.dragging && this.dragging.id === d.id
+        ? this.dragStartMin + this.dragDeltaMin : this.timeToMinutes(d.plannedStart)
+      const durMin = this.dragging && this.dragging.id === d.id
+        ? Math.max(5, this.timeToMinutes(d.plannedEnd) - this.timeToMinutes(d.plannedStart))
+        : Math.max(5, this.timeToMinutes(d.plannedEnd) - startMin)
+      return {
+        left: (startMin * GANTT_PX_PER_MIN) + 'px',
+        width: Math.max(30, durMin * GANTT_PX_PER_MIN) + 'px'
+      }
+    },
+    durText(d) {
+      const s = this.dragging && this.dragging.id === d.id
+        ? this.minutesToTime(this.dragStartMin + this.dragDeltaMin) : d.plannedStart
+      return String(s).slice(5, 16)
+    },
+    startDrag(d, e) {
+      this.dragging = d
+      this.dragStartX = e.clientX
+      this.dragStartMin = this.timeToMinutes(d.plannedStart)
+      this.dragDeltaMin = 0
+      e.preventDefault()
+    },
+    onGanttMove(e) {
+      if (!this.dragging) return
+      this.dragDeltaMin = Math.round((e.clientX - this.dragStartX) / GANTT_PX_PER_MIN)
+    },
+    onGanttUp() {
+      if (!this.dragging) return
+      const d = this.dragging
+      const newStartMin = this.dragStartMin + this.dragDeltaMin
+      const durMin = this.timeToMinutes(d.plannedEnd) - this.timeToMinutes(d.plannedStart)
+      http.post(`/aps/details/${d.id}/adjust`, {
+        plannedStart: this.minutesToTime(newStartMin),
+        plannedEnd: this.minutesToTime(newStartMin + durMin)
+      }).then(() => { this.$message.success('已调整'); this.loadDetails() })
+        .catch(showError)
+      this.dragging = null
+    },
     addCapacity() {
       http.post('/aps/capacities', this.capForm).then(() => {
         this.$message.success('产能已登记')
@@ -152,3 +204,15 @@ detailCols: [
   }
 }
 </script>
+
+<style scoped>
+.gantt { overflow-x: auto; padding: 8px 0; }
+.gantt-row { display: flex; align-items: center; height: 36px; margin-bottom: 4px; }
+.gantt-label { width: 140px; flex-shrink: 0; font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
+.gantt-track { flex: 1; height: 28px; background: var(--surface-3); border-radius: var(--r-1, 2px); position: relative; }
+.gantt-bar { position: absolute; top: 2px; height: 24px; border-radius: var(--r-1, 2px); background: var(--pri-500); cursor: grab; min-width: 30px; display: flex; align-items: center; justify-content: center; }
+.gantt-bar:active { cursor: grabbing; }
+.gantt-bar.is-dragging { opacity: 0.85; box-shadow: var(--elev-2); }
+.gantt-bar-text { font-size: 11px; color: var(--btn-pri-ink); font-variant-numeric: tabular-nums; white-space: nowrap; padding: 0 4px; }
+.muted { color: var(--ink-3); font-size: 12px; }
+</style>
