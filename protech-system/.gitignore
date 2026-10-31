@@ -1,0 +1,11 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+data/uploads/
+*.db
+*.db-journal
+.env
+.env.local
+prisma/schema.mysql.prisma
+test-results/

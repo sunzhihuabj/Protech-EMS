@@ -1,0 +1,24 @@
+{
+  "name": "protech-system",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Protech 企业综合管理系统（业务总台）— RPD V2.0 TypeScript 全栈 Monorepo（09/11 册）",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "sync:schema": "node scripts/sync-dev-schema.mjs",
+    "db:push:dev": "npm run sync:schema && prisma db push --schema prisma/schema.mysql.prisma --skip-generate",
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

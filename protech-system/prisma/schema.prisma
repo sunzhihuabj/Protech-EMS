@@ -1,0 +1,511 @@
+// Protech 企业综合管理系统 · 数据模型（05 册唯一事实源）
+// 全局规范（05 册 §一）：id BIGINT 自增；业务编码独立唯一索引；五审计字段全表必备；
+// 金额 amount_cents BIGINT（BR-10）；数量 DECIMAL(14,3)；比例 DECIMAL(6,4)；
+// timestamptz；枚举存 code（String 列 + shared-types 校验）；库级不建外键约束（应用层保证）。
+// BR-11：全表 deleted_at 软删除，无物理删除接口（Prisma middleware 强制）。
+// 注意：本文件为 PostgreSQL 交付事实源；本机开发/测试用 scripts/sync-sqlite-schema.mjs
+// 生成的 schema.sqlite.prisma 镜像（差异仅 provider 与 @db.* 原生类型标注）。
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================ 支撑域（T-71~T-79） ============================
+
+/// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）
+model SysDept {
+  id         BigInt    @id @default(autoincrement())
+  code       String    @unique
+  name       String
+  parentId   BigInt?
+  path       String    @default("/")
+  chainCode  String? // order 订单链 / supply 供应链 / mfg 制造链 / delivery 交付链 / rd 研发 / market 市场 / fin 财务 / ga 企管
+  boardCode  String? // ①~⑨ 看板归属
+  headcount  Int?
+  sort       Int       @default(0)
+  status     String    @default("active")
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy  BigInt?
+  updatedBy  BigInt?
+  deletedAt  DateTime? @db.Timestamptz(6)
+
+  @@index([parentId])
+  @@map("sys_dept")
+}
+
+/// 用户（FR-M00-001/004：支持兼任多部门多角色由 sys_user_role + deptId 主属实现；登录失败 5 次锁定 15 分钟）
+model SysUser {
+  id           BigInt    @id @default(autoincrement())
+  username     String    @unique
+  passwordHash String
+  displayName  String
+  deptId       BigInt?
+  position     String?
+  email        String?
+  phone        String?
+  status       String    @default("active") // active / disabled（离职停用）
+  failCount    Int       @default(0)
+  lockedUntil  DateTime? @db.Timestamptz(6)
+  lastLoginAt  DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy    BigInt?
+  updatedBy    BigInt?
+  deletedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([deptId])
+  @@map("sys_user")
+}
+
+/// 角色（03 册 §3.2 九角色；maxDataScope 为 E-16 六档）
+model SysRole {
+  id            BigInt    @id @default(autoincrement())
+  code          String    @unique
+  name          String
+  maxDataScope  String    @default("self")
+  remark        String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy     BigInt?
+  updatedBy     BigInt?
+  deletedAt     DateTime? @db.Timestamptz(6)
+
+  @@map("sys_role")
+}
+
+/// 权限（FR-M00-002：菜单/按钮/数据三级；code 例 project:create）
+model SysPermission {
+  id        BigInt    @id @default(autoincrement())
+  code      String    @unique
+  name      String
+  type      String // menu / button / api
+  module    String // M00 ~ M16
+  parentId  BigInt?
+  sort      Int       @default(0)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([module])
+  @@map("sys_permission")
+}
+
+model SysUserRole {
+  userId   BigInt
+  roleId   BigInt
+  grantedAt DateTime @default(now()) @db.Timestamptz(6)
+  grantedBy BigInt?
+
+  @@id([userId, roleId])
+  @@map("sys_user_role")
+}
+
+model SysRolePermission {
+  roleId       BigInt
+  permissionId BigInt
+  grantedAt    DateTime @default(now()) @db.Timestamptz(6)
+  grantedBy    BigInt?
+
+  @@id([roleId, permissionId])
+  @@map("sys_role_permission")
+}
+
+/// R-PM 项目级临时授权（FR-M00-003）：项目关闭后 7 天自动回收（worker 扫描），全程审计
+model ProjectPmGrant {
+  id         BigInt    @id @default(autoincrement())
+  userId     BigInt
+  projectId  BigInt
+  grantedAt  DateTime  @default(now()) @db.Timestamptz(6)
+  expiredAt  DateTime? @db.Timestamptz(6)
+  revokedAt  DateTime? @db.Timestamptz(6)
+  grantedBy  BigInt?
+  remark     String?
+
+  @@unique([userId, projectId])
+  @@map("project_pm_grant")
+}
+
+/// 会话表（09 册：JWT 短期 + 会话表；refresh token 哈希落库可吊销）
+model SysSession {
+  id               BigInt    @id @default(autoincrement())
+  userId           BigInt
+  refreshTokenHash String    @unique
+  expiresAt        DateTime  @db.Timestamptz(6)
+  revokedAt        DateTime? @db.Timestamptz(6)
+  ip               String?
+  ua               String?
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([userId])
+  @@map("sys_session")
+}
+
+/// 审计日志（FR-M00-006：登录/单据增删改/权限变更/编码生成/导出/红灯处置/配置修改；保留 ≥3 年；不可删 BR-11）
+model SysAuditLog {
+  id         BigInt   @id @default(autoincrement())
+  userId     BigInt?
+  username   String?
+  action     String // login / create / update / delete(软删) / grant / revoke / export / config / code_gen / escalate
+  objectType String
+  objectId   String?
+  before     String?  @db.Text
+  after      String?  @db.Text
+  ip         String?
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([objectType, objectId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("sys_audit_log")
+}
+
+/// 消息通知中心（FR-M00-007：待办/升级/提醒/@；已读未读）
+model SysNotify {
+  id        BigInt    @id @default(autoincrement())
+  userId    BigInt
+  type      String // todo / escalate / remind / mention
+  title     String
+  content   String?   @db.Text
+  bizType   String?
+  bizId     String?
+  readAt    DateTime? @db.Timestamptz(6)
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([userId, readAt])
+  @@map("sys_notify")
+}
+
+/// 系统配置中心（FR-M00-009：红灯 3 天/响应 24h48h/建档 3 日/分级金额线 500/5000 等；改动留痕）
+model SysConfig {
+  id        BigInt    @id @default(autoincrement())
+  key       String    @unique
+  value     String    @db.Text
+  valueType String    @default("string") // string / number / bool / json
+  remark    String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@map("sys_config")
+}
+
+/// 编码规则（FR-M00-005；05 册 §四；并发安全由原子 UPDATE 递增保证；BR-09 不可变）
+model SysCodeRule {
+  id            BigInt    @id @default(autoincrement())
+  bizType       String    @unique
+  pattern       String
+  seqLen        Int       @default(4)
+  yearly        Boolean   @default(true)
+  currentPeriod String // 年度周期 YYYY；yearly=false 时为 'ALL'
+  currentSeq    Int       @default(0)
+  remark        String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy     BigInt?
+  updatedBy     BigInt?
+  deletedAt     DateTime? @db.Timestamptz(6)
+
+  @@map("sys_code_rule")
+}
+
+/// 数据字典（FR-M00-011：枚举统一管理；新增走变更流程；停用不删）
+model SysEnumItem {
+  id        BigInt    @id @default(autoincrement())
+  enumType  String // PARTY_TYPE / ORDER_TYPE / ...（E-01~E-20 键名）
+  code      String
+  label     String
+  sort      Int       @default(0)
+  status    String    @default("active")
+  remark    String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@unique([enumType, code])
+  @@map("sys_enum_item")
+}
+
+/// 附件（FR-M00-010：≤50MB；MinIO 生产/dev 磁盘驱动；按对象挂载）
+model SysFile {
+  id            BigInt    @id @default(autoincrement())
+  name          String
+  path          String
+  mimeType      String?
+  size          BigInt?
+  md5           String?
+  storageDriver String    @default("disk") // disk / s3
+  objectType    String?
+  objectId      String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy     BigInt?
+  updatedBy     BigInt?
+  deletedAt     DateTime? @db.Timestamptz(6)
+
+  @@index([objectType, objectId])
+  @@map("sys_file")
+}
+
+// ============================ 主数据域（T-01~T-06、T-10、T-12、T-14、T-92、T-93） ============================
+
+/// T-10 法人主体（两司分账全局维度；Q-01：TGL 停用统一 TLD）
+model LegalEntity {
+  id             BigInt    @id @default(autoincrement())
+  entityCode     String    @unique // PRT / TLD
+  name           String
+  taxNo          String?
+  address        String?
+  contractPrefix String
+  status         String    @default("active")
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy      BigInt?
+  updatedBy      BigInt?
+  deletedAt      DateTime? @db.Timestamptz(6)
+
+  @@map("legal_entity")
+}
+
+/// T-01 客户集团（142→14 归并顶层）
+model CustomerGroup {
+  id        BigInt    @id @default(autoincrement())
+  groupCode String    @unique
+  name      String
+  region    String?
+  remark    String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@map("customer_group")
+}
+
+/// T-02 客户主体（集团→区域→项目公司三级；类型多选 E-01；别名见 Alias）
+model CustomerParty {
+  id        BigInt    @id @default(autoincrement())
+  partyCode String    @unique // C####
+  groupId   BigInt?
+  name      String
+  shortName String?
+  types     String // JSON 数组 ["owner","oem"]
+  status    String    @default("active")
+  remark    String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([groupId])
+  @@index([name])
+  @@map("customer_party")
+}
+
+/// T-93 别名库（主体/项目/物料共用；只增不删；搜索命中别名 FR-M01-002/016）
+model Alias {
+  id        BigInt   @id @default(autoincrement())
+  ownerType String // party / project / material
+  ownerId   BigInt
+  alias     String
+  source    String? // import / manual / ai_clean
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy BigInt?
+
+  @@index([ownerType, ownerId])
+  @@index([alias])
+  @@map("alias")
+}
+
+/// T-03 风场库（一地一档永不变；同风场多期不加档，在项目档案区分 FR-M01-004）
+model WindFarm {
+  id         BigInt    @id @default(autoincrement())
+  farmCode   String    @unique // WF{YYYY}-{NNN}
+  fullName   String
+  province   String?
+  city       String?
+  county     String?
+  capacityMw Decimal?  @db.Decimal(10, 3)
+  remark     String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy  BigInt?
+  updatedBy  BigInt?
+  deletedAt  DateTime? @db.Timestamptz(6)
+
+  @@index([fullName])
+  @@map("wind_farm")
+}
+
+/// T-05 物料主数据（一码一物；4 套旧码经 T-06 映射兼容；legal_entity_scope 两司隔离）
+model Material {
+  id               BigInt    @id @default(autoincrement())
+  materialCode     String    @unique
+  name             String
+  spec             String?
+  unit             String
+  category         String?
+  legalEntityScope String    @default("common") // common / PRT / TLD
+  abcClass         String? // A / B / C
+  safetyStockMin   Decimal?  @db.Decimal(14, 3)
+  safetyStockMax   Decimal?  @db.Decimal(14, 3)
+  status           String    @default("active") // active / frozen / inactive
+  remark           String?
+  createdAt        DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt        DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy        BigInt?
+  updatedBy        BigInt?
+  deletedAt        DateTime? @db.Timestamptz(6)
+
+  @@index([name])
+  @@map("material")
+}
+
+/// T-06 归并映射（old_code → master_code，只增不改；映射外旧码扫码拦截 FR-M06-021）
+model MdCodeMap {
+  id         BigInt   @id @default(autoincrement())
+  oldCode    String   @unique
+  masterCode String
+  source     String? // bom_audit / manual / import
+  createdAt  DateTime @default(now()) @db.Timestamptz(6)
+  createdBy  BigInt?
+
+  @@index([masterCode])
+  @@map("md_code_map")
+}
+
+/// T-04 供应商库（349 家种子；FR-M01-007 关联采购记录视图 R2）
+model Supplier {
+  id           BigInt    @id @default(autoincrement())
+  supplierCode String    @unique
+  name         String
+  shortName    String?
+  category     String?
+  contact      String?
+  phone        String?
+  status       String    @default("active")
+  remark       String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy    BigInt?
+  updatedBy    BigInt?
+  deletedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([name])
+  @@map("supplier")
+}
+
+/// T-12 项目档案（全系统锚点；27 字段关键 12 项必填；状态机 E-04）
+model Project {
+  id                  BigInt    @id @default(autoincrement())
+  projectCode         String    @unique // PJ{YYYY}-{NNNN}
+  standardName        String
+  shortName           String    @unique // 3—6 字全公司唯一
+  phase               String? // 期次（一/二/三期）
+  windFarmId          BigInt? // 整机厂初装两段式可空（FR-M03-015，pending_farm）；技改/备件/定检必填
+  ownerPartyId        BigInt? // 业主（初装可空→pending_owner）
+  oemPartyIds         String? // JSON 数组，整机厂可多选
+  legalEntityId       BigInt
+  orderType           String
+  productLines        String // JSON 数组 E-03
+  unitCount           Int
+  contractAmountCents BigInt? // 万元录入 ×1e6（BR-10）
+  warrantyStart       DateTime? @db.Timestamptz(6)
+  warrantyEnd         DateTime? @db.Timestamptz(6)
+  pmUserId            BigInt? // R-PM 授权源
+  engOwnerId          BigInt?
+  aftersalesOwnerId   BigInt?
+  salesOwnerId        BigInt?
+  collectorId         BigInt? // 催款责任人（双责任人制）
+  status              String    @default("pending_exec")
+  pendingFlags        String? // JSON ["pending_owner","pending_farm"]
+  remark              String?
+  createdAt           DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt           DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy           BigInt?
+  updatedBy           BigInt?
+  deletedAt           DateTime? @db.Timestamptz(6)
+
+  @@index([status])
+  @@index([windFarmId])
+  @@index([ownerPartyId])
+  @@index([pmUserId])
+  @@map("project")
+}
+
+/// T-14 产品子项（FR-M04-009 一风场多产品不拆项目；contractId 待 S1 合同表，应用层引用）
+model ProjectProductItem {
+  id             BigInt    @id @default(autoincrement())
+  projectId      BigInt
+  productLine    String
+  contractId     BigInt?
+  contractCode   String? // 快照
+  unitCount      Int
+  warrantyStart  DateTime? @db.Timestamptz(6)
+  warrantyEnd    DateTime? @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy      BigInt?
+  updatedBy      BigInt?
+  deletedAt      DateTime? @db.Timestamptz(6)
+
+  @@index([projectId])
+  @@map("project_product_item")
+}
+
+/// 主数据变更审批（FR-M01-012；标注新增；建档专员提交、商务部主管批；历史留痕）
+model MdChangeRequest {
+  id          BigInt    @id @default(autoincrement())
+  objectType  String // party / wind_farm / material / project
+  objectId    BigInt
+  changes     String    @db.Text // JSON [{field,before,after}]
+  reason      String
+  status      String    @default("pending") // pending / approved / rejected
+  submittedBy BigInt
+  reviewedBy  BigInt?
+  reviewedAt  DateTime? @db.Timestamptz(6)
+  rejectNote  String?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy   BigInt?
+  updatedBy   BigInt?
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([objectType, objectId])
+  @@index([status])
+  @@map("md_change_request")
+}
+
+/// T-92 归一词典（四类；录入端前置校验共用 FR-M01-006/M13-003）
+model NormDict {
+  id         BigInt    @id @default(autoincrement())
+  type       String // typo / symbol / unit / sep
+  raw        String
+  normalized String
+  source     String?
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy  BigInt?
+  updatedBy  BigInt?
+  deletedAt  DateTime? @db.Timestamptz(6)
+
+  @@unique([type, raw])
+  @@map("norm_dict")
+}
