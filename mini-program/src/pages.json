@@ -1,0 +1,9 @@
+{
+  "pages": [
+    { "path": "pages/project/list", "style": { "navigationBarTitleText": "我的项目" } },
+    { "path": "pages/doc/view", "style": { "navigationBarTitleText": "图纸预览" } },
+    { "path": "pages/log/edit", "style": { "navigationBarTitleText": "日志填报" } },
+    { "path": "pages/writeoff/scan", "style": { "navigationBarTitleText": "销项扫码" } }
+  ],
+  "globalStyle": { "navigationBarTextStyle": "white", "navigationBarBackgroundColor": "#1F7B8C" }
+}

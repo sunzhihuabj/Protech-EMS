@@ -28,9 +28,12 @@ import java.util.Map;
 public class QmsController {
 
     private final QmsService qmsService;
+    private final com.projlife.qms.mapper.QmsSpcDataMapper spcDataMapper;
 
-    public QmsController(QmsService qmsService) {
+    public QmsController(QmsService qmsService,
+                         com.projlife.qms.mapper.QmsSpcDataMapper spcDataMapper) {
         this.qmsService = qmsService;
+        this.spcDataMapper = spcDataMapper;
     }
 
     @GetMapping("/inspections")
@@ -85,5 +88,20 @@ public class QmsController {
     @GetMapping("/assets/{assetId}/mtbf")
     public ApiResponse<Map<String, Object>> mtbf(@PathVariable Long assetId) {
         return ApiResponse.ok(qmsService.mtbf(assetId));
+    }
+
+    // ---------- SPC（FR-QMS-09） ----------
+
+    @GetMapping("/spc")
+    @RequirePermission("qms:inspection")
+    public ApiResponse<java.util.List<com.projlife.qms.entity.QmsSpcData>> spc(
+            @RequestParam(required = false) String characteristic) {
+        var wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.projlife.qms.entity.QmsSpcData>()
+                .eq(com.projlife.qms.entity.QmsSpcData::getDeleted, 0)
+                .orderByAsc(com.projlife.qms.entity.QmsSpcData::getSampleTime);
+        if (characteristic != null && !characteristic.isEmpty()) {
+            wrapper.eq(com.projlife.qms.entity.QmsSpcData::getCharacteristic, characteristic);
+        }
+        return ApiResponse.ok(spcDataMapper.selectList(wrapper.last("LIMIT 100")));
     }
 }

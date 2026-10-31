@@ -59,6 +59,7 @@ const routes = [
       { path: 'scm/po', name: 'scmPo', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: 'PO 台账', permCode: 'menu:scm', stub: true } },
       { path: 'qms/inspection', name: 'qmsInspection', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '检验台账', permCode: 'menu:qms', stub: true } },
       { path: 'qms/8d', name: 'qms8d', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '8D 报告', permCode: 'menu:qms', stub: true } },
+      { path: 'qms/spc', name: 'qmsSpc', component: () => import('@/views/qms/SpcChart.vue'), meta: { title: 'SPC 控制图', permCode: 'menu:qms' } },
       { path: 'eam/asset', name: 'eamAsset', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '设备台账', permCode: 'menu:eam', stub: true } },
       { path: 'kb/my', name: 'kbMy', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '我的看板订阅', permCode: 'menu:kb', stub: true } },
       { path: 'kb/metric', name: 'kbMetric', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '指标口径', permCode: 'menu:kb', stub: true } },
