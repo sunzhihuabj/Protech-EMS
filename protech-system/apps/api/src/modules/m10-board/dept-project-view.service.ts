@@ -118,7 +118,7 @@ export class DeptProjectViewService {
 
   // ---------------- BV-03 项目监管看板（五区，08 册 §5.3） ----------------
 
-  /** 九阶段全流程时间线 */
+  /** FR-M04-005 BV-03 数据源：九阶段全流程时间线 */
   private timelineOf(project: { status: string; createdAt: Date; warrantyStart: Date | null; warrantyEnd: Date | null }) {
     const stages = ['立项', '方案交底', '生产齐套', '发货', '进场安装', '调试验收', '结算', '回款', '质保'];
     const statusMap: Record<string, string> = {

@@ -141,7 +141,7 @@ export class FinanceService {
     return receipt;
   }
 
-  // ---------------- 账龄与回款率（FR-M08-003/009） ----------------
+  // ---------------- 账龄与回款率（FR-M08-003 三维账龄 / FR-M08-009） ----------------
 
   /** 应收账龄（合同维度：累计开票 - 累计回款，按最早未清计划到期日起算） */
   async aging() {
@@ -187,7 +187,7 @@ export class FinanceService {
     return { buckets: AGING_BUCKETS, list: result };
   }
 
-  /** 回款率 = 当期实收 / 当期应开票应收（12 册口径；按月） */
+  /** FR-M08-009 回款率 = 当期实收 / 当期应开票应收（12 册口径；按月/按链/集团） */
   async receiptRate(): Promise<{ rate: number | null; receivedCents: string; invoicedCents: string }> {
     const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
     const invoiced = await this.prisma.invoice.aggregate({

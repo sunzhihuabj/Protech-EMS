@@ -128,7 +128,7 @@ export class CardService implements OnModuleInit {
     return card;
   }
 
-  /** FR-M10-009/010 状态迁移：留痕 + 红灯必填 + BR-12 补录标记 */
+  /** FR-M10-009 拖拽留痕 + FR-M10-010 补录标记（BR-12）+ 红灯必填 */
   async transition(cardId: bigint, to: string, userId: bigint, body: Record<string, unknown>) {
     const card = await this.prisma.kbCard.findFirst({ where: { id: cardId, deletedAt: null } });
     if (!card) throw BizException.notFound('卡片不存在');

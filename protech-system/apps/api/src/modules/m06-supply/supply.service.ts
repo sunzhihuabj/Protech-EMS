@@ -301,7 +301,7 @@ export class SupplyService {
         },
       });
     } else {
-      // 出库：发货/领料必须挂项目码（BR-03 无项目编码不发货）
+      // FR-M06-005 出库（发货/领料）：必须挂项目码（BR-03 无项目编码不发货）
       if (sourceType === 'ship' && !projectId) {
         throw BizException.br('BR-03', '该操作需要项目编码，当前单据未关联项目');
       }
@@ -475,7 +475,7 @@ export class SupplyService {
     });
   }
 
-  /** FR-M06-019 每日日终快照（worker 23:30 调用） */
+  /** FR-M06-019 每日日终快照（worker 23:30 调用）；FR-M06-020 流水见 moveList */
   async dailySnapshot(): Promise<{ period: string; totalSkus: number }> {
     const period = new Date().toISOString().slice(0, 10);
     const invs = await this.prisma.inventory.findMany({ where: { deletedAt: null, qty: { not: 0 } } });

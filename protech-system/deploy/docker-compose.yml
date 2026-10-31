@@ -1,0 +1,82 @@
+# Protech 企业综合管理系统 · 单机编排（09 册：Docker Compose 五容器 + 三基础设施）
+# 使用：cd deploy && cp .env.example .env（填密钥）&& docker compose up -d
+#       docker compose exec api node dist/prisma/migrate-deploy.js（或 npx prisma migrate deploy）
+#       docker compose exec api node dist/seed.js（仅首次空库）
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-protech}
+      POSTGRES_USER: ${POSTGRES_USER:-protech}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env 设置}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-protech}']
+      interval: 10s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-protech}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:?请在 .env 设置}
+    volumes:
+      - miniodata:/data
+
+  api:
+    build:
+      context: ..
+      dockerfile: apps/api/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-protech}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-protech}
+      JWT_SECRET: ${JWT_SECRET:?请在 .env 设置}
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?请在 .env 设置}
+      REDIS_URL: redis://redis:6379
+      AI_PROVIDER: ${AI_PROVIDER:-mock}
+      AI_API_KEY: ${AI_API_KEY:-}
+      PORT: 9090
+    ports:
+      - '127.0.0.1:9090:9090' # 仅 nginx 反代对外，生产禁直连
+
+  worker:
+    build:
+      context: ..
+      dockerfile: apps/worker/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_BASE: http://api:9090
+      INTERNAL_TOKEN: ${INTERNAL_TOKEN:?请在 .env 设置}
+      REDIS_URL: redis://redis:6379
+
+  web:
+    build:
+      context: ..
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - '80:80'
+
+volumes:
+  pgdata:
+  redisdata:
+  miniodata:

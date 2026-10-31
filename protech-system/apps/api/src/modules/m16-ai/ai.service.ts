@@ -5,7 +5,7 @@ import { BizException } from '../../shared/biz.exception';
 import { parseId } from '../../shared/serialize';
 import { normalizeName, similarity } from '@protech/shared-types';
 
-/** 能力点注册表（10 册：白名单 + E-18 分级；R1 上 AI-01/02/03） */
+/** 能力点注册表（FR-M16-002/003/004=AI-01/02/03 R1；10 册：白名单 + E-18 分级） */
 export const CAPABILITIES: Record<string, { name: string; level: 'auto' | 'ask' | 'never'; enabled: boolean }> = {
   'AI-01': { name: '合同要素提取', level: 'ask', enabled: true },
   'AI-02': { name: '主数据查重辅助', level: 'auto', enabled: true },

@@ -8,7 +8,7 @@ import { BizException } from '../../shared/biz.exception';
 import { parseId, parseIdOrNull } from '../../shared/serialize';
 import { assertCents, ratioToString, archiveDeadline, bcCode, CONTRACT_NATURE, isValidCode } from '@protech/shared-types';
 
-/** E-05 合同状态机（05 册 §6.2） */
+/** E-05 合同状态机（FR-M03-006 九态；05 册 §6.2） */
 const CONTRACT_TRANSITIONS: Record<string, string[]> = {
   drafting: ['reviewed'],
   reviewed: ['signed'],
@@ -107,6 +107,7 @@ export class ContractService {
     return contract;
   }
 
+  /** FR-M03-003 合同-项目关联（一合同可挂多项目，跨风场拆挂；订单行→项目） */
   async attachProject(contractId: bigint, projectId: bigint, userId: bigint, orderLine?: string) {
     const project = await this.prisma.project.findFirst({ where: { id: projectId, deletedAt: null } });
     if (!project) throw BizException.notFound(`项目不存在：${projectId}`);
@@ -370,6 +371,7 @@ export class ContractService {
   // ---------------- 变更（-BCn） ----------------
 
   /** FR-M03-007 补充协议：提交变更单 → 审批通过生成 -BC{n} 合同 */
+  /** FR-M03-007 补充协议 -BCn（变更留痕改前改后值） */
   async createChange(contractId: bigint, userId: bigint, body: Record<string, unknown>) {
     const c = await this.prisma.contract.findFirst({ where: { id: contractId, deletedAt: null } });
     if (!c) throw BizException.notFound('合同不存在');
@@ -434,7 +436,7 @@ export class ContractService {
     return { status: 'approved', bcContractCode: bc.contractCode };
   }
 
-  // ---------------- 查询 ----------------
+  // ---------------- 查询（FR-M03-008 台账视图/FR-M03-010 全文检索基础） ----------------
 
   async detail(contractId: bigint) {
     const c = await this.prisma.contract.findFirst({ where: { id: contractId, deletedAt: null } });

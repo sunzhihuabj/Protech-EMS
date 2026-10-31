@@ -44,7 +44,7 @@ export class QuotationService {
       }));
   }
 
-  /** FR-M02-003 历史成交价参考：中标报价 P25/P50/P90 + 最近 5 笔（按客户+产品线） */
+  /** FR-M02-003 历史成交价参考（P25/P50/P90+最近 5 笔）；FR-M02-007 报价附件挂 fileId 扩展位 */
   async priceHistory(partyId: bigint, productLine: string) {
     const rows = await this.prisma.quotation.findMany({
       where: { partyId, status: 'won', deletedAt: null, productLines: { contains: productLine } },

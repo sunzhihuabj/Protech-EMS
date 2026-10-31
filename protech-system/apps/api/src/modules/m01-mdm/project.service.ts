@@ -167,6 +167,7 @@ export class ProjectService {
 
   // ---------------- 建档（FR-M01-008） ----------------
 
+  /** FR-M01-008/FR-M04-003 建档：四类订单情形路径 + 三角色分列（业主/整机厂/我方主体独立字段） */
   async create(body: Record<string, unknown>, userId: bigint, opts: { force?: boolean } = {}) {
     const windFarmId = parseIdOrNull(body.windFarmId);
     const orderType = String(body.orderType ?? '');
