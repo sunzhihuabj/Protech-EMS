@@ -106,6 +106,12 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'gov:verify', name: '治理工单复核', type: 'button', module: 'M13' },
   { code: 'gov:merge', name: '物料归并/回写（治理组）', type: 'button', module: 'M13' },
   { code: 'import:run', name: '批量导入执行', type: 'button', module: 'M15' },
+  // ---- M16 AI / 报表 / 补货 ----
+  { code: 'ai:run', name: 'AI 能力点调用（白名单）', type: 'button', module: 'M16' },
+  { code: 'reissue:create', name: '补货申请', type: 'button', module: 'M06' },
+  { code: 'reissue:review', name: '补货审批', type: 'button', module: 'M06' },
+  { code: 'report:view', name: '预置报表查询', type: 'menu', module: 'M14' },
+  { code: 'report:export', name: '报表导出', type: 'button', module: 'M14' },
 ];
 
 /** 各权限默认授予的角色（FR-M00-002 九角色矩阵；R-SYS 恒为全量 '*'） */
@@ -196,4 +202,9 @@ export const PERM_ROLES: Record<string, string[]> = {
   'gov:verify': ['R-GA', 'R-SYS'],
   'gov:merge': ['R-GA', 'R-SYS'],
   'import:run': ['R-GA', 'R-SYS', 'R-CHAIN', 'R-DEPT'],
+  'ai:run': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
+  'reissue:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],
+  'reissue:review': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
+  'report:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-FIN', 'R-GA', 'R-SYS'],
+  'report:export': ['R-EXEC', 'R-CHAIN', 'R-GA', 'R-FIN', 'R-SYS'],
 };

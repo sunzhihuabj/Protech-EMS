@@ -698,6 +698,66 @@ model ImportBatch {
   @@map("import_batch")
 }
 
+// ============================ AI 域（T-95~T-96）与补货 ============================
+
+/// T-95 AI 调用日志（FR-M16-001/014：谁/何时/输入摘要/token/置信度/可溯源）
+model AiCall {
+  id           BigInt    @id @default(autoincrement())
+  capability   String // AI-01 ~ AI-12
+  userId       BigInt?
+  inputDigest  String? // 输入摘要（脱敏后）
+  model        String    @default("mock")
+  tokens       Int?
+  latencyMs    Int?
+  confidence   String? // DECIMAL 文本
+  resultRef    String? // 可溯源引用（原文/草稿 id）
+  level        String    @default("ask") // E-18 auto/ask/never
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@index([capability])
+  @@index([userId])
+  @@map("ai_call")
+}
+
+/// T-96 AI 反馈（字段级采纳/修正闭环）
+model AiFeedback {
+  id           BigInt   @id @default(autoincrement())
+  callId       BigInt
+  accepted     Boolean
+  editedFields String?  @db.Text // JSON
+  reason       String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+
+  @@map("ai_feedback")
+}
+
+/// 补货申请（FR-M06-013 分级审批 + FR-M06-014 原因结构分析；E-08 原因枚举）
+model ReplenishRequest {
+  id           BigInt    @id @default(autoincrement())
+  projectId    BigInt?
+  materialId   BigInt
+  qty          Decimal   @db.Decimal(14, 3)
+  amountCents  BigInt
+  reason       String // E-08
+  isSafetyPart Boolean   @default(false) // 安全件先发后签 4h 内出库 24h 补签
+  tier         String? // tier1(≤500 一级) / tier2(500-5000) / tier3(>5000 或涉变更)
+  status       String    @default("pending") // pending / approved / rejected / shipped / signed_back
+  approverId   BigInt?
+  reviewedAt   DateTime? @db.Timestamptz(6)
+  signedBackAt DateTime? @db.Timestamptz(6)
+  remark       String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy    BigInt?
+  deletedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([status])
+  @@index([reason])
+  @@map("replenish_request")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）
