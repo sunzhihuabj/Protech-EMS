@@ -35,13 +35,15 @@ import java.util.Map;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final com.projlife.project.service.CpmService cpmService;
     private final TaskService taskService;
     private final EcoService ecoService;
     private final PrjTemplateMapper templateMapper;
 
-    public ProjectController(ProjectService projectService, TaskService taskService,
+    public ProjectController(ProjectService projectService, com.projlife.project.service.CpmService cpmService, TaskService taskService,
                              EcoService ecoService, PrjTemplateMapper templateMapper) {
         this.projectService = projectService;
+        this.cpmService = cpmService;
         this.taskService = taskService;
         this.ecoService = ecoService;
         this.templateMapper = templateMapper;
@@ -202,5 +204,11 @@ public class ProjectController {
     public ApiResponse<Void> removeMember(@PathVariable Long id, @PathVariable Long userId) {
         projectService.removeMember(id, userId);
         return ApiResponse.ok();
+    }
+
+    /** FR-PRJ-22 关键路径算法（CPM） */
+    @GetMapping("/{id}/critical-path")
+    public ApiResponse<com.projlife.project.service.CpmService.CpmResult> criticalPath(@PathVariable Long id) {
+        return ApiResponse.ok(cpmService.calculate(id));
     }
 }
