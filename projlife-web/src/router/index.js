@@ -54,7 +54,7 @@ const routes = [
       { path: 'sys/log', name: 'sysLog', component: () => import('@/views/system/Logs.vue'), meta: { title: '审计日志', permCode: 'menu:system:log' } },
       // 模板档占位（UID-05 模板条目：路由/菜单已登记，字段随切片细化——验收 1 无孤儿页面）
       { path: 'workbench/todo', name: 'workbenchTodo', component: () => import('@/views/workbench/Todo.vue'), meta: { title: '待办中心', permCode: 'menu:workbench' } },
-      { path: 'workbench/my-task', name: 'workbenchMyTask', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '我的任务', permCode: 'menu:workbench', stub: true } },
+      { path: 'workbench/my-task', name: 'workbenchMyTask', component: () => import('@/views/workbench/MyTask.vue'), meta: { title: '我的任务', permCode: 'menu:workbench' } },
       { path: 'scm/supplier', name: 'scmSupplier', component: () => import('@/views/scm/Supplier.vue'), meta: { title: '供应商台账', permCode: 'menu:scm' } },
       { path: 'scm/po', name: 'scmPo', component: () => import('@/views/scm/PurchaseOrder.vue'), meta: { title: 'PO 台账', permCode: 'menu:scm' } },
       { path: 'scm/requirement', name: 'scmRequirement', component: () => import('@/views/scm/Requirement.vue'), meta: { title: '采购需求', permCode: 'menu:scm' } },
@@ -62,12 +62,12 @@ const routes = [
       { path: 'qms/8d', name: 'qms8d', component: () => import('@/views/qms/EightD.vue'), meta: { title: '8D 报告', permCode: 'menu:qms' } },
       { path: 'qms/spc', name: 'qmsSpc', component: () => import('@/views/qms/SpcChart.vue'), meta: { title: 'SPC 控制图', permCode: 'menu:qms' } },
       { path: 'eam/asset', name: 'eamAsset', component: () => import('@/views/eam/Asset.vue'), meta: { title: '设备台账', permCode: 'menu:eam' } },
-      { path: 'kb/my', name: 'kbMy', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '我的看板订阅', permCode: 'menu:kb', stub: true } },
+      { path: 'kb/my', name: 'kbMy', component: () => import('@/views/kb/KbMy.vue'), meta: { title: '我的看板订阅', permCode: 'menu:kb' } },
       { path: 'kb/metric', name: 'kbMetric', component: () => import('@/views/kb/MetricDefs.vue'), meta: { title: '指标口径', permCode: 'menu:kb' } },
       { path: 'bid/source', name: 'bidSource', component: () => import('@/views/bid/BidSource.vue'), meta: { title: '数据源', permCode: 'menu:bid' } },
       { path: 'bid/rule', name: 'bidRule', component: () => import('@/views/bid/BidRule.vue'), meta: { title: '匹配规则', permCode: 'menu:bid' } },
       { path: 'sys/code', name: 'sysCode', component: () => import('@/views/sys/CodeRules.vue'), meta: { title: '编码规则', permCode: 'menu:system:config' } },
-      { path: 'sys/import', name: 'sysImport', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '导入批次', permCode: 'menu:system:log', stub: true } },
+      { path: 'sys/import', name: 'sysImport', component: () => import('@/views/sys/ImportWizard.vue'), meta: { title: '导入向导', permCode: 'menu:system:log' } },
       // Agent 平台（M19，骨架档）
       { path: 'agt/app', name: 'agtApp', component: () => import('@/views/agent/AgentConsole.vue'), meta: { title: 'Agent 应用注册', permCode: 'menu:agt' } },
       // 个人（仅用户菜单入口，"仅内链"）

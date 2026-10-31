@@ -37,14 +37,18 @@ public class QmsService {
     private final CodeSequenceService codeSequenceService;
     private final MesService mesService;
 
+    private final com.projlife.qms.mapper.QmsSpcDataMapper spcDataMapper;
+
     public QmsService(QmsInspectionMapper inspectionMapper, Qms8dMapper eightDMapper,
                       QmsGaugeMapper gaugeMapper, CodeSequenceService codeSequenceService,
-                      MesService mesService) {
+                      MesService mesService,
+                      com.projlife.qms.mapper.QmsSpcDataMapper spcDataMapper) {
         this.inspectionMapper = inspectionMapper;
         this.eightDMapper = eightDMapper;
         this.gaugeMapper = gaugeMapper;
         this.codeSequenceService = codeSequenceService;
         this.mesService = mesService;
+        this.spcDataMapper = spcDataMapper;
     }
 
     public PageResp<QmsInspection> page(PageReq pageReq, String type, String result) {
@@ -185,5 +189,40 @@ public class QmsService {
             throw BizException.notFound("检验单不存在");
         }
         return inspection;
+    }
+
+    /** FR-QMS-09 SPC 数据录入 + 出控判定（valueX 超出 UCL/LCL → isOutOfControl=1） */
+    @Transactional
+    public com.projlife.qms.entity.QmsSpcData recordSpc(com.projlife.qms.entity.QmsSpcData spc) {
+        if (spc.getCharacteristic() == null || spc.getCharacteristic().isEmpty()) {
+            throw BizException.badRequest("质量特征必填");
+        }
+        if (spc.getValueX() == null) {
+            throw BizException.badRequest("测量值必填");
+        }
+        if (spc.getSampleTime() == null) {
+            spc.setSampleTime(java.time.LocalDateTime.now());
+        }
+        // 出控判定：valueX > UCL 或 < LCL
+        if (spc.getUcl() != null && spc.getValueX().compareTo(spc.getUcl()) > 0) {
+            spc.setIsOutOfControl(1);
+        } else if (spc.getLcl() != null && spc.getValueX().compareTo(spc.getLcl()) < 0) {
+            spc.setIsOutOfControl(1);
+        } else {
+            spc.setIsOutOfControl(0);
+        }
+        spcDataMapper.insert(spc);
+        return spc;
+    }
+
+    /** SPC 数据查询（按特征过滤） */
+    public java.util.List<com.projlife.qms.entity.QmsSpcData> spcList(String characteristic) {
+        var wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.projlife.qms.entity.QmsSpcData>()
+                .eq(com.projlife.qms.entity.QmsSpcData::getDeleted, 0)
+                .orderByAsc(com.projlife.qms.entity.QmsSpcData::getSampleTime);
+        if (characteristic != null && !characteristic.isEmpty()) {
+            wrapper.eq(com.projlife.qms.entity.QmsSpcData::getCharacteristic, characteristic);
+        }
+        return spcDataMapper.selectList(wrapper.last("LIMIT 100"));
     }
 }

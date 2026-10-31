@@ -118,4 +118,11 @@ public class QmsController {
         }
         return ApiResponse.ok(spcDataMapper.selectList(wrapper.last("LIMIT 100")));
     }
+
+    @PostMapping("/spc")
+    @RequirePermission("qms:inspect")
+    public ApiResponse<com.projlife.qms.entity.QmsSpcData> recordSpc(
+            @RequestBody com.projlife.qms.entity.QmsSpcData spc) {
+        return ApiResponse.ok(qmsService.recordSpc(spc));
+    }
 }
