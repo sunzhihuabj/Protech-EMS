@@ -53,10 +53,10 @@ const routes = [
       { path: 'sys/config', name: 'sysConfig', component: () => import('@/views/system/Configs.vue'), meta: { title: '系统参数', permCode: 'menu:system:config' } },
       { path: 'sys/log', name: 'sysLog', component: () => import('@/views/system/Logs.vue'), meta: { title: '审计日志', permCode: 'menu:system:log' } },
       // 模板档占位（UID-05 模板条目：路由/菜单已登记，字段随切片细化——验收 1 无孤儿页面）
-      { path: 'workbench/todo', name: 'workbenchTodo', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '待办中心', permCode: 'menu:workbench', stub: true } },
+      { path: 'workbench/todo', name: 'workbenchTodo', component: () => import('@/views/workbench/Todo.vue'), meta: { title: '待办中心', permCode: 'menu:workbench' } },
       { path: 'workbench/my-task', name: 'workbenchMyTask', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '我的任务', permCode: 'menu:workbench', stub: true } },
-      { path: 'scm/supplier', name: 'scmSupplier', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '供应商台账', permCode: 'menu:scm', stub: true } },
-      { path: 'scm/po', name: 'scmPo', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: 'PO 台账', permCode: 'menu:scm', stub: true } },
+      { path: 'scm/supplier', name: 'scmSupplier', component: () => import('@/views/scm/Supplier.vue'), meta: { title: '供应商台账', permCode: 'menu:scm' } },
+      { path: 'scm/po', name: 'scmPo', component: () => import('@/views/scm/PurchaseOrder.vue'), meta: { title: 'PO 台账', permCode: 'menu:scm' } },
       { path: 'qms/inspection', name: 'qmsInspection', component: () => import('@/views/qms/Inspection.vue'), meta: { title: '检验台账', permCode: 'menu:qms' } },
       { path: 'qms/8d', name: 'qms8d', component: () => import('@/views/stub/TemplateStub.vue'), meta: { title: '8D 报告', permCode: 'menu:qms', stub: true } },
       { path: 'qms/spc', name: 'qmsSpc', component: () => import('@/views/qms/SpcChart.vue'), meta: { title: 'SPC 控制图', permCode: 'menu:qms' } },
