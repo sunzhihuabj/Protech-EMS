@@ -10,6 +10,7 @@
       <el-button v-if="!isWall" size="small" @click="cycleMode">
         {{ isMeeting ? '退出会议' : '开始会议' }}
       </el-button>
+      <el-button v-if="isMeeting" size="small" type="primary" @click="endMeeting">结束会议</el-button>
     </div>
 
     <!-- 议程条（会议模式：72，四段） -->
@@ -220,6 +221,21 @@ export default {
     nextCard() {
       this.threeQ = { where: '', who: '', when: '' }
       this.meetingIndex = Math.min(this.meetingIndex + 1, Math.max(0, this.redCards.length - 1))
+    },
+    /** 结束会议（FR-KB-11）：纪要落库 kb_meeting → 跳纪要页 */
+    endMeeting() {
+      http.post('/kb/meetings', {
+        boardId: 1,
+        meetingDate: new Date().toISOString().slice(0, 10),
+        durationMinutes: Math.max(30, Math.round(this.elapsedMin)),
+        redCount: this.redCards.length,
+        reviewedCount: this.redCards.length,
+        closedCount: this.closedCards.length,
+        minutes: '会议纪要自动生成（FR-KB-11）：红灯 ' + this.redCards.length + ' 张，逐卡结论见卡片台账'
+      }).then(body => {
+        this.$message.success('纪要已落库 id=' + body.data.id)
+        this.$router.push({ name: 'kbMeeting', params: { id: String(body.data.id) } })
+      }).catch(showError)
     },
     cycleMode() {
       // 会议 ↔ 日常（wall 只读由 URL 直达；主题切换在 meeting/wall 下锁定由 Appearance 页判断）

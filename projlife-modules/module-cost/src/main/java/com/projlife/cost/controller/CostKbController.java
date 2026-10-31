@@ -9,6 +9,8 @@ import com.projlife.cost.entity.CostSnapshot;
 import com.projlife.cost.entity.KbCard;
 import com.projlife.cost.service.CostService;
 import com.projlife.cost.service.KbCardService;
+import com.projlife.cost.service.KbMeetingService;
+import com.projlife.cost.entity.KbMeeting;
 import com.projlife.security.auth.RequirePermission;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -31,10 +33,13 @@ public class CostKbController {
 
     private final CostService costService;
     private final KbCardService cardService;
+    private final KbMeetingService meetingService;
 
-    public CostKbController(CostService costService, KbCardService cardService) {
+    public CostKbController(CostService costService, KbCardService cardService,
+                            KbMeetingService meetingService) {
         this.costService = costService;
         this.cardService = cardService;
+        this.meetingService = meetingService;
     }
 
     // ---------- 成本 ----------
@@ -119,5 +124,21 @@ public class CostKbController {
 
     private BigDecimal toDecimal(Object value) {
         return value == null ? null : new BigDecimal(String.valueOf(value));
+    }
+
+    // ---------- 会议纪要（FR-KB-11） ----------
+
+    /** 纪要落库：会议模式结束 → kb_meeting */
+    @PostMapping("/kb/meetings")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<KbMeeting> saveMeeting(@RequestBody KbMeeting meeting) {
+        return ApiResponse.ok(meetingService.save(meeting));
+    }
+
+    /** 纪要列表（按板） */
+    @GetMapping("/kb/meetings")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<java.util.List<KbMeeting>> meetings(@RequestParam Long boardId) {
+        return ApiResponse.ok(meetingService.listByBoard(boardId));
     }
 }

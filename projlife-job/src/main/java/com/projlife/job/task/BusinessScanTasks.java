@@ -15,6 +15,7 @@ import org.springframework.stereotype.Component;
  *   <li>02:00 九板红灯 3 天升级（UC-KB-03，FR-KB-07）</li>
  *   <li>02:30 档案借阅逾期扫描（OVERDUE，V4-02 M13）</li>
  *   <li>03:00 第三方人员授权到期扫描（EXPIRED，V4-05 M11）</li>
+   *   <li>03:30 库龄自动跑批识别呆滞（CANDIDATE，S12 遗留 → R5 落地）</li>
  *   <li>每 10 分钟 Andon 分级升级（工位→班长→主任，FR-MES-30）</li>
  * </ul>
  */
@@ -65,6 +66,15 @@ public class BusinessScanTasks {
         int n = invoker.post("/api/v1/mes/andon/escalate");
         if (enabled) {
             log.info("Andon 升级扫描完成：{} 条", n);
+        }
+    }
+
+    @Scheduled(cron = "0 30 3 * * ?")
+    @SchedulerLock(name = "inv-age-scan", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    public void inventoryAgeScan() {
+        int n = invoker.post("/api/internal/jobs/inv/age-scan");
+        if (enabled) {
+            log.info("库龄扫描完成：{} 条批次进呆滞候选", n);
         }
     }
 }

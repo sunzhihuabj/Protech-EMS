@@ -8,6 +8,8 @@ import com.projlife.inventory.entity.InvDisposal;
 import com.projlife.inventory.entity.InvSlowMoving;
 import com.projlife.inventory.mapper.InvDisposalMapper;
 import com.projlife.inventory.mapper.InvSlowMovingMapper;
+import com.projlife.inventory.mapper.InvBatchMapper;
+import com.projlife.inventory.entity.InvBatch;
 import com.projlife.org.service.code.CodeSequenceService;
 import com.projlife.org.service.code.CodeTypes;
 import com.projlife.security.auth.RequirePermission;
@@ -30,12 +32,14 @@ public class SlowMovingService {
 
     private final InvSlowMovingMapper slowMapper;
     private final InvDisposalMapper disposalMapper;
+    private final InvBatchMapper batchMapper;
     private final CodeSequenceService codeSequenceService;
 
     public SlowMovingService(InvSlowMovingMapper slowMapper, InvDisposalMapper disposalMapper,
-                             CodeSequenceService codeSequenceService) {
+                             InvBatchMapper batchMapper, CodeSequenceService codeSequenceService) {
         this.slowMapper = slowMapper;
         this.disposalMapper = disposalMapper;
+        this.batchMapper = batchMapper;
         this.codeSequenceService = codeSequenceService;
     }
 
@@ -168,5 +172,37 @@ public class SlowMovingService {
             throw BizException.notFound("处置单不存在: " + id);
         }
         return disposal;
+    }
+
+    /** 库龄自动跑批（S12 遗留，R5 落地）：批次库龄 ≥threshold 天且数量>0 → 呆滞 CANDIDATE（同物料未闭环则跳过） */
+    @Transactional
+    public int autoScanFromBatches(int ageThresholdDays) {
+        LocalDate cutoff = LocalDate.now().minusDays(ageThresholdDays);
+        List<InvBatch> batches = batchMapper.selectList(new LambdaQueryWrapper<InvBatch>()
+                .le(InvBatch::getReceiptDate, cutoff)
+                .gt(InvBatch::getQty, 0)
+                .eq(InvBatch::getDeleted, 0));
+        int created = 0;
+        for (InvBatch batch : batches) {
+            // 同物料已有未闭环台账（CANDIDATE/CONFIRMED/DISPOSING）则跳过，避免重复登记
+            Long open = slowMapper.selectCount(new LambdaQueryWrapper<InvSlowMoving>()
+                    .eq(InvSlowMoving::getMaterialId, batch.getMaterialId())
+                    .in(InvSlowMoving::getStatus, "CANDIDATE", "CONFIRMED", "DISPOSING")
+                    .eq(InvSlowMoving::getDeleted, 0));
+            if (open != null && open > 0) {
+                continue;
+            }
+            InvSlowMoving slow = new InvSlowMoving();
+            slow.setMaterialId(batch.getMaterialId());
+            slow.setLocationId(batch.getLocationId());
+            slow.setQty(batch.getQty());
+            slow.setAgeDays((int) java.time.temporal.ChronoUnit.DAYS.between(
+                    batch.getReceiptDate(), LocalDate.now()));
+            slow.setFirstSeenDate(LocalDate.now());
+            slow.setStatus("CANDIDATE");
+            slowMapper.insert(slow);
+            created++;
+        }
+        return created;
     }
 }
