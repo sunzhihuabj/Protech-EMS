@@ -659,6 +659,45 @@ model Collection {
   @@map("collection")
 }
 
+// ============================ 治理域（T-91~T-93 已有别名/词典）与导入 ============================
+
+/// T-91 治理工单（FR-M13-001：BOM 校验/查重/清洗自动生成；分派/处理/复核闭环）
+model GovTask {
+  id        BigInt    @id @default(autoincrement())
+  taskCode  String    @unique // GT{YYYY}-{NNNN}
+  type      String // dup_code / name_clean / bom_rule / naming / unmapped_code
+  payload   String?   @db.Text // JSON 待处理对象
+  assigneeId BigInt?
+  result    String?   @db.Text // JSON 处理结果
+  status    String    @default("open") // open / processing / done / verified
+  sourceType String? // bom_lint / material_dup / unmapped_scan / manual
+  sourceId  String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([status])
+  @@index([type])
+  @@map("gov_task")
+}
+
+/// 导入批次（FR-M15-008：模板校验/错误行回执/分批导入；全部留审计）
+model ImportBatch {
+  id           BigInt    @id @default(autoincrement())
+  templateKey  String // parties / materials / projects / contracts
+  totalRows    Int
+  okRows       Int
+  errorRows    Int
+  errors       String?   @db.Text // JSON [{row, field, message}]
+  status       String    @default("done") // done / partial / failed
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+
+  @@map("import_batch")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）

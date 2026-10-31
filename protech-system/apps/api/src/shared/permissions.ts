@@ -100,6 +100,12 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'finance:view', name: '账龄/回款率查询', type: 'menu', module: 'M08' },
   { code: 'acceptance:create', name: '验收登记', type: 'button', module: 'M08' },
   { code: 'collection:add', name: '催收记录', type: 'button', module: 'M08' },
+  // ---- M13 治理 / M15 导入 ----
+  { code: 'gov:view', name: '治理工单/工作台/质量看板', type: 'menu', module: 'M13' },
+  { code: 'gov:manage', name: '治理工单处理/词典', type: 'button', module: 'M13' },
+  { code: 'gov:verify', name: '治理工单复核', type: 'button', module: 'M13' },
+  { code: 'gov:merge', name: '物料归并/回写（治理组）', type: 'button', module: 'M13' },
+  { code: 'import:run', name: '批量导入执行', type: 'button', module: 'M15' },
 ];
 
 /** 各权限默认授予的角色（FR-M00-002 九角色矩阵；R-SYS 恒为全量 '*'） */
@@ -185,4 +191,9 @@ export const PERM_ROLES: Record<string, string[]> = {
   'finance:view': ['R-EXEC', 'R-FIN', 'R-CHAIN', 'R-SYS'],
   'acceptance:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-SYS'],
   'collection:add': ['R-FIN', 'R-CHAIN', 'R-SYS'],
+  'gov:view': ['R-EXEC', 'R-GA', 'R-SYS', 'R-CHAIN', 'R-DEPT'],
+  'gov:manage': ['R-GA', 'R-SYS', 'R-DEPT'],
+  'gov:verify': ['R-GA', 'R-SYS'],
+  'gov:merge': ['R-GA', 'R-SYS'],
+  'import:run': ['R-GA', 'R-SYS', 'R-CHAIN', 'R-DEPT'],
 };
