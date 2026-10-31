@@ -9,4 +9,5 @@ $--background-color-base: #F5F5F6;
 $--text-color-primary: #1C1D1F;  $--text-color-regular: #474B50;
 $--text-color-secondary: #5F656B;  $--text-color-placeholder: #5F656B;  // placeholder = --ink-3，禁 --ink-4
 $--disabled-fill-base: #F5F5F6;  $--disabled-color-base: #80878E;
+$--font-path: '/fonts';   // 字体已复制 public/fonts（编译产物 url 绝对路径，R3b 修复）
 @import 'element-ui/packages/theme-chalk/src/index.scss';

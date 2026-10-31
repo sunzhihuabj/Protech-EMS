@@ -20,3 +20,12 @@
 
 ## 三、待续（第三批）
 - 其余 9 页面迁移（同示范页模式）；会议模式三问自动暂存 30s；131 路由模板页批量；视觉走查截图对比
+
+## 四、R3b 追加修复：全站图标 404（用户反馈"少了图标"）
+
+| 项 | 说明 |
+|---|---|
+| 现象 | R1 主题重构后全站 el-icon 显示为方框（截图确认） |
+| 根因 | L0 element-neutral.scss 编译产物 `url(fonts/element-icons.woff)` 相对路径未随 sass 发射 → dist/assets/fonts/ 不存在 → 404；旧链路字体在 public/theme/fonts/ 已随预编译方案废弃而删除 |
+| 修复 | `$--font-path: '/fonts'` + 字体复制 public/fonts/（element-icons.woff/ttf 来自 element-ui 包）→ 编译产物单条绝对路径 @font-face；document.fonts 校验 status=loaded |
+| 防再犯 | R1 SPRINT 补记"字体发射"检查点：切 L0 编译后必查 dist 字体与 document.fonts |

@@ -1,3 +1,5 @@
+/* Element UI 图标字体（R1 重构后 L0 编译产物把 url 指向 dist/assets/fonts 而
+   字体未随 sass 发射 → 404 全站图标变方框。这里显式声明到 public/fonts/） */
 /* Protech 全局基础样式（UID-01 令牌口径：颜色/字号/间距一律引用令牌，禁自创 hex） */
 html, body, #app {
   height: 100%;
