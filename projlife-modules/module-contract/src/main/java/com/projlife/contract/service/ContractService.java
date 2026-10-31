@@ -116,6 +116,14 @@ public class ContractService {
         if (contract.getAmount().signum() < 0) {
             throw BizException.badRequest("合同金额须 ≥0");
         }
+        // MySQL strict（TEST-REPORT F3）：party_a/party_b/business_type 为 NOT NULL 无默认列
+        if (contract.getPartyA() == null || contract.getPartyA().isEmpty()
+                || contract.getPartyB() == null || contract.getPartyB().isEmpty()) {
+            throw BizException.badRequest("甲乙方主体必填（partyA/partyB）");
+        }
+        if (contract.getBusinessType() == null || contract.getBusinessType().isEmpty()) {
+            throw BizException.badRequest("业务类型必填（businessType：NEW/RENEW/...）");
+        }
         if (!"XS".equals(contract.getNature()) && !"CG".equals(contract.getNature())
                 && !"KJ".equals(contract.getNature())) {
             throw BizException.badRequest("合同性质必须为 XS/CG/KJ（FR-CT-02）");

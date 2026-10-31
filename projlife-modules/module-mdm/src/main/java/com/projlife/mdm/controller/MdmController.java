@@ -101,7 +101,30 @@ public class MdmController {
     @GetMapping("/materials")
     public ApiResponse<com.projlife.common.api.PageResp<com.projlife.mdm.entity.MdMaterial>> materials(
             com.projlife.common.api.PageReq pageReq, @RequestParam(required = false) String keyword) {
-        return ApiResponse.ok(materialService.page(pageReq, keyword));
+        com.projlife.common.api.PageResp<com.projlife.mdm.entity.MdMaterial> page =
+                materialService.page(pageReq, keyword);
+        // BR-06 / UID-00 A-07 / L-3：无价格权限者 costPrice 置 null（前端渲染 ***，列位保留）。
+        // 权限口径：cost:view（成本）或采购价格（R09/R15/R01/R02 持有 scm 价格权）可见。
+        if (!hasAnyPermission("cost:view", "scm:order:view_price")) {
+            for (com.projlife.mdm.entity.MdMaterial m : page.getRecords()) {
+                m.setCostPrice(null);
+            }
+        }
+        return ApiResponse.ok(page);
+    }
+
+    /** BR-06 联动：任一价格权限即见物料成本价（NFR-09） */
+    private boolean hasAnyPermission(String... perms) {
+        com.projlife.common.context.LoginUser user = com.projlife.common.context.UserContextHolder.get();
+        if (user == null) {
+            return false;
+        }
+        for (String perm : perms) {
+            if (user.hasPermission(perm)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     @PostMapping("/materials")

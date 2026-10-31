@@ -76,6 +76,13 @@ public class InventoryService {
         if (txn.getWarehouseCode() == null || txn.getMaterialId() == null) {
             throw BizException.badRequest("仓库与物料必填");
         }
+        // MySQL strict（TEST-REPORT F3）：unit/source_type 为 NOT NULL 无默认列，缺省应 400 而非 500
+        if (txn.getUnit() == null || txn.getUnit().isEmpty()) {
+            throw BizException.badRequest("计量单位必填（E-20 受控 8 种）");
+        }
+        if (txn.getSourceType() == null || txn.getSourceType().isEmpty()) {
+            throw BizException.badRequest("来源类型必填（PO/MO/MANUAL 等）");
+        }
         // BR-INV-02：出库校验可用量（ISSUE/负数量）
         if ("ISSUE".equals(txn.getTxnType()) || (txn.getQty().signum() < 0
                 && !"COUNT_ADJ".equals(txn.getTxnType()) && !"ADJUST".equals(txn.getTxnType()))) {

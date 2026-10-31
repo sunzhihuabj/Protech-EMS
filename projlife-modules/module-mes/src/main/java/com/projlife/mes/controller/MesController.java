@@ -45,12 +45,14 @@ public class MesController {
     }
 
     @PostMapping("/orders")
+    @com.projlife.security.auth.RequirePermission("mes:order:create")
     public ApiResponse<Long> create(@RequestBody MesProductionOrder order) {
         return ApiResponse.ok(mesService.createProductionOrder(order));
     }
 
     /** FR-MES-03：按步骤序列生成工序工单（steps: [{name, code, needInspection}]） */
     @PostMapping("/orders/{id}/routes")
+    @com.projlife.security.auth.RequirePermission("mes:order:create")
     public ApiResponse<Integer> generateRoutes(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         @SuppressWarnings("unchecked")
         List<Map<String, Object>> stepList = (List<Map<String, Object>>) body.get("steps");
@@ -75,6 +77,7 @@ public class MesController {
 
     /** FR-MES-12：开工（串行前置校验） */
     @PostMapping("/processes/{id}/start")
+    @com.projlife.security.auth.RequirePermission("mes:process:work")
     public ApiResponse<Void> start(@PathVariable Long id) {
         mesService.startProcess(id);
         return ApiResponse.ok();
@@ -82,6 +85,7 @@ public class MesController {
 
     /** FR-MES-13/14/15：完工报工 */
     @PostMapping("/processes/{id}/finish")
+    @com.projlife.security.auth.RequirePermission("mes:process:work")
     public ApiResponse<Map<String, Object>> finish(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         return ApiResponse.ok(mesService.finishProcess(id,
                 toDecimal(body.get("goodQty")), toDecimal(body.get("defectQty")),
@@ -91,6 +95,7 @@ public class MesController {
 
     /** FR-MES-16：检验放行 */
     @PostMapping("/processes/{id}/qc")
+    @com.projlife.security.auth.RequirePermission("mes:qc:release")
     public ApiResponse<Void> qc(@PathVariable Long id, @RequestBody Map<String, Object> body) {
         mesService.qcRelease(id, Boolean.TRUE.equals(body.get("passed")), (String) body.get("rejectReason"));
         return ApiResponse.ok();
@@ -98,6 +103,7 @@ public class MesController {
 
     /** FR-MES-28：Andon 触发 */
     @PostMapping("/andon")
+    @com.projlife.security.auth.RequirePermission("mes:andon:raise")
     public ApiResponse<MesAndon> raiseAndon(@RequestBody Map<String, Object> body) {
         Long poId = body.get("productionOrderId") == null ? null : Long.valueOf(String.valueOf(body.get("productionOrderId")));
         Long procId = body.get("processOrderId") == null ? null : Long.valueOf(String.valueOf(body.get("processOrderId")));
@@ -107,6 +113,7 @@ public class MesController {
 
     /** FR-MES-30：Andon 升级（job 入口） */
     @PostMapping("/andon/escalate")
+    @com.projlife.security.auth.RequirePermission("mes:andon:raise")
     public ApiResponse<Integer> escalate() {
         return ApiResponse.ok(mesService.escalateAndons());
     }
