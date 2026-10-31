@@ -12,6 +12,8 @@ import MaterialList from './pages/MaterialList';
 import QuoteList from './pages/QuoteList';
 import ContractList from './pages/ContractList';
 import ContractDetail from './pages/ContractDetail';
+import BoardView from './pages/BoardView';
+import ExecutiveBoard from './pages/ExecutiveBoard';
 import Stub from './pages/Stub';
 import 'dayjs/locale/zh-cn';
 
@@ -32,7 +34,9 @@ const router = createBrowserRouter([
       { path: 'biz/contract/:id', element: <ContractDetail /> },
       { path: 'biz', element: <Stub title="报价 / 合同 / 评审（BR-01/02 卡点）" slice="S1" /> },
       { path: 'delivery', element: <Stub title="派工 / 销项 / 现场日志（BR-04）" slice="S4" /> },
-      { path: 'kb', element: <Stub title="九板 / BV-01/02/03 / 红灯引擎 / 会议模式" slice="S2" /> },
+      { path: 'kb', element: <BoardView /> },
+      { path: 'kb/:code', element: <BoardView /> },
+      { path: 'kb/executive', element: <ExecutiveBoard /> },
       { path: 'report', element: <Stub title="预置报表 / 导出 / 订阅" slice="S6" /> },
       { path: 'admin', element: <Stub title="用户 / 角色 / 编码规则 / 配置 / 审计" slice="S0 深化" /> },
     ],

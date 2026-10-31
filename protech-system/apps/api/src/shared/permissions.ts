@@ -62,6 +62,13 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'contract:filing', name: '建档备案（25 要素）', type: 'button', module: 'M03' },
   { code: 'contract:change', name: '补充协议/变更', type: 'button', module: 'M03' },
   { code: 'contract:export', name: '合同台账导出', type: 'button', module: 'M03' },
+  // ---- M10 看板与早会 ----
+  { code: 'kb:view', name: '看板查看', type: 'menu', module: 'M10' },
+  { code: 'kb:card:create', name: '建卡（五要素）', type: 'button', module: 'M10' },
+  { code: 'kb:card:move', name: '卡片移动/状态变更', type: 'button', module: 'M10' },
+  { code: 'kb:card:urge', name: '升级清单催办', type: 'button', module: 'M10' },
+  { code: 'kb:meeting:run', name: '会议模式（过堂/纪要）', type: 'button', module: 'M10' },
+  { code: 'kb:admin', name: '看板配置（板/指标/词库）', type: 'button', module: 'M10' },
 ];
 
 /** 各权限默认授予的角色（FR-M00-002 九角色矩阵；R-SYS 恒为全量 '*'） */
@@ -114,4 +121,10 @@ export const PERM_ROLES: Record<string, string[]> = {
   'contract:filing': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
   'contract:change': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
   'contract:export': ['R-EXEC', 'R-CHAIN', 'R-GA', 'R-SYS'],
+  'kb:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-QA', 'R-GA', 'R-SYS'],
+  'kb:card:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-GA', 'R-SYS'],
+  'kb:card:move': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-GA', 'R-SYS'],
+  'kb:card:urge': ['R-EXEC', 'R-CHAIN', 'R-SYS'],
+  'kb:meeting:run': ['R-CHAIN', 'R-DEPT', 'R-GA', 'R-SYS'],
+  'kb:admin': ['R-GA', 'R-SYS'],
 };

@@ -147,6 +147,154 @@ model Quotation {
   @@map("quotation")
 }
 
+// ============================ 看板域（T-61~T-66 + 会议） ============================
+
+/// T-61 板（九板预置 1 总板 + 4 日板 + 4 周板；可改名不可删 FR-M10-001）
+model Board {
+  id        BigInt    @id @default(autoincrement())
+  boardCode String    @unique // exec① / order② / supply③ / mfg④ / delivery⑤ / rd⑥ / market⑦ / fin⑧ / ga⑨
+  name      String
+  type      String // executive / daily / weekly
+  ownerDept String? // 主责部门 code
+  rhythm    String? // 每日 15-30 分钟 / 周一 30 分钟
+  status    String    @default("active")
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@map("board")
+}
+
+/// T-62 卡片（五要素；VAGUE 拦截；BR-07 无删除；BR-12 补录标记）
+model KbCard {
+  id            BigInt    @id @default(autoincrement())
+  boardId       BigInt
+  title         String
+  ownerId       BigInt // 唯一责任人（到人）
+  ownerDeptId   BigInt?
+  dueDate       DateTime  @db.Timestamptz(6) // 承诺日（可上调不可下调 FR-M10-007）
+  status        String    @default("todo") // E-07 todo/doing/blocked/done
+  blockedReason String?   @db.Text // 红灯必填
+  nextAction    String?   @db.Text // 红灯必填下一步
+  isBackfill    Boolean   @default(false) // BR-12
+  blockedAt     DateTime? @db.Timestamptz(6) // 红灯起算（3 天升级）
+  escalatedAt   DateTime? @db.Timestamptz(6) // 已升级总板
+  respondedAt   DateTime? @db.Timestamptz(6) // 责任方响应（48h 扫描）
+  sourceType    String? // 一键建卡来源：project/contract/dispatch/work_order/ecn
+  sourceId      String?
+  crossBoardId  BigInt? // 跨部门挂卡目标板（FR-M10-011）
+  crossFlag     String? // out 已外挂 / in 被挂
+  closedAt      DateTime? @db.Timestamptz(6)
+  remark        String?
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy     BigInt?
+  updatedBy     BigInt?
+  deletedAt     DateTime? @db.Timestamptz(6)
+
+  @@index([boardId, status])
+  @@index([ownerId])
+  @@index([blockedAt])
+  @@map("kb_card")
+}
+
+/// T-63 卡片流水（每次变更写；四区拖拽留痕 FR-M10-009）
+model KbCardLog {
+  id         BigInt   @id @default(autoincrement())
+  cardId     BigInt
+  fromStatus String?
+  toStatus   String
+  byId       BigInt?
+  note       String?
+  isBackfill Boolean  @default(false)
+  movedAt    DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([cardId])
+  @@map("kb_card_log")
+}
+
+/// T-64 升级记录（board/executive/meeting 三级 E-17；BR-07）
+model KbEscalation {
+  id          BigInt    @id @default(autoincrement())
+  cardId      BigInt
+  level       String // board / executive / meeting
+  reason      String? // blocked_3d / no_response_48h / manual
+  escalatedAt DateTime  @default(now()) @db.Timestamptz(6)
+  resolvedAt  DateTime? @db.Timestamptz(6)
+
+  @@index([cardId])
+  @@map("kb_escalation")
+}
+
+/// T-65 指标定义（formula=参数化 SQL 模板/TS 计算器键；阈值可配 FR-M10-004/005）
+model MetricDef {
+  id        BigInt    @id @default(autoincrement())
+  metricCode String   @unique
+  boardCode String
+  name      String
+  formula   String    @db.Text // metric-sql 包模板键 + SQL（只读）
+  unit      String    @default("pct") // pct / wan_cents / count / days
+  target    String? // 目标值
+  yellowAt  String? // 黄灯阈值
+  redAt     String? // 红灯阈值
+  direction String    @default("forward") // forward 正向 / reverse 反向
+  source    String    @default("auto") // auto / manual（手工每板 ≤1）
+  detailKey String? // 下钻明细模板键（FR-M10-006）
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([boardCode])
+  @@map("metric_def")
+}
+
+/// T-66 指标快照（每日 06:00 全量 + 每 2h 增量；失败置 error 不影响他指标）
+model MetricSnapshot {
+  id         BigInt   @id @default(autoincrement())
+  metricCode String
+  period     String // YYYY-MM-DD 或 YYYY-MM
+  value      String? // 数值文本（NULL=无数据 → 前端"—"）
+  status     String   @default("ok") // ok / error / empty
+  computedAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([metricCode, period])
+  @@map("metric_snapshot")
+}
+
+/// 会议模式记录（FR-M10-018~021：四段议程/三问过堂/自动纪要）
+model KbMeeting {
+  id          BigInt    @id @default(autoincrement())
+  boardId     BigInt
+  meetingDate DateTime  @db.Timestamptz(6)
+  attendees   String // JSON userIds
+  minutes     String?   @db.Text // 纪要 JSON（红灯数/三问结论/今日承诺/上报事项）
+  startedAt   DateTime  @default(now()) @db.Timestamptz(6)
+  endedAt     DateTime? @db.Timestamptz(6)
+  createdBy   BigInt?
+
+  @@index([boardId, meetingDate])
+  @@map("kb_meeting")
+}
+
+/// 过堂记录（三问：卡在哪/谁解决/何时解决；未填三问不允许下一张 FR-M10-019）
+model KbMeetingItem {
+  id       BigInt   @id @default(autoincrement())
+  meetingId BigInt
+  cardId   BigInt
+  askWhere String?  @db.Text
+  askWho   String?
+  askWhen  String?
+  skipped  Boolean  @default(false) // 跳过记"未闭环过堂"
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@unique([meetingId, cardId])
+  @@map("kb_meeting_item")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）
