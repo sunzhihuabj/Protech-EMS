@@ -1001,6 +1001,55 @@ model BackupRecord {
   @@map("backup_record")
 }
 
+// ============================ R2 深化：B/C 类 BOM（T-18/T-19）与点位销项（T-42） ============================
+
+/// T-18 参数模板（B 类：标准节 BOM + 附件包 BOM + 参数 JSON 塔高/塔型/节数）
+model ParamTemplate {
+  id                    BigInt   @id @default(autoincrement())
+  templateCode          String   @unique
+  productLine           String
+  standardSectionBomId  BigInt
+  accessoryPackBomId    BigInt?
+  params                String   @db.Text
+  createdAt             DateTime @default(now()) @db.Timestamptz(6)
+  createdBy             BigInt?
+
+  @@index([productLine])
+  @@map("param_template")
+}
+
+/// T-19 套件包（C 类：机舱消防套件等）
+model KitPack {
+  id        BigInt   @id @default(autoincrement())
+  kitCode   String   @unique
+  name      String
+  lines     String   @db.Text
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy BigInt?
+
+  @@map("kit_pack")
+}
+
+/// T-42 点位销项（FR-M07-003：逐项销项；缺件→红灯）
+model PunchItem {
+  id           BigInt    @id @default(autoincrement())
+  dispatchId   BigInt
+  bomLineId    BigInt
+  positionCode String
+  materialId   BigInt
+  requiredQty  Int       @default(1)
+  doneQty      Int       @default(0)
+  doneAt       DateTime? @db.Timestamptz(6)
+  doneBy       BigInt?
+  shortageFlag Boolean   @default(false)
+  note         String?
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+
+  @@index([dispatchId])
+  @@map("punch_item")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）
