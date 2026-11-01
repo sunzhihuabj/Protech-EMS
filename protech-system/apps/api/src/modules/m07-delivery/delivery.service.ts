@@ -147,7 +147,7 @@ export class DeliveryService {
     return { status: 'done' };
   }
 
-  // ---------------- 交底 / 日志 / 问题 ----------------
+  // ---------------- 交底（FR-M07-004 ⑤板交底及时率口径）/ 现场日志（FR-M07-005）/ 问题闭环（FR-M07-006）/ 完工确认（FR-M07-007→M08 验收） ----------------
 
   async createDisclosure(body: Record<string, unknown>, userId: bigint) {
     const projectId = parseIdOrNull(body.projectId);

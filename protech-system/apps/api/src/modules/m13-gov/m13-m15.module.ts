@@ -92,7 +92,7 @@ export class GovController {
     return { id: row.id.toString() };
   }
 
-  /** FR-M13-008 月度合规率通报（经营例会用）：一物多码新增/命名合规/T+ 完整率 */
+  /** FR-M13-008 月度合规率通报；FR-M13-011 货位主数据见 WmsLocation（/locations CRUD） */
   @Get('compliance-report')
   @RequirePermission('gov:view')
   async complianceReport() {

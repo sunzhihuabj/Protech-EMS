@@ -35,6 +35,7 @@ export class ScanService {
         data: { cardId: card.id, level: 'executive', reason: `blocked_${days}d` },
       });
       await this.audit.log({ action: 'escalate', objectType: 'KbCard', objectId: card.id, after: { level: 'executive' } });
+      // FR-M10-016 升级通知：链主/被挂方负责人/分管副总/总板主持（站内+钉钉经 BusSubscriptions card.escalated）
       // 升级推送：链主/被挂方负责人/分管副总/总板主持（站内；钉钉走 M15 Webhook）
       await this.notify.sendMany(
         await this.boardStakeholders(card.boardId),

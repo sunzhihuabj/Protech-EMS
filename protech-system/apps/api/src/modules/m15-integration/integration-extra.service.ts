@@ -126,12 +126,13 @@ export class DingtalkService {
  * FR-M15-009 打印模板引擎（HTML 可配 Q-07）：送货单/验收单/派工单。
  * 模板存 sys_config（print_tpl_<key>），占位符 {{field}} 渲染；A4 单页优先。
  */
-export const PRINT_TEMPLATES = ['delivery', 'acceptance', 'dispatch'] as const;
+export const PRINT_TEMPLATES = ['delivery', 'acceptance', 'dispatch', 'quote'] as const;
 export type PrintTemplateKey = (typeof PRINT_TEMPLATES)[number];
 
 const DEFAULT_PRINT_TPL: Record<PrintTemplateKey, string> = {
   delivery: '<h2>送货单</h2><p>单据号：{{sourceId}}</p><p>项目：{{projectCode}}</p><p>物料：{{materialCode}} × {{qty}}</p><p>日期：{{date}}</p><hr/><p>送货人：____ 收货人：____</p>',
   acceptance: '<h2>验收单</h2><p>项目：{{projectCode}} {{standardName}}</p><p>结论：{{conclusion}}</p><p>日期：{{date}}</p><hr/><p>验收人：____ 业主代表：____</p>',
+  quote: '<h2>报价单</h2><p>编号：{{quotationCode}}</p><p>客户：{{partyName}}</p><p>产品线：{{productLines}}</p><p>数量：{{qty}} × 单价（分）：{{unitPriceCents}}</p><p>有效期至：{{validUntil}}</p><hr/><p>报价人：____ 客户确认：____</p>',
   dispatch: '<h2>派工单</h2><p>编号：{{pgCode}}</p><p>项目：{{projectCode}}｜风场：{{farmName}}</p><p>任务：{{taskDesc}}</p><p>工期：{{planDays}} 天</p><hr/><p>派工人：____ 班组长：____</p>',
 };
 

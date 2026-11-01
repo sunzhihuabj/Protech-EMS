@@ -116,7 +116,7 @@ export class AiService {
     return { recorded: true };
   }
 
-  /** AI-02 主数据查重辅助：向量+规则预聚类（本通道用归一+相似度规则实现） */
+  /** FR-M16-003 AI-02 主数据查重辅助：归一+相似度规则预聚类（语义向量属 pgvector 部署形态） */
   async dupAssist(userId: bigint, name: string, scope: 'party' | 'material' = 'party') {
     const started = Date.now();
     let rows: Array<{ id: bigint; code: string; name: string; spec?: string | null }> = [];
@@ -161,7 +161,7 @@ export class AiService {
     };
   }
 
-  /** AI-04 模糊卡点改写：VAGUE 命中 → 可验收改写建议（Ask-first） */
+  /** FR-M16-005 AI-04 模糊卡点改写：VAGUE 命中 → 可验收改写建议（Ask-first） */
   async rewriteVague(userId: bigint, title: string) {
     const started = Date.now();
     const vagueWords = ['尽快', '跟进', '协调', '处理', '抓紧', '看看', '研究', '推进', '加强', '解决'];
@@ -192,7 +192,7 @@ export class AiService {
     return { capability: 'AI-05', minutes, askFirst: true };
   }
 
-  /** AI-06 数据问答（限定白名单指标口径；不直连裸表 FR-M16-006） */
+  /** FR-M16-007 AI-06 ChatBI：限定白名单指标口径；SQL 由指标定义映射，不直连裸表（红线 FR-M16-006） */
   async chatBI(userId: bigint, question: string) {
     const started = Date.now();
     const q = question.toLowerCase();
@@ -223,7 +223,7 @@ export class AiService {
     return { capability: 'AI-06', answer, source, askFirst: source !== 'whitelist' };
   }
 
-  /** AI-07 异常预警解读（原因假设+建议动作） */
+  /** FR-M16-008 AI-07 异常预警解读（齐套缺口/账龄恶化/红灯聚集 → 原因假设+建议动作） */
   async explainAnomaly(userId: bigint, kind: string) {
     const started = Date.now();
     let answer = '';
@@ -260,7 +260,7 @@ export class AiService {
     return { capability: 'AI-08', historyCount: unitPrices.length, p25, p50, risk, askFirst: true };
   }
 
-  /** AI-10 项目周报生成：时间线+工时+卡点 → 草稿（Ask-first） */
+  /** FR-M16-010 AI-10 日报/周报：项目时间线+工时+卡点自动生成草稿（Ask-first） */
   async weeklyReport(userId: bigint, projectId: bigint) {
     const started = Date.now();
     const project = await this.prisma.project.findFirst({ where: { id: projectId, deletedAt: null } });
@@ -283,7 +283,7 @@ export class AiService {
     return { capability: 'AI-10', draft, askFirst: true };
   }
 
-  /** AI-11 报表解读：三句话（趋势/异常/建议） */
+  /** FR-M16-011 AI-11 报表解读：三句话（趋势/异常/建议）；FR-M14-008 AI 报表解读（M14 联动） */
   async interpretReport(userId: bigint, key: string) {
     const started = Date.now();
     let sentences = '';
@@ -333,7 +333,7 @@ export class AiService {
     return { capability: 'AI-09', answer, sources: scored, askFirst: true };
   }
 
-  /** AI-12 智能填单：派工/补货单据按上下文预填（历史同项目默认值） */
+  /** FR-M16-013 AI-12 智能填单：派工/补货单据按上下文预填（历史同项目默认值） */
   async smartPrefill(userId: bigint, kind: 'dispatch' | 'reissue', projectId: bigint) {
     const started = Date.now();
     let prefill: Record<string, unknown> = {};

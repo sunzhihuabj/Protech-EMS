@@ -115,7 +115,7 @@ export class R3MiscController {
     return { recorded: true };
   }
 
-  // ---- FR-M14-007 报表使用统计 / FR-M14-004 自定义视图 ----
+  // ---- FR-M14-007 报表使用统计（谁在用哪些报表，反哺下线）/ FR-M14-004 自定义列保存为个人视图（userId+reportKey 维度扩展位） ----
   @Post('report-usage')
   async reportUsage(@Body() body: { reportKey?: string }, @CurrentUser() me: AuthUser) {
     if (!body.reportKey) throw BizException.param('reportKey 必填');

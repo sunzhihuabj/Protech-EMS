@@ -92,6 +92,19 @@ export class QuotationController {
     return { id: c.id.toString(), contractCode: c.contractCode };
   }
 
+  /** FR-M02-008 报价打印（HTML 模板可配 Q-07） */
+  @Post(':id/print')
+  async printQuote(@Param('id') id: string) {
+    const q = await this.prisma.quotation.findFirst({ where: { id: parseId(id), deletedAt: null } });
+    if (!q) throw BizException.notFound('报价单不存在');
+    const party = await this.prisma.customerParty.findFirst({ where: { id: q.partyId }, select: { name: true } });
+    const tpl = await this.prisma.sysConfig.findFirst({ where: { key: 'print_tpl_quote', deletedAt: null } });
+    const html = (tpl?.value ?? '<h2>报价单</h2><p>编号：{{quotationCode}}</p><p>客户：{{partyName}}</p><p>产品线：{{productLines}}</p><p>数量：{{qty}} × 单价（分）：{{unitPriceCents}}</p><p>有效期至：{{validUntil}}</p><hr/><p>报价人：____ 客户确认：____</p>')
+      .replace(/\{\{(\w+)\}\}/g, (_, f: string) =>
+        String({ quotationCode: q.quotationCode, partyName: party?.name ?? '', productLines: JSON.parse(q.productLines || '[]').join('/'), qty: q.qty, unitPriceCents: q.unitPriceCents.toString(), validUntil: q.validUntil?.toISOString().slice(0, 10) ?? '' }[f] ?? ''));
+    return { html };
+  }
+
   @Get('stats')
   @RequirePermission('quote:list')
   async stats() {

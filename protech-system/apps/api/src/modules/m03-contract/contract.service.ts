@@ -186,7 +186,7 @@ export class ContractService {
     const pending = await this.prisma.contractReview.findFirst({ where: { contractId, round, result: null } });
     if (pending) return { reviewStatus: 'reviewing', pendingRole: pending.role };
 
-    // 全部通过 → 事务：reviewed + 自动立项 + 回写 + 事件（11 册 §5.1）
+    // FR-M03-011 评审通过自动立项（FR-M04-002 同源）：全部通过 → 事务：reviewed + 项目 pending_exec + 事件（11 册 §5.1）
     const links = await this.prisma.contractProject.findMany({ where: { contractId } });
     await this.prisma.$transaction(async (tx) => {
       await tx.contract.update({

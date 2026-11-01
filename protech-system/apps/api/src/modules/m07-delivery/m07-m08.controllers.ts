@@ -59,6 +59,27 @@ export class DeliveryController {
     return this.delivery.completeMilestone(parseId(id), me.id);
   }
 
+  /** FR-M07-004 交底台账与及时率：进场前完成交底项目数÷进场项目数（⑤板） */
+  @Get('delivery/disclosure-rate')
+  @RequirePermission('dispatch:view')
+  async disclosureRate() {
+    const disclosures = await this.prisma.disclosure.findMany({ where: { type: 'plan' }, select: { projectId: true, discloseAt: true } });
+    const projectIds = [...new Set(disclosures.map((d) => d.projectId))];
+    const shipped = await this.prisma.project.findMany({
+      where: { deletedAt: null, status: { in: ['shipped', 'accepted', 'warranty', 'closed'] } },
+      select: { id: true, updatedAt: true },
+      take: 500,
+    });
+    const disclosedSet = new Set(projectIds);
+    const timely = shipped.filter((p) => disclosedSet.has(p.id)).length;
+    return {
+      进场项目数: shipped.length,
+      已交底项目数: projectIds.length,
+      及时率: shipped.length ? Number((timely / shipped.length).toFixed(4)) : null,
+      target: 1.0,
+    };
+  }
+
   /** FR-M07-009 区域组负荷视图：7 区域组在办项目/人天负荷 */
   @Get('delivery/zone-load')
   @RequirePermission('dispatch:view')

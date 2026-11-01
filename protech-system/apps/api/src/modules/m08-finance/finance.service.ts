@@ -246,7 +246,8 @@ export class FinanceService {
     return acceptance;
   }
 
-  /** FR-M08-006 质保金台账：比例/到期/释放状态 */
+  /** FR-M09-005 质保成本归集：售后工单成本挂项目（“这个风场赚没赚”依据，M11 联动）见 AfterArchiveService.transitionOrder；
+   * FR-M08-006 质保金台账：比例/到期/释放状态 */
   async warrantyDeposits() {
     const contracts = await this.prisma.contract.findMany({
       where: { deletedAt: null, warrantyDepositRate: { not: null }, status: { in: ['performing', 'partial_invoiced', 'accepted', 'warranty'] } },

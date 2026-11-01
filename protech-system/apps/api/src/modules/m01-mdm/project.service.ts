@@ -233,6 +233,7 @@ export class ProjectService {
       contractAmountCents = BigInt(String(v).trim());
     }
 
+    // FR-M04-007 项目团队五角色（pm/eng/aftersales/sales/collector 双责任人）字段在建档/编辑落库
     // 质保默认值：初装 60 月 / 技改 12 月（01 册 §2.3），可显式覆盖
     const warrantyMonths = Number(
       body.warrantyMonths ?? ORDER_TYPE_WARRANTY_MONTHS[orderType] ?? 12,

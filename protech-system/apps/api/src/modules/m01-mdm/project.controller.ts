@@ -63,6 +63,36 @@ export class ProjectController {
     };
   }
 
+  /** FR-M04-012 设备档案沉淀：项目完工后工程 BOM+点位表自动生成该风场设备档案（“这台机组装了什么”一查便知） */
+  @Get(':id/equipment-profile')
+  @RequirePermission('mdm:project:list')
+  async equipmentProfile(@Param('id') id: string) {
+    const project = await this.prisma.project.findFirst({ where: { id: parseId(id), deletedAt: null } });
+    if (!project) throw BizException.notFound('项目不存在');
+    const workOrders = await this.prisma.workOrder.findMany({ where: { projectId: project.id, deletedAt: null } });
+    const profile: Array<{ woCode: string; bomCode: string; lines: Array<{ materialCode: string; name: string; qty: number; position: string | null }> }> = [];
+    for (const wo of workOrders) {
+      if (!wo.bomId) continue;
+      const bom = await this.prisma.bom.findFirst({ where: { id: wo.bomId } });
+      if (!bom) continue;
+      const lines = await this.prisma.bomLine.findMany({ where: { bomId: bom.id, deletedAt: null } });
+      const ids = lines.map((l) => l.materialId);
+      const materials = ids.length ? await this.prisma.material.findMany({ where: { id: { in: ids } } }) : [];
+      const mById = new Map(materials.map((m) => [m.id, m]));
+      profile.push({
+        woCode: wo.woCode,
+        bomCode: bom.bomCode,
+        lines: lines.map((l) => ({
+          materialCode: mById.get(l.materialId)?.materialCode ?? '',
+          name: mById.get(l.materialId)?.name ?? '',
+          qty: Number(l.qty),
+          position: l.positionCode,
+        })),
+      });
+    }
+    return { projectCode: project.projectCode, standardName: project.standardName, profile };
+  }
+
   /** FR-M04-014 项目复制：同风场新期次复制档案（生成新码，别名继承） */
   @Post(':id/copy')
   @RequirePermission('mdm:project:create')
