@@ -15,6 +15,7 @@ import { M13GovModule } from './modules/m13-gov/m13.module';
 import { M16AiModule } from './modules/m16-ai/m16.module';
 import { M09CostModule } from './modules/m09-cost/m09.module';
 import { M11AfterModule } from './modules/m11-aftersales/m11.module';
+import { M15IntegrationModule } from './modules/m15-integration/m15.module';
 
 /** 根模块：SharedModule(@Global) + M00~M16 业务模块（一模块一目录六件套，11 册 §三） */
 @Module({
@@ -32,6 +33,7 @@ import { M11AfterModule } from './modules/m11-aftersales/m11.module';
     M16AiModule,
     M09CostModule,
     M11AfterModule,
+    M15IntegrationModule,
   ],
   // R2-C B/C 类展开与点位销项（M05/M07 深化控制器，与 M05BomModule 同域）
   controllers: [ExpandController, R2FinishController],

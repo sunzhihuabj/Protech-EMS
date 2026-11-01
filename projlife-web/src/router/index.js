@@ -26,6 +26,8 @@ const routes = [
       { path: 'crm/quotation', name: 'crmQuotation', component: () => import('@/views/crm/Quotations.vue'), meta: { title: '报价单台账', permCode: 'menu:crm' } },
       { path: 'ct/contract', name: 'ctContract', component: () => import('@/views/contract/Contracts.vue'), meta: { title: '合同台账', permCode: 'menu:contract' } },
       { path: 'ct/contract/:id', name: 'ctContractDetail', component: () => import('@/views/contract/ContractDetail.vue'), meta: { title: '合同详情', permCode: 'menu:contract' } },
+      { path: 'ct/contract/:id/filing', name: 'ctContractFiling', component: () => import('@/views/contract/ContractFiling.vue'), meta: { title: '建档备案', permCode: 'menu:contract' } },
+      { path: 'ct/contract/:id', name: 'ctContractDetail', component: () => import('@/views/contract/ContractDetail.vue'), meta: { title: '合同详情', permCode: 'menu:contract' } },
       { path: 'prj/project', name: 'prjProject', component: () => import('@/views/project/Projects.vue'), meta: { title: '项目台账', permCode: 'menu:project' } },
       { path: 'bid/notice', name: 'bidNotice', component: () => import('@/views/bid/BidIntel.vue'), meta: { title: '标讯台账', permCode: 'menu:bid' } },
       // ③ 研发工艺

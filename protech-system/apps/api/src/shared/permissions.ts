@@ -106,6 +106,7 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'gov:verify', name: '治理工单复核', type: 'button', module: 'M13' },
   { code: 'gov:merge', name: '物料归并/回写（治理组）', type: 'button', module: 'M13' },
   { code: 'import:run', name: '批量导入执行', type: 'button', module: 'M15' },
+  { code: 'integration:view', name: '集成监控台/对账/打印', type: 'menu', module: 'M15' },
   // ---- M16 AI / 报表 / 补货 ----
   { code: 'ai:run', name: 'AI 能力点调用（白名单）', type: 'button', module: 'M16' },
   { code: 'reissue:create', name: '补货申请', type: 'button', module: 'M06' },
@@ -219,6 +220,7 @@ export const PERM_ROLES: Record<string, string[]> = {
   'gov:verify': ['R-GA', 'R-SYS'],
   'gov:merge': ['R-GA', 'R-SYS'],
   'import:run': ['R-GA', 'R-SYS', 'R-CHAIN', 'R-DEPT'],
+  'integration:view': ['R-EXEC', 'R-FIN', 'R-CHAIN', 'R-GA', 'R-SYS', 'R-OP', 'R-DEPT'],
   'ai:run': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
   'reissue:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],
   'reissue:review': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
