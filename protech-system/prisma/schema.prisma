@@ -1050,6 +1050,20 @@ model PunchItem {
   @@map("punch_item")
 }
 
+/// 报表订阅（FR-M14-003：周一定时推送指定人；worker）
+model ReportSubscription {
+  id        BigInt   @id @default(autoincrement())
+  reportKey String
+  userIds   String // JSON
+  channel   String   @default("inapp") // inapp / dingtalk(M15)
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy BigInt?
+
+  @@unique([reportKey, channel])
+  @@map("report_subscription")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）

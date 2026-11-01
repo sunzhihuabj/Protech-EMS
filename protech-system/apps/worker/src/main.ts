@@ -63,6 +63,31 @@ async function schedule() {
     {},
     { repeat: { pattern: '0 8 * * 1-5' }, jobId: 'receipt-remind', removeOnComplete: 50 },
   );
+  await queue.add(
+    'slowmoving-scan',
+    {},
+    { repeat: { pattern: '0 3 * * *' }, jobId: 'slowmoving-scan', removeOnComplete: 50 },
+  );
+  await queue.add(
+    'as-inspections',
+    {},
+    { repeat: { pattern: '0 4 * * *' }, jobId: 'as-inspections', removeOnComplete: 50 },
+  );
+  await queue.add(
+    'warranty-watch',
+    {},
+    { repeat: { pattern: '0 4 * * *' }, jobId: 'warranty-watch', removeOnComplete: 50 },
+  );
+  await queue.add(
+    'archive-remind',
+    {},
+    { repeat: { pattern: '0 5 * * *' }, jobId: 'archive-remind', removeOnComplete: 50 },
+  );
+  await queue.add(
+    'report-push',
+    {},
+    { repeat: { pattern: '0 8 * * 1' }, jobId: 'report-push', removeOnComplete: 50 },
+  );
   console.log('[worker] 定时任务已注册（30m 扫描×2/T+推送 / 2h 指标 / 06:00 全量 / 07:30 未开会 / 08:00 回款提醒 / 23:30 快照）');
 }
 
@@ -75,6 +100,11 @@ const TASKS: Record<string, () => Promise<unknown>> = {
   'tplus-push': () => call('internal/tplus/push'),
   'inventory-snapshot': () => call('internal/inventory/snapshot'),
   'receipt-remind': () => call('internal/finance/remind-due'),
+  'slowmoving-scan': () => call('internal/slowmoving/scan'),
+  'as-inspections': () => call('internal/aftersales/generate-inspections'),
+  'warranty-watch': () => call('internal/aftersales/warranty-watch'),
+  'archive-remind': () => call('internal/archives/remind-scan'),
+  'report-push': () => call('internal/push'),
 };
 
 async function run() {

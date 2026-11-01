@@ -33,6 +33,29 @@ export class AiController {
       case 'AI-03':
         if (!body.rawName) throw BizException.param('rawName 必填');
         return this.ai.normalizeName(me.id, String(body.rawName), (body.scope as 'project' | 'party' | 'material') ?? 'project');
+      case 'AI-04':
+        if (!body.title) throw BizException.param('title 必填');
+        return this.ai.rewriteVague(me.id, String(body.title));
+      case 'AI-05':
+        if (!body.meetingId) throw BizException.param('meetingId 必填');
+        return this.ai.generateMinutes(me.id, parseId(body.meetingId));
+      case 'AI-06':
+        if (!body.question) throw BizException.param('question 必填');
+        return this.ai.chatBI(me.id, String(body.question));
+      case 'AI-07':
+        if (!body.kind) throw BizException.param('kind 必填');
+        return this.ai.explainAnomaly(me.id, String(body.kind));
+      case 'AI-08':
+        if (!body.partyId || !body.productLine || body.unitPriceCents === undefined) {
+          throw BizException.param('partyId/productLine/unitPriceCents 必填');
+        }
+        return this.ai.quoteAssist(me.id, parseId(body.partyId), String(body.productLine), BigInt(String(body.unitPriceCents).trim()));
+      case 'AI-10':
+        if (!body.projectId) throw BizException.param('projectId 必填');
+        return this.ai.weeklyReport(me.id, parseId(body.projectId));
+      case 'AI-11':
+        if (!body.reportKey) throw BizException.param('reportKey 必填');
+        return this.ai.interpretReport(me.id, String(body.reportKey));
       default:
         throw BizException.forbidden(`AI 能力未开放：${cap}（R2/R3 路线）`);
     }
@@ -211,6 +234,33 @@ export class ReportController {
     throw BizException.param(`报表不存在：${key}（FR-M14-001 预置库）`);
   }
 
+  /** FR-M14-005 月度经营底稿（经营分析会一键生成：指标+要点聚合） */
+  @Get('executive-pack')
+  @RequirePermission('report:export')
+  async executivePack() {
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const [newContracts, receipts, redCards, backfill, projectCounts] = await Promise.all([
+      this.prisma.contract.aggregate({
+        _sum: { amountCents: true },
+        where: { sealAt: { gte: monthStart }, deletedAt: null },
+      }),
+      this.prisma.receipt.aggregate({ _sum: { amountCents: true }, where: { receivedAt: { gte: monthStart } } }),
+      this.prisma.kbCard.count({ where: { status: 'blocked', deletedAt: null } }),
+      this.prisma.kbCardLog.count({ where: { isBackfill: true, movedAt: { gte: monthStart } } }),
+      this.prisma.project.groupBy({ by: ['status'], _count: { _all: true }, where: { deletedAt: null } }),
+    ]);
+    return {
+      period: monthStart.toISOString().slice(0, 7),
+      新签合同额_万元: Number(newContracts._sum.amountCents ?? 0n) / 1_000_000,
+      当月回款_万元: Number(receipts._sum.amountCents ?? 0n) / 1_000_000,
+      红灯总数: redCards,
+      当月补录次数: backfill,
+      项目分布: projectCounts.map((p) => ({ status: p.status, count: p._count._all })),
+      generatedAt: new Date().toISOString(),
+      note: '经营分析会底稿（FR-M14-005）；同比环比随历史快照积累（T-66）',
+    };
+  }
+
   @Get(':key')
   @RequirePermission('report:view')
   async report(@Param('key') key: string, @CurrentUser() me: AuthUser) {
@@ -235,4 +285,51 @@ export class ReportController {
     }
     return { filename: `${key}-${Date.now()}.csv`, content: lines.join('\n') };
   }
+
+  // ---- FR-M14-003 报表订阅（周一定时推送；worker 调 internal 分发） ----
+
+  @Post('subscriptions')
+  @RequirePermission('report:export')
+  async subscribe(@Body() body: Record<string, unknown>, @CurrentUser() me: AuthUser) {
+    if (!body.reportKey) throw BizException.param('reportKey 必填');
+    const userIds = Array.isArray(body.userIds) ? body.userIds : [me.id.toString()];
+    const sub = await this.prisma.reportSubscription.upsert({
+      where: { reportKey_channel: { reportKey: String(body.reportKey), channel: String(body.channel ?? 'inapp') } },
+      create: {
+        reportKey: String(body.reportKey),
+        userIds: JSON.stringify(userIds),
+        channel: String(body.channel ?? 'inapp'),
+        createdBy: me.id,
+      },
+      update: { userIds: JSON.stringify(userIds), active: true },
+    });
+    return { id: sub.id.toString() };
+  }
+
+  /** worker 周一 08:00 调用：向订阅人推送报表摘要（站内） */
+  @Post('internal/push')
+  async pushSubscriptions(@Body() body: { token?: string }) {
+    const expected = process.env.INTERNAL_TOKEN ?? 'internal-dev-token';
+    if (body.token !== expected) throw BizException.forbidden('内部端点');
+    const subs = await this.prisma.reportSubscription.findMany({ where: { active: true } });
+    let pushed = 0;
+    for (const sub of subs) {
+      const rows = await this.rows(sub.reportKey).catch(() => []);
+      const userIds = JSON.parse(sub.userIds || '[]') as string[];
+      for (const uid of userIds) {
+        await this.prisma.sysNotify.create({
+          data: {
+            userId: BigInt(uid),
+            type: 'remind',
+            title: `【订阅报表】${sub.reportKey} 本期共 ${rows.length} 行（FR-M14-003 周一推送）`,
+            bizType: 'report',
+            bizId: sub.reportKey,
+          },
+        });
+        pushed++;
+      }
+    }
+    return { pushed };
+  }
+
 }
