@@ -16,6 +16,8 @@ import {
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../stores/auth';
 import { api } from '../api/client';
+import { ThemeSwitcher } from '../components/ThemeSwitcher';
+import { useTheme } from '../theme/theme';
 
 const { Sider, Header, Content } = Layout;
 
@@ -33,6 +35,7 @@ const NAV = [
 
 export function BasicLayout() {
   const { me, clear, accessToken, setMe } = useAuth();
+  const themeMode = useTheme((s) => s.mode);
   const nav = useNavigate();
   const loc = useLocation();
   const [unread, setUnread] = useState(0);
@@ -82,6 +85,7 @@ export function BasicLayout() {
           }}
         >
           <Space size={20}>
+            <ThemeSwitcher />
             <Badge count={unread} size="small">
               <BellOutlined style={{ fontSize: 18 }} onClick={() => nav('/home')} />
             </Badge>

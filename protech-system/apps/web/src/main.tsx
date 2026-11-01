@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ConfigProvider, App as AntApp, theme as antdTheme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
@@ -13,9 +13,14 @@ import QuoteList from './pages/QuoteList';
 import ContractList from './pages/ContractList';
 import ContractDetail from './pages/ContractDetail';
 import BoardView from './pages/BoardView';
-import StockMoveWork from './pages/StockMoveWork';
 import ExecutiveBoard from './pages/ExecutiveBoard';
+import DeptBoard from './pages/DeptBoard';
+import ProjectMonitor from './pages/ProjectMonitor';
+import StockMoveWork from './pages/StockMoveWork';
+import AiAssistant from './pages/AiAssistant';
+import ReportCenter from './pages/ReportCenter';
 import Stub from './pages/Stub';
+import { THEMES, useTheme, applyThemeCss } from './theme/theme';
 import 'dayjs/locale/zh-cn';
 
 const router = createBrowserRouter([
@@ -28,36 +33,47 @@ const router = createBrowserRouter([
       { path: 'home', element: <Home /> },
       { path: 'project', element: <ProjectList /> },
       { path: 'project/:id', element: <ProjectDetail /> },
-      { path: 'supply/material', element: <MaterialList /> },
-      { path: 'supply', element: <Stub title="BOM / 采购 / 工单（S3 深化页）" slice="S3" /> },
-      { path: 'supply/stock-move', element: <StockMoveWork /> },
       { path: 'biz/quote', element: <QuoteList /> },
       { path: 'biz/contract', element: <ContractList /> },
       { path: 'biz/contract/:id', element: <ContractDetail /> },
-      { path: 'biz', element: <Stub title="报价 / 合同 / 评审（BR-01/02 卡点）" slice="S1" /> },
+      { path: 'supply/material', element: <MaterialList /> },
+      { path: 'supply/stock-move', element: <StockMoveWork /> },
+      { path: 'supply', element: <Stub title="BOM / 采购 / 工单（S3 深化页）" slice="S3" /> },
       { path: 'delivery', element: <Stub title="派工 / 销项 / 现场日志（BR-04）" slice="S4" /> },
       { path: 'kb', element: <BoardView /> },
       { path: 'kb/:code', element: <BoardView /> },
       { path: 'kb/executive', element: <ExecutiveBoard /> },
-      { path: 'report', element: <Stub title="预置报表 / 导出 / 订阅" slice="S6" /> },
+      { path: 'kb/dept/:deptId', element: <DeptBoard /> },
+      { path: 'kb/project/:projectId', element: <ProjectMonitor /> },
+      { path: 'report', element: <ReportCenter /> },
+      { path: 'ai', element: <AiAssistant /> },
       { path: 'admin', element: <Stub title="用户 / 角色 / 编码规则 / 配置 / 审计" slice="S0 深化" /> },
     ],
   },
 ]);
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+/** FR-M00-014：主题（12 套 × 明暗）与 antd 算法/主色联动 */
+function ThemedRoot() {
+  const { themeKey, mode } = useTheme();
+  useEffect(() => applyThemeCss(), [themeKey, mode]);
+  const theme = THEMES.find((t) => t.key === themeKey) ?? THEMES[0];
+  return (
     <ConfigProvider
       locale={zhCN}
       theme={{
-        // 07 册 §五：默认深色导航 + 浅色内容；主题令牌化在 FR-M00-014（R2）接入 visual/ 12 主题
-        algorithm: antdTheme.defaultAlgorithm,
-        token: { colorPrimary: '#1d4a7a', borderRadius: 8, fontSize: 14 },
+        algorithm: mode === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm,
+        token: { colorPrimary: theme.pri['500'], borderRadius: 8, fontSize: 14 },
       }}
     >
       <AntApp>
         <RouterProvider router={router} />
       </AntApp>
     </ConfigProvider>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <ThemedRoot />
   </React.StrictMode>,
 );
