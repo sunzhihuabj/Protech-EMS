@@ -167,6 +167,56 @@ export class BomService {
     return findings;
   }
 
+  /** FR-M05-009 BOM 对比：两版本行差异（增/删/改） */
+  async compare(bomIdA: bigint, bomIdB: bigint) {
+    const [a, b] = await Promise.all([
+      this.prisma.bomLine.findMany({ where: { bomId: bomIdA, deletedAt: null } }),
+      this.prisma.bomLine.findMany({ where: { bomId: bomIdB, deletedAt: null } }),
+    ]);
+    const key = (l: { materialId: bigint; positionCode: string | null }) => `${l.materialId}:${l.positionCode ?? ''}`;
+    const mapA = new Map(a.map((l) => [key(l), l]));
+    const mapB = new Map(b.map((l) => [key(l), l]));
+    const added: Array<{ materialId: string; qty: number }> = [];
+    const removed: Array<{ materialId: string; qty: number }> = [];
+    const changed: Array<{ materialId: string; qtyA: number; qtyB: number }> = [];
+    for (const [k, l] of mapB) {
+      const la = mapA.get(k);
+      if (!la) added.push({ materialId: l.materialId.toString(), qty: Number(l.qty) });
+      else if (Number(la.qty) !== Number(l.qty)) changed.push({ materialId: l.materialId.toString(), qtyA: Number(la.qty), qtyB: Number(l.qty) });
+    }
+    for (const [k, l] of mapA) if (!mapB.has(k)) removed.push({ materialId: l.materialId.toString(), qty: Number(l.qty) });
+    return { added, removed, changed };
+  }
+
+  /** FR-M05-010 Golden BOM 基线：每产品线指定黄金版本（报价/齐套基准；同线同型唯一） */
+  async setGolden(bomId: bigint, userId: bigint) {
+    const bom = await this.prisma.bom.findFirst({ where: { id: bomId, deletedAt: null } });
+    if (!bom) throw BizException.notFound('BOM 不存在');
+    if (bom.status !== 'published') throw BizException.validation('仅已发布 BOM 可设为 Golden 基线');
+    await this.prisma.bom.updateMany({
+      where: { productLine: bom.productLine, bomType: bom.bomType, goldenFlag: true },
+      data: { goldenFlag: false },
+    });
+    await this.prisma.bom.update({ where: { id: bomId }, data: { goldenFlag: true, updatedBy: userId } });
+    await this.audit.log({ action: 'golden_set', objectType: 'Bom', objectId: bomId, after: { productLine: bom.productLine } });
+    return { golden: true };
+  }
+
+  /** FR-M05-011 BOM 质量看板：形态分布 + 扫描次数 + 治理工单联动 + Golden 展示 */
+  async qualityBoard() {
+    const boms = await this.prisma.bom.findMany({ where: { deletedAt: null }, take: 200 });
+    const byType: Record<string, number> = { full: 0, param: 0, eng: 0 };
+    for (const b of boms) byType[b.bomType] = (byType[b.bomType] ?? 0) + 1;
+    const lintScans30d = await this.prisma.sysAuditLog.count({
+      where: { action: 'bom_lint', objectType: 'Bom', createdAt: { gte: new Date(Date.now() - 30 * 86400000) } },
+    });
+    const openBomRuleTasks = await this.prisma.govTask.count({
+      where: { type: 'bom_rule', status: { in: ['open', 'processing'] }, deletedAt: null },
+    });
+    const golden = await this.prisma.bom.findFirst({ where: { goldenFlag: true }, select: { bomCode: true, productLine: true } });
+    return { bomCount: boms.length, byType, lintScans30d, openBomRuleTasks, golden };
+  }
+
   /** FR-M05-008 ECN：变更单创建（BR-05 处置方案必填） */
   async createEcn(body: Record<string, unknown>, userId: bigint) {
     const bomId = parseIdOrNull(body.bomId);

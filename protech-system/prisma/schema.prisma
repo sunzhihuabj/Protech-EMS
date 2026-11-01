@@ -1064,6 +1064,28 @@ model ReportSubscription {
   @@map("report_subscription")
 }
 
+/// 货位主数据（FR-M06-008：{仓库}-{库区}-{排}-{列}-{层}；四库区 QT/TY/TJ/BJ；三色 E-20）
+model WmsLocation {
+  id        BigInt    @id @default(autoincrement())
+  code      String    @unique // YL-QT-01-03-2
+  warehouse String    @default("YL")
+  zone      String // QT 齐套 / TY 通用 / TJ 特殊件 / BJ 备件
+  row       Int
+  col       Int
+  layer     Int
+  threeColor String  @default("blue") // E-20 blue/yellow/red
+  status    String    @default("active")
+  remark    String?
+  createdAt DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy BigInt?
+  updatedBy BigInt?
+  deletedAt DateTime? @db.Timestamptz(6)
+
+  @@index([zone])
+  @@map("wms_location")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）

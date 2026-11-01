@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../shared/prisma.service';
 import { AuditService } from '../../shared/audit.service';
+import { NotifyService } from '../../shared/notify.service';
 import { BizException } from '../../shared/biz.exception';
 import { parseId, parseIdOrNull } from '../../shared/serialize';
 import { assertCents } from '@protech/shared-types';
@@ -15,6 +16,7 @@ export class CostService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly audit: AuditService,
+    private readonly notify: NotifyService,
   ) {}
 
   // ---------------- 工时（FR-M04-006） ----------------
@@ -206,6 +208,55 @@ export class CostService {
       monthCents: (monthAgg._sum.amountCents ?? 0n).toString(),
       weekCents: (weekAgg._sum.amountCents ?? 0n).toString(),
     };
+  }
+
+  /** FR-M09-006 成本异常预警：毛利率低于毛利线（sys_config cost_margin_floor 默认 0.15）→ 通知负责人 */
+  async marginWatch(): Promise<{ alerted: number }> {
+    const cfg = await this.prisma.sysConfig.findFirst({ where: { key: 'cost_margin_floor' } });
+    const floor = Number(cfg?.value ?? '0.15');
+    const pnls = await this.prisma.projectPnl.findMany({ where: { lockedAt: null } });
+    let alerted = 0;
+    for (const p of pnls) {
+      if (Number(p.grossMargin) >= floor) continue;
+      const project = await this.prisma.project.findFirst({ where: { id: p.projectId }, select: { projectCode: true, pmUserId: true } });
+      if (project?.pmUserId) {
+        await this.notify.send({
+          userId: project.pmUserId,
+          type: 'escalate',
+          title: `成本预警：项目 ${project.projectCode} 毛利率 ${(Number(p.grossMargin) * 100).toFixed(1)}% 低于毛利线 ${floor * 100}%（FR-M09-006）`,
+          bizType: 'project',
+          bizId: p.projectId.toString(),
+        });
+        alerted++;
+      }
+    }
+    return { alerted };
+  }
+
+  /** FR-M09-008 报价校准数据包：同类风场安装人时+消缺成本（投标底稿导出） */
+  async calibrationPack() {
+    const projects = await this.prisma.project.findMany({
+      where: { deletedAt: null, status: { in: ['accepted', 'warranty', 'closed'] } },
+      select: { id: true, projectCode: true, standardName: true, productLines: true, unitCount: true },
+      take: 200,
+    });
+    const rows: Array<Record<string, string | number>> = [];
+    for (const p of projects) {
+      const [installHours, aftersales] = await Promise.all([
+        this.prisma.worklog.aggregate({ _sum: { hours: true }, where: { projectId: p.id } }),
+        this.prisma.afterSalesOrder.findMany({ where: { projectId: p.id }, select: { costCents: true } }),
+      ]);
+      rows.push({
+        项目编码: p.projectCode,
+        标准名: p.standardName,
+        产品线: (JSON.parse(p.productLines || '[]') as string[]).join('/'),
+        台套数: p.unitCount,
+        安装人时: Number(installHours._sum.hours ?? 0),
+        消缺工单数: aftersales.length,
+        消缺成本_元: aftersales.reduce((s, a) => s + Number(a.costCents), 0) / 100,
+      });
+    }
+    return { count: rows.length, rows };
   }
 
   private presentPnl(p: { id: bigint; projectId: bigint; revenueCents: bigint; costCents: bigint; grossMargin: string; lockedAt: Date | null; computedAt: Date }) {

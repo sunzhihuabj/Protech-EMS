@@ -274,6 +274,93 @@ export class AfterArchiveService {
     return { status: overdue ? 'overdue' : 'returned' };
   }
 
+  /** FR-M11-005 定检人天测算：片区在保设备数÷每人日 4 台（放量依据，参数可配） */
+  async inspectionForecast() {
+    const plans = await this.prisma.maintenancePlan.findMany({ where: { status: 'active' } });
+    const projectIds = plans.map((p) => p.projectId);
+    const projects = projectIds.length
+      ? await this.prisma.project.findMany({
+          where: { id: { in: projectIds }, deletedAt: null },
+          select: { id: true, unitCount: true, windFarmId: true },
+        })
+      : [];
+    const pById = new Map(projects.map((p) => [p.id, p]));
+    const PER_DAY = 4;
+    const byFarm: Record<string, { units: number; personDays: number }> = {};
+    for (const plan of plans) {
+      const p = pById.get(plan.projectId);
+      if (!p || !p.windFarmId) continue;
+      const key = p.windFarmId.toString();
+      byFarm[key] = byFarm[key] ?? { units: 0, personDays: 0 };
+      byFarm[key].units += p.unitCount;
+      byFarm[key].personDays = Math.ceil(byFarm[key].units / PER_DAY);
+    }
+    return { perDayPerPerson: PER_DAY, byFarm, totalPersonDays: Object.values(byFarm).reduce((s, f) => s + f.personDays, 0) };
+  }
+
+  /** FR-M11-006 客户服务视图：按集团查看服务记录 */
+  async customerServiceView(groupId: bigint) {
+    const parties = await this.prisma.customerParty.findMany({ where: { groupId, deletedAt: null }, select: { id: true, name: true } });
+    const partyIds = parties.map((p) => p.id);
+    if (!partyIds.length) return { parties: [], orders: [] };
+    const projects = await this.prisma.project.findMany({
+      where: { ownerPartyId: { in: partyIds }, deletedAt: null },
+      select: { id: true, projectCode: true },
+    });
+    const projectIds = projects.map((p) => p.id);
+    const orders = projectIds.length
+      ? await this.prisma.afterSalesOrder.findMany({ where: { projectId: { in: projectIds }, deletedAt: null }, orderBy: { id: 'desc' }, take: 100 })
+      : [];
+    return {
+      parties: parties.map((p) => ({ ...p, id: p.id.toString() })),
+      orders: orders.map((o) => ({
+        ...o,
+        id: o.id.toString(),
+        projectId: o.projectId.toString(),
+        ownerId: o.ownerId.toString(),
+        costCents: o.costCents.toString(),
+        projectCode: projects.find((p) => p.id === o.projectId)?.projectCode ?? '',
+      })),
+    };
+  }
+
+  /** FR-M12-005 档案目录两级检索：实物总目录 → 盒内目录（physicalLoc 聚合） */
+  async catalog(keyword?: string) {
+    const list = await this.prisma.archive.findMany({
+      where: {
+        deletedAt: null,
+        ...(keyword ? { OR: [{ title: { contains: keyword } }, { archiveNo: { contains: keyword } }] } : {}),
+      },
+      orderBy: { archiveNo: 'asc' },
+      take: 300,
+    });
+    const byLoc = new Map<string, typeof list>();
+    for (const a of list) {
+      const loc = a.physicalLoc ?? '未上架';
+      const arr = byLoc.get(loc) ?? [];
+      arr.push(a);
+      byLoc.set(loc, arr);
+    }
+    return {
+      total: list.length,
+      boxes: Array.from(byLoc.entries()).map(([loc, items]) => ({
+        physicalLoc: loc,
+        count: items.length,
+        items: items.map((a) => ({ id: a.id.toString(), archiveNo: a.archiveNo, title: a.title, category: a.category, status: a.status })),
+      })),
+    };
+  }
+
+  /** FR-M12-010 命名规范校验（DQ-05）：标识段-类型码-主题-日期-版本-责任人 */
+  checkNaming(name: string): { ok: boolean; suggestion: string } {
+    const re = /^[A-Z]{1,4}-[A-Z]{1,4}-.+-\d{8}(-V\d+)?-.+$/;
+    const ok = re.test(name);
+    return {
+      ok,
+      suggestion: ok ? '命名合规' : `建议格式：GC-TU-主题-YYYYMMDD-V1-责任人（当前：${name}）`,
+    };
+  }
+
   /** FR-M12-004 期满鉴定清单（每年 12 月 worker 生成） */
   async expiryList() {
     const due = await this.prisma.archive.findMany({

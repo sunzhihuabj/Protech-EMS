@@ -145,6 +145,12 @@ export const METRIC_DEFS = [
   { metricCode: 'site_close_days', boardCode: 'delivery', name: '现场问题闭环时长(天)', formula: 'sql:site_close_days', unit: 'days', target: '7', direction: 'reverse', source: 'auto' },
   { metricCode: 'quote_win_rate', boardCode: 'market', name: '报价转化率', formula: 'sql:quote_win_rate', unit: 'pct', direction: 'forward', source: 'auto' },
   { metricCode: 'aging_overdue', boardCode: 'fin', name: '逾期应收(万元)', formula: 'sql:aging_overdue', unit: 'wan_cents', direction: 'reverse', source: 'auto' },
+  // 库房六大 KPI（FR-M06-017）
+  { metricCode: 'inv_accuracy_rate', boardCode: 'supply', name: '账实相符率', formula: 'calc:inv_accuracy', unit: 'pct', target: '0.95', direction: 'forward', source: 'auto' },
+  { metricCode: 'variance_close_days', boardCode: 'supply', name: '差异闭环天数', formula: 'calc:variance_close_days', unit: 'days', target: '7', direction: 'reverse', source: 'auto' },
+  { metricCode: 'slow_disposed', boardCode: 'supply', name: '呆滞消化(种)', formula: 'calc:slow_disposed', unit: 'count', target: '120', direction: 'forward', source: 'auto' },
+  { metricCode: 'replenish_monthly', boardCode: 'supply', name: '月度补货次数', formula: 'calc:replenish_monthly', unit: 'count', target: '50', direction: 'reverse', source: 'auto' },
+  { metricCode: 'site_expense_week', boardCode: 'delivery', name: '本周现场费用(元)', formula: 'calc:site_expense', unit: 'count', direction: 'reverse', source: 'auto' },
 ] as const;
 
 @Injectable()
@@ -174,7 +180,10 @@ export class MetricService {
       let status = 'ok';
       let value: string | null = null;
       try {
-        const computed = await this.compute(def.formula, def.metricCode);
+        const formulaKey = def.formula.startsWith('calc:') || def.formula.startsWith('sql:')
+          ? def.formula.split(':')[1]
+          : def.formula;
+        const computed = await this.compute(formulaKey, def.metricCode);
         if (computed === null) {
           status = 'empty';
           empty++;
@@ -219,6 +228,36 @@ export class MetricService {
         if (!total) return null;
         const bf = await this.prisma.kbCardLog.count({ where: { movedAt: { gte: monthStart }, isBackfill: true } });
         return Number((bf / total).toFixed(4));
+      }
+      case 'inv_accuracy': {
+        const total = await this.prisma.stocktakeLine.count({ where: { countedQty: { not: null } } });
+        if (!total) return null;
+        const ok = await this.prisma.stocktakeLine.count({ where: { varianceQty: 0 } });
+        return Number((ok / total).toFixed(4));
+      }
+      case 'variance_close_days': {
+        const done = await this.prisma.stockVariance.findMany({
+          where: { step: { in: ['approved', 'rectified'] }, createdAt: { gte: new Date(Date.now() - 90 * 86400000) } },
+          take: 200,
+        });
+        if (!done.length) return null;
+        const days = done.map((v) => ((v.approvedAt ?? new Date()).getTime() - v.createdAt.getTime()) / 86400000);
+        return Number((days.reduce((a, b) => a + b, 0) / days.length).toFixed(1));
+      }
+      case 'slow_disposed': {
+        return this.prisma.slowMoving.count({ where: { disposalStatus: 'done', deletedAt: null } });
+      }
+      case 'replenish_monthly': {
+        const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+        return this.prisma.replenishRequest.count({ where: { createdAt: { gte: monthStart }, deletedAt: null } });
+      }
+      case 'site_expense': {
+        const weekStart = new Date(Date.now() - 7 * 86400000);
+        const agg = await this.prisma.costEntry.aggregate({
+          _sum: { amountCents: true },
+          where: { costType: 'expense', createdAt: { gte: weekStart } },
+        });
+        return Number(agg._sum.amountCents ?? 0n) / 100;
       }
       case 'new_contract_wan': {
         const agg = await this.prisma.contract.aggregate({

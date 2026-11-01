@@ -6,6 +6,7 @@ import { M02QuoteModule } from './modules/m02-quote/m02-quote.module';
 import { M03ContractModule } from './modules/m03-contract/m03-contract.module';
 import { M05BomModule } from './modules/m05-bom/m05-bom.module';
 import { ExpandController } from './modules/m05-bom/expand.controller';
+import { R2FinishController } from './modules/m06-supply/wms.controller';
 import { ExpandService } from './modules/m05-bom/expand.service';
 import { M06SupplyModule } from './modules/m06-supply/m06-supply.module';
 import { M07M08Module } from './modules/m07-delivery/m07-m08.modules';
@@ -33,7 +34,7 @@ import { M11AfterModule } from './modules/m11-aftersales/m11.module';
     M11AfterModule,
   ],
   // R2-C B/C 类展开与点位销项（M05/M07 深化控制器，与 M05BomModule 同域）
-  controllers: [ExpandController],
+  controllers: [ExpandController, R2FinishController],
   providers: [ExpandService],
 })
 export class AppModule {}

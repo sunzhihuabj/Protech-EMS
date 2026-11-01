@@ -147,6 +147,53 @@ export class ImportController {
           return { partyCode };
         },
       },
+      contracts: {
+        key: 'contracts',
+        required: ['合同名称', '性质', '对方主体编码', '金额_分', '签订日期', '项目编码'],
+        validators: {
+          性质: (v) => (['XS', 'CG', 'KJ'].includes(v) ? null : '性质须为 XS/CG/KJ'),
+          金额_分: (v) => (/^\d+$/.test(v) ? null : '金额必须整数分（BR-10）'),
+        },
+        create: async (row, userId) => {
+          // 存量补录向导（FR-M03-009）：12 关键要素导入，备注挂"待核实"
+          const counterparty = await this.prisma.customerParty.findFirst({
+            where: { partyCode: row['对方主体编码'], deletedAt: null },
+          });
+          if (!counterparty) throw new Error(`对方主体不存在：${row['对方主体编码']}`);
+          const project = await this.prisma.project.findFirst({
+            where: { projectCode: row['项目编码'], deletedAt: null },
+          });
+          if (!project) throw new Error(`项目不存在：${row['项目编码']}（BR-01 前提）`);
+          const entity = await this.prisma.legalEntity.findFirst({ where: { deletedAt: null } });
+          if (!entity) throw new Error('法人主体未初始化');
+          const contractCode = await this.codes.next('contract', {
+            entity: entity.contractPrefix,
+            nature: row['性质'],
+            biz: row['业务码'] ?? 'SB',
+          });
+          const contract = await this.prisma.contract.create({
+            data: {
+              contractCode,
+              contractName: row['合同名称'],
+              nature: row['性质'],
+              bizType: row['业务码'] ?? 'SB',
+              ourEntityId: entity.id,
+              counterpartyId: counterparty.id,
+              amountCents: BigInt(row['金额_分']),
+              signedAt: new Date(row['签订日期']),
+              warrantyMonths: row['质保月数'] ? Number(row['质保月数']) : null,
+              status: 'performing',
+              remark: '存量补录（待核实 FR-M03-009）',
+              createdBy: userId,
+              updatedBy: userId,
+            },
+          });
+          await this.prisma.contractProject.create({
+            data: { contractId: contract.id, projectId: project.id, orderLine: '存量补录', createdBy: userId },
+          });
+          return { contractCode };
+        },
+      },
       materials: {
         key: 'materials',
         required: ['物料编码', '名称', '单位'],
