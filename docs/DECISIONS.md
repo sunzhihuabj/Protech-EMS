@@ -31,3 +31,4 @@
 ## ADR-006 仓库位置：工作区 `projlife/` 子目录
 - **背景**：需求文档目录 `ProjLife-企业级管理平台/` 含中文路径。
 - **决策**：代码仓库建于 `ProjLife-企业级管理平台/projlife/`，规格包复制为 `docs/SPEC/`（只读，21 册）。Windows/中文路径下 Maven 与 Vite 构建已验证可行；若后续工具链出现路径编码问题，评估迁至 ASCII 路径并记录。
+| ADR-007 | 2026-11-01 | 数据库选型：**MySQL 8.0**（非 GreatDB/非 PostgreSQL）。用户裁决：本项目无国产化要求，追求高效/稳定/性能。MySQL 8.0 与现有 MyBatis-Plus/Flyway/HikariCP 全兼容，代码零迁移；InnoDB 在 165 表 + 292 端点规模下性能充分；8.0 相比 5.7 新增 CTE/窗口函数/JSON 改进/InnoDB 元数据锁优化 | V4-01 §2.3 修订 |

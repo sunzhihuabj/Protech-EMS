@@ -12,14 +12,14 @@
 | projlife-file-service | 8091 | 文件/水印（BR-07） |
 | projlife-job | 8081 | 定时任务（ShedLock JDBC 行锁） |
 | projlife-web | Nginx 443 | Vue 2.7 构建产物 dist/，`/api`→8080、`/fs`→8091 反代 |
-| MySQL/GreatDB | 3306 | 生产走 Flyway 门禁（ADR-002） |
+| MySQL/MySQL 8.0 | 3306 | 生产走 Flyway 门禁（ADR-002） |
 | Redis/memurai | 6379 | 会话/权限缓存（30min TTL）/令牌黑名单 |
 
 ## 二、凭据与资源清单（待用户提供）
 
 | # | 项 | 用途 | 就绪判据 |
 |---|---|---|---|
-| 1 | DB 连接（GreatDB 8.0 兼容） | 主数据 | 连通 + `flyway info` 正常 |
+| 1 | DB 连接（MySQL 8.0 8.0 兼容） | 主数据 | 连通 + `flyway info` 正常 |
 | 2 | Redis 地址+密码 | 缓存 | `PING` 通 |
 | 3 | JWT_SECRET（≥32 随机） | 令牌签名 | 已生成并注入 |
 | 4 | 内网模型端点 + Key（OpenAI 兼容） | AI-001~016 真实推理 | `POST {endpoint}/chat/completions` 200 |
@@ -42,7 +42,7 @@ cd projlife-web && npm ci && npm run build   # 产物 dist/
 
 ## 四、数据库迁移
 
-- 生产（GreatDB/MySQL 8）：Flyway 门禁自动执行 `db/migration/V1..V15`；首次对存量库先 `baseline`。
+- 生产（MySQL 8.0/MySQL 8）：Flyway 门禁自动执行 `db/migration/V1..V15`；首次对存量库先 `baseline`。
 - 本机 MySQL 5.7 开发环境：Flyway 不支持 5.7，用 `scripts/ImportSql.java` 直导（A-10）。
 - 迁移回滚：按 V 版本逆序执行回滚脚本（当前迁移均为幂等 DDL，备份先行）。
 
