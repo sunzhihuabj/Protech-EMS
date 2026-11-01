@@ -22,6 +22,9 @@ public class MdMaterial extends BaseEntity {
     /** 规格 */
     private String spec;
 
+    /** 物料详细描述 */
+    private String description;
+
     /** E-20 计量单位（8 种受控） */
     private String unit;
 
@@ -77,6 +80,14 @@ public class MdMaterial extends BaseEntity {
 
     public void setSpec(String spec) {
         this.spec = spec;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getUnit() {

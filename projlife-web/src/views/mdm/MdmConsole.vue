@@ -66,6 +66,7 @@
       <el-form label-width="100px" size="small">
         <el-form-item label="名称" required><el-input v-model.trim="matForm.materialName" /></el-form-item>
         <el-form-item label="规格"><el-input v-model.trim="matForm.spec" /></el-form-item>
+        <el-form-item label="详细描述"><el-input v-model="matForm.description" type="textarea" :rows="2" placeholder="物料详细信息" /></el-form-item>
         <el-form-item label="类别" required>
           <el-select v-model="matForm.category" style="width: 100%">
             <el-option value="STD" label="标准件" /><el-option value="FAB" label="钣金件" /><el-option value="PURCHASE" label="外购" /><el-option value="ASSY" label="组装" />

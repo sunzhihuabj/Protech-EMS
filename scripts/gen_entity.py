@@ -149,6 +149,7 @@ TABLES = {
         ('material_code', 'VARCHAR', '8 位数字主干（字母前缀冻结新增）'),
         ('material_name', 'VARCHAR', '物料名称'),
         ('spec', 'VARCHAR', '规格'),
+        ('description', 'VARCHAR', '物料详细描述'),
         ('unit', 'VARCHAR', 'E-20 计量单位（8 种受控）'),
         ('category', 'VARCHAR', 'E-21 物料类别'),
         ('material_type', 'VARCHAR', 'STD/SELF/PURCHASE/ELECTRIC/SHEET/VIRTUAL'),
