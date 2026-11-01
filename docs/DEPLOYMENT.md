@@ -68,6 +68,17 @@ cd projlife-web && npm ci && npm run build   # 产物 dist/
 - 配置：全部经环境变量注入，回滚=还原 .env 重启。
 - 数据：DDL 均为加列/建表，回滚不删列；重大变更前整库备份。
 
+## 七.5 功能开关
+
+| 开关 | 默认 | 说明 |
+|---|---|---|
+| `projlife.approval.enabled` | `false` | 合同评审走审批流引擎（两级链：工程主管→总经理）；`true` 时 submitReview 创建审批实例而非直达 REVIEWED |
+| `projlife.notify.dingtalk.enabled` | `false` | 钉钉工作通知主通道（D-08） |
+| `projlife.notify.wechat.enabled` | `false` | 企微备用通道 |
+| `projlife.job.enabled` | `false` | job 进程定时任务总开关 |
+
+> 生产建议：`projlife.approval.enabled=true` 启用审批流（验收 FR-SYS-14 P8 待办中心必须有数据）
+
 ## 八、安全基线（对齐 RPD 硬约束）
 
 - [ ] 全链路 HTTPS；JWT_SECRET 轮换策略（季度）
