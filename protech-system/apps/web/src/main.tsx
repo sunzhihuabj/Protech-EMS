@@ -19,6 +19,8 @@ import ProjectMonitor from './pages/ProjectMonitor';
 import StockMoveWork from './pages/StockMoveWork';
 import AiAssistant from './pages/AiAssistant';
 import ReportCenter from './pages/ReportCenter';
+import MobileHome from './pages/MobileHome';
+import Manual from './pages/Manual';
 import Stub from './pages/Stub';
 import { THEMES, useTheme, applyThemeCss } from './theme/theme';
 import 'dayjs/locale/zh-cn';
@@ -48,6 +50,8 @@ const router = createBrowserRouter([
       { path: 'report', element: <ReportCenter /> },
       { path: 'ai', element: <AiAssistant /> },
       { path: 'admin', element: <Stub title="用户 / 角色 / 编码规则 / 配置 / 审计" slice="S0 深化" /> },
+      { path: 'm', element: <MobileHome /> },
+      { path: 'manual', element: <Manual /> },
     ],
   },
 ]);

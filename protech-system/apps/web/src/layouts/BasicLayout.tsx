@@ -86,6 +86,7 @@ export function BasicLayout() {
         >
           <Space size={20}>
             <ThemeSwitcher />
+            <a onClick={() => window.open('/manual', '_blank')} style={{ fontSize: 13 }}>手册</a>
             <Badge count={unread} size="small">
               <BellOutlined style={{ fontSize: 18 }} onClick={() => nav('/home')} />
             </Badge>
