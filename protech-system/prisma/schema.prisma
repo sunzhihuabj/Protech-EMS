@@ -758,6 +758,150 @@ model ReplenishRequest {
   @@map("replenish_request")
 }
 
+// ============================ R2 深化：成本域（T-51~T-53）/ 工时 / 盘点 / 呆滞 ============================
+
+/// 工时日报（FR-M04-006：按项目+人员+日期录工时；非项目事项独立字段不入项目统计）
+model Worklog {
+  id          BigInt   @id @default(autoincrement())
+  projectId   BigInt? // 非项目事项（休假/内业/证件）为空
+  userId      BigInt
+  logDate     DateTime @db.Timestamptz(6)
+  hours       Decimal  @db.Decimal(5, 2)
+  nonProject  String? // 休假/内业/证件（projectId 为空时必填）
+  note        String?
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+
+  @@index([projectId, logDate])
+  @@index([userId, logDate])
+  @@map("worklog")
+}
+
+/// T-51 成本归集（三口径：labor 工时×费率 / material 物料出库 / expense 费用；rate_snapshot 计费快照）
+model CostEntry {
+  id           BigInt   @id @default(autoincrement())
+  projectId    BigInt
+  costType     String // labor / material / expense
+  sourceType   String // worklog / stock_move / manual_expense
+  sourceId     String?
+  amountCents  BigInt
+  period       String // YYYY-MM
+  rateSnapshot String? // 计费时费率快照（分/人日）
+  note         String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+
+  @@index([projectId, period])
+  @@index([costType])
+  @@map("cost_entry")
+}
+
+/// T-52 费率表（FR-M09-003：调整留痕只影响后续期间）
+model RateCard {
+  id            BigInt   @id @default(autoincrement())
+  roleKey       String // 角色/岗位键（eng_pm / eng_worker / integration…）
+  rateCents     BigInt // 元/人日 → 分
+  effectiveFrom DateTime @db.Timestamptz(6)
+  remark        String?
+  createdAt     DateTime @default(now()) @db.Timestamptz(6)
+  createdBy     BigInt?
+
+  @@index([roleKey, effectiveFrom])
+  @@map("rate_card")
+}
+
+/// T-53 损益快照（FR-M09-002：收入-成本=毛利；结项锁定 FR-M09-002 locked_at）
+model ProjectPnl {
+  id            BigInt    @id @default(autoincrement())
+  projectId     BigInt    @unique
+  revenueCents  BigInt    @default(0)
+  costCents     BigInt    @default(0)
+  grossMargin   String    @default("0.0000") // DECIMAL(6,4)
+  lockedAt      DateTime? @db.Timestamptz(6)
+  computedAt    DateTime  @default(now()) @db.Timestamptz(6)
+
+  @@map("project_pnl")
+}
+
+/// 盘点任务（FR-M06-009 ABC 循环：A 月盘/B 季盘/C 半盘 + 财务抽盘 20% A 类）
+model StocktakeTask {
+  id          BigInt    @id @default(autoincrement())
+  taskCode    String    @unique // ST{YYYY}{MM}-{NNN}
+  cycle       String // A / B / C / sample(财务抽盘)
+  scope       String?   @db.Text // JSON 物料范围（ABC 类/仓库）
+  status      String    @default("open") // open / counting / closed
+  assignedTo  BigInt?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+  closedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([status])
+  @@map("stocktake_task")
+}
+
+/// 盘点行（账面 vs 实盘；差异 → 台账）
+model StocktakeLine {
+  id           BigInt    @id @default(autoincrement())
+  taskId       BigInt
+  materialId   BigInt
+  warehouse    String    @default("YL")
+  legalEntity  String    @default("PRT")
+  bookQty      Decimal   @db.Decimal(14, 3)
+  countedQty   Decimal?  @db.Decimal(14, 3)
+  varianceQty  Decimal?  @db.Decimal(14, 3)
+  countedBy    BigInt?
+  countedAt    DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+
+  @@index([taskId])
+  @@map("stocktake_line")
+}
+
+/// 差异台账（FR-M06-010 差异闭环四步：登记→归因(E-09)→调账审批(500 分级)→整改）
+model StockVariance {
+  id            BigInt    @id @default(autoincrement())
+  taskId        BigInt
+  lineId        BigInt
+  materialId    BigInt
+  varianceQty   Decimal   @db.Decimal(14, 3)
+  varianceCents BigInt
+  cause         String? // E-09 六类归因
+  step          String    @default("registered") // registered / attributed / approved / rectified
+  approverId    BigInt?
+  approvedAt    DateTime? @db.Timestamptz(6)
+  rectifyNote   String?   @db.Text
+  escalateFlag  Boolean   @default(false) // 同因当月 3 次升级专项
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy     BigInt?
+
+  @@index([step])
+  @@index([materialId])
+  @@map("stock_variance")
+}
+
+/// 呆滞台账（FR-M06-011/012：90 预警/180 候选；六出路处置矩阵 E-12）
+model SlowMoving {
+  id             BigInt    @id @default(autoincrement())
+  materialId     BigInt
+  warehouse      String    @default("YL")
+  legalEntity    String    @default("PRT")
+  qty            Decimal   @db.Decimal(14, 3)
+  lastMoveAt     DateTime? @db.Timestamptz(6)
+  level          String // warn(90d) / candidate(180d)
+  disposalWay    String? // E-12 六出路
+  disposalStatus String    @default("pending") // pending / proposed / approved / done
+  ownerId        BigInt? // 责任归属（设计变更→设计等）
+  targetAt       DateTime? @db.Timestamptz(6) // 目标消化期
+  createdAt      DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt      DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy      BigInt?
+  deletedAt      DateTime? @db.Timestamptz(6)
+
+  @@unique([materialId, warehouse, legalEntity])
+  @@map("slow_moving")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）

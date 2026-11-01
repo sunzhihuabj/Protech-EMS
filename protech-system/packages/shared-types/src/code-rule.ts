@@ -35,15 +35,17 @@ export const CODE_RULES: CodeRuleDef[] = [
   { bizType: 'party', pattern: 'C{NNNN}', seqLen: 4, yearly: false, remark: '沿用工具表 C0087' },
   { bizType: 'supplier', pattern: 'SU{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '新增（Q-10 补位）' },
   { bizType: 'gov_task', pattern: 'GT{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '治理工单（M13，新增）' },
+  { bizType: 'stocktake', pattern: 'ST{YYYY}{MM}-{NNN}', seqLen: 3, yearly: true, remark: '盘点任务（M06 R2，新增）' },
 ];
 
 /** 渲染编码：把模板变量替换为实际值 */
 export function renderCode(
   pattern: string,
-  vars: { year: string; seq: string; entity?: string; nature?: string; biz?: string; cat?: string; ret?: string },
+  vars: { year: string; seq: string; month?: string; entity?: string; nature?: string; biz?: string; cat?: string; ret?: string },
 ): string {
   return pattern
     .replace('{YYYY}', vars.year)
+    .replace('{MM}', vars.month ?? String(new Date().getMonth() + 1).padStart(2, '0'))
     .replace('{entity}', vars.entity ?? '')
     .replace('{nature}', vars.nature ?? '')
     .replace('{biz}', vars.biz ?? '')
