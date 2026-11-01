@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { ConfigProvider, App as AntApp, theme as antdTheme } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import { createBrowserRouter, RouterProvider } from 'react-router-dom';
+import { createBrowserRouter, Navigate, RouterProvider } from 'react-router-dom';
 import { BasicLayout } from './layouts/BasicLayout';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -22,19 +22,23 @@ import ReportCenter from './pages/ReportCenter';
 import MobileHome from './pages/MobileHome';
 import Manual from './pages/Manual';
 import Stub from './pages/Stub';
+import NotFound from './pages/NotFound';
+import ErrorPage from './pages/ErrorPage';
 import { THEMES, useTheme, applyThemeCss } from './theme/theme';
 import 'dayjs/locale/zh-cn';
 
 const router = createBrowserRouter([
-  { path: '/login', element: <Login /> },
+  { path: '/login', element: <Login />, errorElement: <ErrorPage /> },
   {
     path: '/',
     element: <BasicLayout />,
+    errorElement: <ErrorPage />,
     children: [
       { index: true, element: <Home /> },
       { path: 'home', element: <Home /> },
       { path: 'project', element: <ProjectList /> },
       { path: 'project/:id', element: <ProjectDetail /> },
+      { path: 'biz', element: <Navigate to="/biz/quote" replace /> },
       { path: 'biz/quote', element: <QuoteList /> },
       { path: 'biz/contract', element: <ContractList /> },
       { path: 'biz/contract/:id', element: <ContractDetail /> },
@@ -52,6 +56,7 @@ const router = createBrowserRouter([
       { path: 'admin', element: <Stub title="用户 / 角色 / 编码规则 / 配置 / 审计" slice="S0 深化" /> },
       { path: 'm', element: <MobileHome /> },
       { path: 'manual', element: <Manual /> },
+      { path: '*', element: <NotFound /> },
     ],
   },
 ]);

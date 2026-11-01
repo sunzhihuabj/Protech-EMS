@@ -96,13 +96,6 @@ export default function QuoteList() {
   };
 
   const act = async (id: string, to: string) => {
-    let expectedSignAt: string | undefined;
-    if (to === 'won') {
-      expectedSignAt = modal
-        ? undefined
-        : undefined;
-      void expectedSignAt;
-    }
     if (to === 'won') {
       // 中标必填预计签约时间（FR-M02-004）
       let input = '';
