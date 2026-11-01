@@ -16,6 +16,7 @@ import com.projlife.mdm.entity.MdLegalEntity;
 import com.projlife.mdm.mapper.MdLegalEntityMapper;
 import com.projlife.org.service.audit.Audited;
 import com.projlife.org.service.code.CodeSequenceService;
+import com.projlife.common.util.BusinessLogHelper;
 import com.projlife.org.service.code.CodeTypes;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -166,6 +167,7 @@ public class ContractService {
                     .with("suggestion", "请先建档取码")
                     .with("link", "/mdm/project/new");
         }
+        BusinessLogHelper.transition("合同", contract.getContractName(), "DRAFT", "REVIEWING", "R8 审批流");
         if (approvalEnabled) {
             // R8 审批流：两级（工程主管 → 总经理），末节点回调置 REVIEWED
             List<long[]> chain = List.of(new long[]{0, 4}, new long[]{0, 1});

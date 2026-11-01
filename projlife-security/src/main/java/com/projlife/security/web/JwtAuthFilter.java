@@ -55,6 +55,8 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                 throw BizException.of(401, "账号不存在或已停用");
             }
             UserContextHolder.set(user);
+            MDC.put("userId", String.valueOf(user.getUserId()));
+            MDC.put("username", user.getRealName() != null ? user.getRealName() : user.getUsername());
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
             SecurityContextHolder.getContext().setAuthentication(authentication);

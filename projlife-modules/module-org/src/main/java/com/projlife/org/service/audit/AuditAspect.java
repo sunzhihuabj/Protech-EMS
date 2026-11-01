@@ -25,6 +25,8 @@ import java.util.regex.Pattern;
 public class AuditAspect {
 
     private static final Logger log = LoggerFactory.getLogger(AuditAspect.class);
+    /** 用户操作日志专用 Logger → 路由到 operation-{date}.log（logback-spring.xml） */
+    private static final Logger operationLog = LoggerFactory.getLogger("OPERATION");
     private static final Pattern ARG_REF = Pattern.compile("\\{(\\d)}");
 
     private final OperationLogService operationLogService;
@@ -60,6 +62,14 @@ public class AuditAspect {
                 audited.module(), audited.action(), audited.targetType(),
                 resolveTargetId(audited.targetId(), args),
                 null, afterJson, currentIp(), (int) cost);
+
+        // 双写：同时写用户操作日志文件（operation-{date}.log）
+        operationLog.info("ACTION={} | MODULE={} | USER={}/{} | TARGET={}/{} | COST={}ms | RESULT={}",
+                audited.action(), audited.module(),
+                user == null ? "system" : user.getUserCode(),
+                user == null ? "system" : user.getRealName(),
+                audited.targetType(), resolveTargetId(audited.targetId(), args),
+                cost, "OK");
     }
 
     private String resolveTargetId(String expression, Object[] args) {

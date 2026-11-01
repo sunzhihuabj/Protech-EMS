@@ -11,6 +11,7 @@ import com.projlife.inventory.mapper.InvStockCacheMapper;
 import com.projlife.inventory.mapper.InvTransactionMapper;
 import com.projlife.org.service.audit.Audited;
 import com.projlife.org.service.code.CodeSequenceService;
+import com.projlife.common.util.BusinessLogHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -111,6 +112,7 @@ public class InventoryService {
             if (Boolean.TRUE.equals(push.get("success"))) {
                 txn.setSyncStatus("SYNCED");
                 txn.setTPlusVoucherNo(String.valueOf(push.get("voucherNo")));
+                BusinessLogHelper.transition("库存事务", txn.getTxnNo(), "PENDING_SYNC", "SYNCED", "system");
             } else {
                 txn.setSyncStatus("EXCEPTION");
                 txn.setSyncError(String.valueOf(push.get("error")));
