@@ -59,6 +59,64 @@ export class DeliveryController {
     return this.delivery.completeMilestone(parseId(id), me.id);
   }
 
+  /** FR-M07-009 区域组负荷视图：7 区域组在办项目/人天负荷 */
+  @Get('delivery/zone-load')
+  @RequirePermission('dispatch:view')
+  async zoneLoad() {
+    const zones = await this.prisma.sysDept.findMany({ where: { code: { startsWith: 'FS' }, deletedAt: null } });
+    void zones;
+    // 区域组=工程技术部下辖（含"区域"命名组）；按主属部门聚合
+    const engDept = await this.prisma.sysDept.findFirst({ where: { code: 'GCJS', deletedAt: null } });
+    if (!engDept) return { zones: [] };
+    const children = await this.prisma.sysDept.findMany({
+      where: { path: { startsWith: `${engDept.path}${engDept.id}/` }, deletedAt: null },
+      select: { id: true, name: true },
+    });
+    const rows = [];
+    for (const z of children) {
+      const members = await this.prisma.sysUser.findMany({ where: { deptId: z.id, deletedAt: null, status: 'active' }, select: { id: true } });
+      const ids = members.map((m) => m.id);
+      const [projects, hours] = await Promise.all([
+        this.prisma.dispatch.count({ where: { deletedAt: null, status: { in: ['confirmed', 'in_progress'] }, OR: [{ members: { contains: ids[0]?.toString() ?? '|' } }] } }).catch(() => 0),
+        this.prisma.worklog.aggregate({ _sum: { hours: true }, where: { userId: { in: ids }, logDate: { gte: new Date(Date.now() - 30 * 86400000) } } }),
+      ]);
+      rows.push({ zone: z.name, members: ids.length, activeDispatches: projects, hours30d: Number(hours._sum.hours ?? 0) });
+    }
+    return { zones: rows };
+  }
+
+  /** FR-M07-011 验收资料清单：竣工/结算 checklist 随验收单归档 */
+  @Get('acceptances/:id/documents')
+  @RequirePermission('acceptance:create')
+  async acceptanceDocs(@Param('id') id: string) {
+    const acc = await this.prisma.acceptance.findFirst({ where: { id: parseId(id) } });
+    if (!acc) throw BizException.notFound('验收单不存在');
+    const checklist = ['竣工资料', '结算资料', '调试报告', '培训记录', '备件清单'];
+    const have = JSON.parse(acc.documents || '[]') as string[];
+    return {
+      acceptanceId: acc.id.toString(),
+      checklist: checklist.map((c) => ({ item: c, present: have.includes(c) })),
+      complete: checklist.every((c) => have.includes(c)),
+    };
+  }
+
+  /** FR-M07-012 安全交底与隐患（⑨板指标源，与质量安全部共用） */
+  @Post('safety-issues')
+  @RequirePermission('issue:create')
+  async safetyIssue(@Body() body: Record<string, unknown>, @CurrentUser() me: AuthUser) {
+    if (!body.projectId || !body.description) throw BizException.param('projectId/description 必填');
+    const row = await this.prisma.siteIssue.create({
+      data: {
+        projectId: parseId(body.projectId),
+        description: `[安全] ${String(body.description)}`,
+        ownerId: body.ownerId ? parseId(body.ownerId) : me.id,
+        deadline: body.deadline ? new Date(String(body.deadline)) : new Date(Date.now() + 7 * 86400000),
+        createdBy: me.id,
+      },
+    });
+    return { id: row.id.toString() };
+  }
+
   @Post('disclosures')
   @RequirePermission('disclosure:create')
   async createDisclosure(@Body() body: Record<string, unknown>, @CurrentUser() me: AuthUser) {
@@ -152,6 +210,24 @@ export class FinanceController {
   async addCollection(@Body() body: Record<string, unknown>, @CurrentUser() me: AuthUser) {
     const row = await this.finance.addCollection(body, me.id);
     return { id: row.id.toString() };
+  }
+
+  @Get('finance/warranty-deposits')
+  @RequirePermission('finance:view')
+  async warrantyDeposits() {
+    return this.finance.warrantyDeposits();
+  }
+
+  @Get('finance/receipt-forecast')
+  @RequirePermission('finance:view')
+  async receiptForecast() {
+    return this.finance.receiptForecast();
+  }
+
+  @Get('finance/invoice-timeliness')
+  @RequirePermission('finance:view')
+  async invoiceTimeliness() {
+    return this.finance.invoiceTimeliness();
   }
 
   @Post('internal/finance/remind-due')

@@ -19,6 +19,28 @@ beforeAll(async () => {
   admin = await login('admin');
   chainSw = await login('chain-sw');
   op = await login('op-demo');
+  // 种子库独立运行时无项目 → 本规格自建
+  const entities = await get('/api/v1/mdm/entities', chainSw);
+  const entityId = entities.json().data.find((e: { entityCode: string }) => e.entityCode === 'PRT').id;
+  const farms = await get('/api/v1/mdm/farms?keyword=姚安', chainSw);
+  const farmId = farms.json().data.list[0].id;
+  const parties = await get('/api/v1/mdm/parties?keyword=三峡', chainSw);
+  const ownerId = parties.json().data.list[0].id;
+  await post(
+    '/api/v1/mdm/projects',
+    {
+      standardName: '三峡新能源-姚安大龙口-集成期',
+      shortName: '集成期',
+      phase: '集成期',
+      windFarmId: farmId,
+      ownerPartyId: ownerId,
+      legalEntityId: entityId,
+      orderType: 'owner_retrofit',
+      productLines: ['lift'],
+      unitCount: 1,
+    },
+    chainSw,
+  );
 });
 
 afterAll(async () => {
@@ -36,11 +58,11 @@ describe('M15 集成补全（FR-M15-005/009/010/011/012）', () => {
 
   it('FR-M15-009 打印模板：派工单按单据取数渲染 + 模板可配', async () => {
     // 找一张已有派工单（r2c spec 可能建过——本库独立种子，若无则先建）
-    const projects = await get('/api/v1/mdm/projects?pageSize=5', chainSw);
-    const pid = projects.json().data.list[0]?.id;
-    const farms = await get('/api/v1/mdm/farms?keyword=姚安', chainSw);
+    const farms = await get('/api/v1/mdm/farms?keyword=姚安', admin);
     const farmId = farms.json().data.list[0].id;
-    const d = await post('/api/v1/dispatches', { projectId: pid, windFarmId: farmId, taskDesc: '打印演示派工' }, chainSw);
+    const projects = await get('/api/v1/mdm/projects?keyword=集成期', admin);
+    const pid = projects.json().data.list[0].id;
+    const d = await post('/api/v1/dispatches', { projectId: pid, windFarmId: farmId, taskDesc: '打印演示派工' }, admin);
     const pgCode = d.json().data.pgCode;
     const print = await post('/api/v1/integration/print/dispatch', { dispatchId: d.json().data.id }, op);
     expect(print.statusCode).toBe(201);

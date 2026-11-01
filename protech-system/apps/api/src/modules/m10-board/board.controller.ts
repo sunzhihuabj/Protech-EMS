@@ -122,6 +122,118 @@ export class BoardController {
     return rows.map((r) => ({ ...r, id: r.id.toString(), cardId: r.cardId.toString(), byId: r.byId?.toString() ?? null }));
   }
 
+  /** FR-M10-023 闭环统计：准时关闭率/红灯滞留/补录率，按人/部门排名（KPI 过程指标） */
+  @Get('stats/closure')
+  @RequirePermission('kb:view')
+  async closureStats() {
+    const now = Date.now();
+    const doneCards = await this.prisma.kbCard.findMany({
+      where: { status: 'done', closedAt: { not: null }, deletedAt: null },
+      select: { ownerId: true, dueDate: true, closedAt: true, blockedAt: true },
+      take: 500,
+    });
+    const byOwner = new Map<string, { total: number; onTime: number; blockedDays: number[] }>();
+    for (const c of doneCards) {
+      const k = c.ownerId.toString();
+      const e = byOwner.get(k) ?? { total: 0, onTime: 0, blockedDays: [] };
+      e.total++;
+      if ((c.closedAt as Date).getTime() <= c.dueDate.getTime()) e.onTime++;
+      if (c.blockedAt) e.blockedDays.push(((c.closedAt as Date).getTime() - c.blockedAt.getTime()) / 86400000);
+      byOwner.set(k, e);
+    }
+    const ownerIds = [...byOwner.keys()].map((x) => BigInt(x));
+    const users = ownerIds.length
+      ? await this.prisma.sysUser.findMany({ where: { id: { in: ownerIds } }, select: { id: true, displayName: true } })
+      : [];
+    const rank = users.map((u) => {
+      const e = byOwner.get(u.id.toString())!;
+      const avgBlocked = e.blockedDays.length
+        ? Number((e.blockedDays.reduce((a, b) => a + b, 0) / e.blockedDays.length).toFixed(1))
+        : null;
+      return {
+        userId: u.id.toString(),
+        displayName: u.displayName,
+        closedTotal: e.total,
+        onTimeRate: e.total ? Number((e.onTime / e.total).toFixed(4)) : null,
+        avgBlockedDays: avgBlocked,
+      };
+    }).sort((a, b) => (b.onTimeRate ?? 0) - (a.onTimeRate ?? 0));
+
+    const logs = await this.prisma.kbCardLog.count({ where: { isBackfill: true, movedAt: { gte: new Date(now - 30 * 86400000) } } });
+    const logsTotal = await this.prisma.kbCardLog.count({ where: { movedAt: { gte: new Date(now - 30 * 86400000) } } });
+    return {
+      rank,
+      backfillRate30d: logsTotal ? Number((logs / logsTotal).toFixed(4)) : 0,
+      redAvgStayDays: rank.filter((r) => r.avgBlockedDays !== null).length
+        ? Number((rank.reduce((s, r) => s + (r.avgBlockedDays ?? 0), 0) / rank.filter((r) => r.avgBlockedDays !== null).length).toFixed(1))
+        : null,
+    };
+  }
+
+  /** FR-M10-024 总板汇总：指标来自四链板（不重复计算）；红灯区=各板升级卡+跨链卡 */
+  @Get('executive/summary')
+  @RequirePermission('kb:view')
+  async executiveSummary() {
+    const chainBoards = await this.prisma.board.findMany({ where: { boardCode: { in: ['order', 'supply', 'mfg', 'delivery'] } } });
+    const perBoard = await Promise.all(
+      chainBoards.map(async (b) => ({
+        boardCode: b.boardCode,
+        metrics: await this.metricSvc.boardMetrics(b.boardCode),
+        red: await this.prisma.kbCard.count({ where: { boardId: b.id, status: 'blocked', deletedAt: null } }),
+        escalated: await this.prisma.kbCard.count({ where: { boardId: b.id, status: 'blocked', escalatedAt: { not: null }, deletedAt: null } }),
+      })),
+    );
+    return { perBoard };
+  }
+
+  /** FR-M10-029 看板配置：板改名/指标阈值调整（R-GA+链主） */
+  @Post('boards/:code/config')
+  @RequirePermission('kb:admin')
+  async configBoard(@Param('code') code: string, @Body() body: Record<string, unknown>, @CurrentUser() me: AuthUser) {
+    const board = await this.prisma.board.findFirst({ where: { boardCode: code, deletedAt: null } });
+    if (!board) throw BizException.notFound('看板不存在');
+    if (body.name !== undefined) {
+      await this.prisma.board.update({ where: { id: board.id }, data: { name: String(body.name), updatedBy: me.id } });
+    }
+    if (Array.isArray(body.metricTargets)) {
+      for (const mt of body.metricTargets as Array<{ metricCode: string; target: string }>) {
+        await this.prisma.metricDef.updateMany({
+          where: { metricCode: mt.metricCode, deletedAt: null },
+          data: { target: mt.target, updatedBy: me.id },
+        });
+      }
+    }
+    return null;
+  }
+
+  /** FR-M10-030 手工指标：每板 ≤1 个手工录入（带"手工"角标） */
+  @Post('boards/:code/manual-metric')
+  @RequirePermission('kb:admin')
+  async manualMetric(@Param('code') code: string, @Body() body: { name?: string; value?: string }, @CurrentUser() me: AuthUser) {
+    if (!body.name || body.value === undefined) throw BizException.param('name/value 必填');
+    const existing = await this.prisma.metricDef.count({ where: { boardCode: code, source: 'manual', deletedAt: null } });
+    if (existing >= 1) throw BizException.validation('每板仅允许 1 个手工指标（FR-M10-030）');
+    const def = await this.prisma.metricDef.create({
+      data: {
+        metricCode: `manual_${code}_${Date.now()}`,
+        boardCode: code,
+        name: body.name,
+        formula: 'manual',
+        unit: 'count',
+        direction: 'forward',
+        source: 'manual',
+        updatedBy: me.id,
+      },
+    });
+    const period = new Date().toISOString().slice(0, 10);
+    await this.prisma.metricSnapshot.upsert({
+      where: { metricCode_period: { metricCode: def.metricCode, period } },
+      create: { metricCode: def.metricCode, period, value: String(body.value), status: 'ok' },
+      update: { value: String(body.value), status: 'ok', computedAt: new Date() },
+    });
+    return { metricCode: def.metricCode };
+  }
+
   // ---------------- 会议模式 ----------------
 
   @Post('boards/:id/meetings')

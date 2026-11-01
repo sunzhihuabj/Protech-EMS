@@ -31,9 +31,9 @@ describe('M16 AI R2 能力点（FR-M16-004~008/010/011）', () => {
     const enabled = caps.json().data.filter((c: { enabled: boolean }) => c.enabled).map((c: { code: string }) => c.code);
     expect(enabled).toContain('AI-04');
     expect(enabled).toContain('AI-06');
-    expect(enabled).not.toContain('AI-09');
-    const blocked = await post('/api/v1/ai/AI-09/run', { question: '工艺' }, op);
-    expect(blocked.statusCode).toBe(403);
+    expect(enabled).toContain('AI-09'); // R3-D 已开放
+    const ai09 = await post('/api/v1/ai/AI-09/run', { question: '工艺' }, op);
+    expect(ai09.statusCode).toBe(201);
   });
 
   it('AI-04 模糊卡点改写（Ask-first）', async () => {

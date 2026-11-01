@@ -15,10 +15,10 @@ export const CAPABILITIES: Record<string, { name: string; level: 'auto' | 'ask' 
   'AI-06': { name: '数据问答 ChatBI', level: 'ask', enabled: true },
   'AI-07': { name: '异常预警解读', level: 'ask', enabled: true },
   'AI-08': { name: '报价辅助', level: 'ask', enabled: true },
-  'AI-09': { name: '知识库问答 RAG', level: 'ask', enabled: false }, // R3（语料准备）
+  'AI-09': { name: '知识库问答 RAG', level: 'ask', enabled: true },
   'AI-10': { name: '日报周报生成', level: 'ask', enabled: true },
   'AI-11': { name: '报表解读', level: 'auto', enabled: true },
-  'AI-12': { name: '智能填单', level: 'ask', enabled: false }, // R3
+  'AI-12': { name: '智能填单', level: 'ask', enabled: true }, // 简易上下文预填
 };
 
 /** AI-01 合同 25 要素提取字段（Ask-first 草稿） */
@@ -304,6 +304,67 @@ export class AiService {
     }
     await this.logCall('AI-11', userId, key, '0.8', 'report:' + key, Date.now() - started);
     return { capability: 'AI-11', interpretation: sentences, askFirst: false };
+  }
+
+  /** AI-09 知识库问答 RAG：制度/工艺/SOP 检索——简易关键词召回+原文引用（语义向量属 pgvector 部署形态，接口不变） */
+  async ragQuery(userId: bigint, question: string) {
+    const started = Date.now();
+    // 语料源：审计中制度类备注 + 归一词典 + 已有案例（aftersales 描述）
+    const kws = question.replace(/[?？。！，\s]+/g, ' ').split(' ').filter((w) => w.length >= 2);
+    const [normHits, caseHits, cfgHits] = await Promise.all([
+      this.prisma.normDict.findMany({ take: 500 }),
+      this.prisma.afterSalesOrder.findMany({ where: { deletedAt: null }, take: 200, select: { orderCode: true, description: true } }),
+      this.prisma.sysConfig.findMany({ take: 100, select: { key: true, remark: true } }),
+    ]);
+    const corpus: Array<{ source: string; ref: string; text: string }> = [
+      ...normHits.map((n) => ({ source: '归一词典', ref: `${n.type}:${n.raw}`, text: `${n.raw} → ${n.normalized}` })),
+      ...caseHits.map((c) => ({ source: '售后案例', ref: c.orderCode, text: c.description })),
+      ...cfgHits.filter((c) => c.remark).map((c) => ({ source: '制度/配置', ref: c.key, text: c.remark ?? '' })),
+    ];
+    const scored = corpus
+      .map((doc) => ({ ...doc, score: kws.filter((k) => doc.text.includes(k) || doc.ref.includes(k)).length }))
+      .filter((d) => d.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3);
+    const answer = scored.length
+      ? `依据 ${scored.length} 条语料（引用原文见 sources）：` + scored.map((d) => `【${d.source}·${d.ref}】${d.text}`).join(' | ')
+      : '知识库暂无命中文档；RAG 语料随制度/案例沉淀扩充，答案未检出时必须明示不确定（FR-M16-014 Never do 红线）';
+    await this.logCall('AI-09', userId, question, scored.length ? '0.8' : '0.3', scored.map((d) => d.ref).join(','), Date.now() - started);
+    return { capability: 'AI-09', answer, sources: scored, askFirst: true };
+  }
+
+  /** AI-12 智能填单：派工/补货单据按上下文预填（历史同项目默认值） */
+  async smartPrefill(userId: bigint, kind: 'dispatch' | 'reissue', projectId: bigint) {
+    const started = Date.now();
+    let prefill: Record<string, unknown> = {};
+    if (kind === 'dispatch') {
+      const history = await this.prisma.dispatch.findMany({
+        where: { projectId, deletedAt: null },
+        orderBy: { id: 'desc' },
+        take: 5,
+        select: { planDays: true, taskDesc: true },
+      });
+      prefill = {
+        planDays: history[0]?.planDays ?? 5,
+        taskDescSuggest: history[0]?.taskDesc ?? '安装调试（历史同项目默认）',
+        basedOn: history.length,
+      };
+    } else {
+      const history = await this.prisma.replenishRequest.findMany({
+        where: { deletedAt: null, projectId },
+        orderBy: { id: 'desc' },
+        take: 5,
+        select: { materialId: true, qty: true, reason: true },
+      });
+      prefill = {
+        lastMaterialId: history[0]?.materialId.toString() ?? null,
+        lastQty: history[0] ? Number(history[0].qty) : null,
+        lastReason: history[0]?.reason ?? 'wear',
+        basedOn: history.length,
+      };
+    }
+    await this.logCall('AI-12', userId, `${kind}:${projectId}`, '0.8', kind, Date.now() - started);
+    return { capability: 'AI-12', kind, prefill, askFirst: true };
   }
 
   private async suggest(rawName: string, scope: string): Promise<Array<{ id: string; name: string; score: number; basis: string }>> {

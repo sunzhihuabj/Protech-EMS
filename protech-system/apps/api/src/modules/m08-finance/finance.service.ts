@@ -246,6 +246,78 @@ export class FinanceService {
     return acceptance;
   }
 
+  /** FR-M08-006 质保金台账：比例/到期/释放状态 */
+  async warrantyDeposits() {
+    const contracts = await this.prisma.contract.findMany({
+      where: { deletedAt: null, warrantyDepositRate: { not: null }, status: { in: ['performing', 'partial_invoiced', 'accepted', 'warranty'] } },
+      select: { id: true, contractCode: true, amountCents: true, warrantyDepositRate: true, warrantyMonths: true, periodEnd: true, status: true },
+    });
+    return contracts.map((c) => {
+      const rate = Number(c.warrantyDepositRate ?? 0);
+      const depositCents = (c.amountCents * BigInt(Math.round(rate * 10000))) / 10000n;
+      const received = this.prisma.receipt.aggregate({ _sum: { amountCents: true }, where: { contractId: c.id } });
+      return {
+        contractId: c.id.toString(),
+        contractCode: c.contractCode,
+        depositRate: rate,
+        depositCents: depositCents.toString(),
+        releaseDueAt: c.periodEnd,
+        status: c.status === 'warranty' ? '质保期中' : '履约中',
+      };
+    });
+  }
+
+  /** FR-M08-007 回款预测：未来 3 个月按合同计划条款预测现金流 */
+  async receiptForecast() {
+    const now = new Date();
+    const months = [0, 1, 2].map((i) => {
+      const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+      return d.toISOString().slice(0, 7);
+    });
+    const plans = await this.prisma.paymentPlan.findMany({
+      where: { status: 'pending', dueAt: { not: null } },
+      select: { dueAt: true, amountCents: true },
+    });
+    const byMonth: Record<string, number> = {};
+    for (const m of months) byMonth[m] = 0;
+    for (const plan of plans) {
+      const key = (plan.dueAt as Date).toISOString().slice(0, 7);
+      if (key in byMonth) byMonth[key] += Number(plan.amountCents) / 1_000_000;
+    }
+    return { months, forecastWan: byMonth };
+  }
+
+  /** FR-M08-010 开票及时率：验收/节点到开票天数统计（≤30 天视为及时） */
+  async invoiceTimeliness() {
+    const invoices = await this.prisma.invoice.findMany({
+      where: { status: { not: 'void' }, invoicedAt: { not: null } },
+      select: { contractId: true, invoicedAt: true, createdAt: true },
+      take: 500,
+    });
+    if (!invoices.length) return { count: 0, timelyRate: null, avgDays: null };
+    const acceptances = await this.prisma.acceptance.findMany({ select: { contractId: true, acceptedAt: true } });
+    const accByContract = new Map<bigint, Date>();
+    for (const a of acceptances) {
+      if (a.contractId !== null && !accByContract.has(a.contractId)) accByContract.set(a.contractId, a.acceptedAt);
+    }
+    let timely = 0;
+    let totalDays = 0;
+    let counted = 0;
+    for (const inv of invoices) {
+      const base = (inv.contractId !== null ? accByContract.get(inv.contractId) : undefined) ?? inv.createdAt;
+      const days = ((inv.invoicedAt as Date).getTime() - base.getTime()) / 86400000;
+      if (days < 0) continue;
+      counted++;
+      totalDays += days;
+      if (days <= 30) timely++;
+    }
+    return {
+      count: counted,
+      timelyRate: counted ? Number((timely / counted).toFixed(4)) : null,
+      avgDays: counted ? Number((totalDays / counted).toFixed(1)) : null,
+    };
+  }
+
   // ---------------- 催收记录（FR-M08-008） ----------------
 
   async addCollection(body: Record<string, unknown>, userId: bigint) {

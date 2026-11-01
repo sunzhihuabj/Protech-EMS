@@ -120,6 +120,7 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'stocktake:manage', name: '盘点任务管理/差异归因', type: 'button', module: 'M06' },
   { code: 'stocktake:count', name: '盘点录入', type: 'button', module: 'M06' },
   { code: 'stocktake:approve', name: '差异调账审批', type: 'button', module: 'M06' },
+  { code: 'stocktake:view', name: '盘点差异看板', type: 'menu', module: 'M06' },
   { code: 'slowmoving:view', name: '呆滞台账查询', type: 'menu', module: 'M06' },
   { code: 'slowmoving:manage', name: '呆滞处置', type: 'button', module: 'M06' },
   // ---- M11 售后 / M12 档案（R2） ----
@@ -232,6 +233,7 @@ export const PERM_ROLES: Record<string, string[]> = {
   'stocktake:manage': ['R-CHAIN', 'R-DEPT', 'R-SYS'],
   'stocktake:count': ['R-OP', 'R-CHAIN', 'R-DEPT', 'R-SYS'],
   'stocktake:approve': ['R-CHAIN', 'R-FIN', 'R-SYS'],
+  'stocktake:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
   'slowmoving:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
   'slowmoving:manage': ['R-CHAIN', 'R-DEPT', 'R-GA', 'R-SYS'],
   'as:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],

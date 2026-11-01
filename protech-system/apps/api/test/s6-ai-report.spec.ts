@@ -50,10 +50,9 @@ describe('M16 AI 能力点（FR-M16-001/002/003/014）', () => {
   it('能力点白名单：R1 三点开放，其余拒绝', async () => {
     const caps = await get('/api/v1/ai/capabilities', op);
     const enabled = caps.json().data.filter((c: { enabled: boolean }) => c.enabled);
-    expect(enabled.map((c: { code: string }) => c.code).sort()).toEqual(['AI-01', 'AI-02', 'AI-03', 'AI-04', 'AI-05', 'AI-06', 'AI-07', 'AI-08', 'AI-10', 'AI-11']);
+    expect(enabled.map((c: { code: string }) => c.code).sort()).toEqual(['AI-01', 'AI-02', 'AI-03', 'AI-04', 'AI-05', 'AI-06', 'AI-07', 'AI-08', 'AI-09', 'AI-10', 'AI-11', 'AI-12']);
 
-    const blocked = await post('/api/v1/ai/AI-09/run', { question: '回款率' }, op);
-    expect(blocked.statusCode).toBe(403);
+    expect(enabled.length).toBe(12); // 全部 12 能力点开放（R3-D 完成）
   });
 
   it('AI-01 合同要素提取：Ask-first 草稿 + 确认入库 + 调用审计', async () => {

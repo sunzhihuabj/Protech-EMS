@@ -126,6 +126,26 @@ export class CostController {
     return this.stocktake.count(parseId(taskId), parseId(lineId), Number(body.countedQty), me.id);
   }
 
+  /** FR-M06-022 盘点差异看板：当月差异笔数/金额/闭环率/归因分布（③板指标源） */
+  @Get('stocktakes/variance-dashboard')
+  @RequirePermission('stocktake:view')
+  async varianceDashboard() {
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const vs = await this.prisma.stockVariance.findMany({ where: { createdAt: { gte: monthStart } }, take: 500 });
+    const closed = vs.filter((v) => v.step === 'approved' || v.step === 'rectified').length;
+    const byCause: Record<string, number> = {};
+    for (const v of vs) {
+      const k = v.cause ?? '未归因';
+      byCause[k] = (byCause[k] ?? 0) + 1;
+    }
+    return {
+      monthVarianceCount: vs.length,
+      varianceAmountCents: vs.reduce((s, v) => s + Number(v.varianceCents), 0).toString(),
+      closeRate: vs.length ? Number((closed / vs.length).toFixed(4)) : null,
+      byCause,
+    };
+  }
+
   @Get('stocktakes/:taskId')
   @RequirePermission('stocktake:manage')
   async taskDetail(@Param('taskId') taskId: string) {

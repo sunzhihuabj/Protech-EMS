@@ -56,6 +56,12 @@ export class AiController {
       case 'AI-11':
         if (!body.reportKey) throw BizException.param('reportKey 必填');
         return this.ai.interpretReport(me.id, String(body.reportKey));
+      case 'AI-09':
+        if (!body.question) throw BizException.param('question 必填');
+        return this.ai.ragQuery(me.id, String(body.question));
+      case 'AI-12':
+        if (!body.kind || !body.projectId) throw BizException.param('kind/projectId 必填');
+        return this.ai.smartPrefill(me.id, String(body.kind) as 'dispatch' | 'reissue', parseId(body.projectId));
       default:
         throw BizException.forbidden(`AI 能力未开放：${cap}（R2/R3 路线）`);
     }

@@ -63,6 +63,74 @@ export class ProjectController {
     };
   }
 
+  /** FR-M04-014 项目复制：同风场新期次复制档案（生成新码，别名继承） */
+  @Post(':id/copy')
+  @RequirePermission('mdm:project:create')
+  async copyProject(@Param('id') id: string, @Body() body: Record<string, unknown>, @CurrentUser() me: AuthUser) {
+    const src = await this.prisma.project.findFirst({ where: { id: parseId(id), deletedAt: null } });
+    if (!src) throw BizException.notFound('源项目不存在');
+    const shortName = String(body.shortName ?? `${src.shortName}新`);
+    const standardName = String(body.standardName ?? `${src.standardName}-复制`);
+    const created = await this.projects.create(
+      {
+        ...JSON.parse(JSON.stringify({
+          windFarmId: src.windFarmId?.toString() ?? null,
+          ownerPartyId: src.ownerPartyId?.toString() ?? null,
+          legalEntityId: src.legalEntityId.toString(),
+          orderType: src.orderType,
+          productLines: JSON.parse(src.productLines ?? '[]'),
+          unitCount: src.unitCount,
+          contractAmountCents: src.contractAmountCents?.toString() ?? null,
+          phase: body.phase ?? null,
+          standardName,
+          shortName,
+        })),
+        pmUserId: me.id.toString(),
+      },
+      me.id,
+      { force: true },
+    );
+    // 别名继承（FR-M04-014）
+    const aliases = await this.prisma.alias.findMany({ where: { ownerType: 'project', ownerId: src.id } });
+    for (const a of aliases) {
+      await this.prisma.alias.create({
+        data: { ownerType: 'project', ownerId: created.id, alias: a.alias, source: 'copy', createdBy: me.id },
+      });
+    }
+    return { id: created.id.toString(), projectCode: created.projectCode, aliasesInherited: aliases.length };
+  }
+
+  /** FR-M04-015 项目台账导出（全字段含审计口径） */
+  @Get('export')
+  @RequirePermission('mdm:export')
+  async exportProjects() {
+    const list = await this.prisma.project.findMany({ where: { deletedAt: null }, orderBy: { id: 'desc' }, take: 1000 });
+    return {
+      count: list.length,
+      rows: list.map((p) => ({
+        项目编码: p.projectCode,
+        标准名: p.standardName,
+        简称: p.shortName,
+        状态: p.status,
+        订单类型: p.orderType,
+        台数: p.unitCount,
+        金额_万元: p.contractAmountCents ? Number(p.contractAmountCents) / 1_000_000 : 0,
+        创建: p.createdAt?.toISOString?.().slice(0, 10) ?? '',
+      })),
+    };
+  }
+
+  /** FR-M04-011 项目文档中心：按项目挂载的附件 */
+  @Get(':id/documents')
+  @RequirePermission('mdm:project:list')
+  async documents(@Param('id') id: string) {
+    const files = await this.prisma.sysFile.findMany({
+      where: { objectType: 'project', objectId: id, deletedAt: null },
+      orderBy: { id: 'desc' },
+    });
+    return files.map((f) => ({ ...f, id: f.id.toString(), size: f.size?.toString() ?? null }));
+  }
+
   /** FR-M04-010 未关联风场清单（排产订单月度清零跟踪） */
   @Get('pending-tasks')
   @RequirePermission('mdm:project:list')

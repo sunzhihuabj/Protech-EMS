@@ -92,6 +92,74 @@ export class GovController {
     return { id: row.id.toString() };
   }
 
+  /** FR-M13-008 月度合规率通报（经营例会用）：一物多码新增/命名合规/T+ 完整率 */
+  @Get('compliance-report')
+  @RequirePermission('gov:view')
+  async complianceReport() {
+    const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const [dqBlocks, materials, bomLint, importBatches] = await Promise.all([
+      this.prisma.sysAuditLog.count({ where: { action: 'dq_block', createdAt: { gte: monthStart } } }),
+      this.prisma.material.count({ where: { deletedAt: null } }),
+      this.prisma.sysAuditLog.count({ where: { action: 'bom_lint', createdAt: { gte: monthStart } } }),
+      this.prisma.importBatch.findMany({ where: { createdAt: { gte: monthStart } } }),
+    ]);
+    const okRows = importBatches.reduce((s, b) => s + b.okRows, 0);
+    const totalRows = importBatches.reduce((s, b) => s + b.totalRows, 0);
+    return {
+      period: monthStart.toISOString().slice(0, 7),
+      oneCodeMultiMaterialBlocks: dqBlocks,
+      materialTotal: materials,
+      bomLintScans: bomLint,
+      importPassRate: totalRows ? Number((okRows / totalRows).toFixed(4)) : null,
+      note: '月度合规率通报（经营例会 FR-M13-008）；T+ 完整率随文件适配器导入（FR-M15-001）累计',
+    };
+  }
+
+  /** FR-M13-010 迁移验收报告：迁入量/差异/待核实清单 */
+  @Get('migration-report')
+  @RequirePermission('gov:view')
+  async migrationReport() {
+    const [parties, materials, farms, contracts, mappedOld, frozenOld] = await Promise.all([
+      this.prisma.customerParty.count({ where: { deletedAt: null } }),
+      this.prisma.material.count({ where: { deletedAt: null } }),
+      this.prisma.windFarm.count({ where: { deletedAt: null } }),
+      this.prisma.contract.count({ where: { deletedAt: null } }),
+      this.prisma.mdCodeMap.count(),
+      this.prisma.material.count({ where: { status: 'frozen', deletedAt: null } }),
+    ]);
+    const pendingVerify = await this.prisma.contract.count({ where: { deletedAt: null, remark: { contains: '待核实' } } });
+    return {
+      迁入主体: parties,
+      迁入物料: materials,
+      迁入风场: farms,
+      迁入合同: contracts,
+      旧码映射: mappedOld,
+      归并冻结: frozenOld,
+      待核实清单: pendingVerify,
+      note: '迁移验收报告（12 册 §7 FR-M13-010）',
+    };
+  }
+
+  /** FR-M13-012 数据快照对比（治理前后指标对比，改善证据） */
+  @Get('snapshot-diff')
+  @RequirePermission('gov:view')
+  async snapshotDiff(@Query('from') from?: string, @Query('to') to?: string) {
+    const build = async (period: string) => {
+      const invAcc = await this.prisma.metricSnapshot.findFirst({
+        where: { metricCode: 'inv_accuracy_rate', period },
+        orderBy: { computedAt: 'desc' },
+      });
+      const nextFirst = period.endsWith('-12')
+        ? new Date(Date.UTC(Number(period.slice(0, 4)) + 1, 0, 1))
+        : new Date(Date.UTC(Number(period.slice(0, 4)), Number(period.slice(5, 7)), 1));
+      const frozen = await this.prisma.material.count({ where: { status: 'frozen', deletedAt: null, updatedAt: { lt: nextFirst } } });
+      return { period, invAccuracy: invAcc?.value ?? null, frozenCodes: frozen };
+    };
+    const a = await build(from ?? new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10));
+    const b = await build(to ?? new Date().toISOString().slice(0, 10));
+    return { from: a, to: b, improved: Number(b.frozenCodes) >= Number(a.frozenCodes) };
+  }
+
   @Get('clean-candidates')
   @RequirePermission('gov:view')
   async cleanCandidates(@Query() q: Record<string, string>) {

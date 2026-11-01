@@ -18,7 +18,7 @@ export class IntegrationExtraController {
 
   /** FR-M15-011 集成监控台：T+ 队列/事件流水/钉钉通道/导入批次 */
   @Get('monitor')
-  @RequirePermission('tplus:queue')
+  @RequirePermission('integration:view')
   async monitor() {
     const [queueCounts, importBatches] = await Promise.all([
       this.prisma.stockMove.groupBy({ by: ['tPlusStatus'], _count: { _all: true } }),
@@ -81,7 +81,7 @@ export class IntegrationExtraController {
 
   /** FR-M15-012 月度对账报告（中台 vs T+ 代理口径） */
   @Get('reconciliation')
-  @RequirePermission('tplus:queue')
+  @RequirePermission('integration:view')
   async reconciliation(@Query('period') period?: string) {
     return this.reconcile.monthlyReport(period);
   }
