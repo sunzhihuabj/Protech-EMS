@@ -36,6 +36,7 @@ export const CODE_RULES: CodeRuleDef[] = [
   { bizType: 'supplier', pattern: 'SU{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '新增（Q-10 补位）' },
   { bizType: 'gov_task', pattern: 'GT{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '治理工单（M13，新增）' },
   { bizType: 'stocktake', pattern: 'ST{YYYY}{MM}-{NNN}', seqLen: 3, yearly: true, remark: '盘点任务（M06 R2，新增）' },
+  { bizType: 'aftersales', pattern: 'AS{YYYY}-{NNNN}', seqLen: 4, yearly: true, remark: '售后工单（M11 R2，新增）' },
 ];
 
 /** 渲染编码：把模板变量替换为实际值 */

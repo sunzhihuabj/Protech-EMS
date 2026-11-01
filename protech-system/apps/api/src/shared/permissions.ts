@@ -121,6 +121,14 @@ export const PERMISSIONS: PermDef[] = [
   { code: 'stocktake:approve', name: '差异调账审批', type: 'button', module: 'M06' },
   { code: 'slowmoving:view', name: '呆滞台账查询', type: 'menu', module: 'M06' },
   { code: 'slowmoving:manage', name: '呆滞处置', type: 'button', module: 'M06' },
+  // ---- M11 售后 / M12 档案（R2） ----
+  { code: 'as:create', name: '售后工单创建', type: 'button', module: 'M11' },
+  { code: 'as:manage', name: '售后工单处理/定检', type: 'button', module: 'M11' },
+  { code: 'as:view', name: '售后查询/故障率', type: 'menu', module: 'M11' },
+  { code: 'archive:view', name: '档案目录/借阅查询', type: 'menu', module: 'M12' },
+  { code: 'archive:manage', name: '档案登记/期满鉴定', type: 'button', module: 'M12' },
+  { code: 'archive:borrow', name: '借阅申请/归还', type: 'button', module: 'M12' },
+  { code: 'archive:approve', name: '借阅审批/借出登记', type: 'button', module: 'M12' },
 ];
 
 /** 各权限默认授予的角色（FR-M00-002 九角色矩阵；R-SYS 恒为全量 '*'） */
@@ -224,4 +232,11 @@ export const PERM_ROLES: Record<string, string[]> = {
   'stocktake:approve': ['R-CHAIN', 'R-FIN', 'R-SYS'],
   'slowmoving:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
   'slowmoving:manage': ['R-CHAIN', 'R-DEPT', 'R-GA', 'R-SYS'],
+  'as:create': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],
+  'as:manage': ['R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-SYS'],
+  'as:view': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN', 'R-GA', 'R-SYS'],
+  'archive:view': ['R-EXEC', 'R-GA', 'R-SYS', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-FIN'],
+  'archive:manage': ['R-GA', 'R-SYS'],
+  'archive:borrow': ['R-EXEC', 'R-CHAIN', 'R-DEPT', 'R-PM', 'R-OP', 'R-GA', 'R-SYS'],
+  'archive:approve': ['R-GA', 'R-SYS', 'R-CHAIN'],
 };

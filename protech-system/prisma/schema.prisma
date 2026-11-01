@@ -902,6 +902,105 @@ model SlowMoving {
   @@map("slow_moving")
 }
 
+// ============================ R2 深化：售后域（M11）与档案域（T-81/T-82/M12） ============================
+
+/// 售后工单（FR-M11-001：挂项目码；消缺/定检/改造；受阻→红灯联动 FR-M11-007）
+model AfterSalesOrder {
+  id           BigInt    @id @default(autoincrement())
+  orderCode    String    @unique // AS{YYYY}-{NNNN}
+  projectId    BigInt
+  type         String // fix 消缺 / inspect 定检 / retrofit 改造
+  description  String    @db.Text
+  ownerId      BigInt
+  status       String    @default("open") // open / in_progress / blocked / done
+  blockedReason String?  @db.Text
+  costCents    BigInt    @default(0) // 质保内成本归集（FR-M11-003 M09 联动）
+  startedAt    DateTime? @db.Timestamptz(6)
+  doneAt       DateTime? @db.Timestamptz(6)
+  createdAt    DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy    BigInt?
+  updatedAt    DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  updatedBy    BigInt?
+  deletedAt    DateTime? @db.Timestamptz(6)
+
+  @@index([projectId, status])
+  @@map("aftersales_order")
+}
+
+/// 定检计划（FR-M11-002：框架协议按周期生成任务）
+model MaintenancePlan {
+  id          BigInt   @id @default(autoincrement())
+  projectId   BigInt
+  cycleMonths Int      @default(12)
+  nextDueAt   DateTime @db.Timestamptz(6)
+  ownerTeam   String?
+  lastDoneAt  DateTime? @db.Timestamptz(6)
+  status      String   @default("active")
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  createdBy   BigInt?
+
+  @@index([nextDueAt])
+  @@map("maintenance_plan")
+}
+
+/// T-81 档案（FR-M12-001 档号；FR-M12-002 电子实物互为索引；E-13 八门类/E-14 期限）
+model Archive {
+  id          BigInt    @id @default(autoincrement())
+  archiveNo   String    @unique
+  category    String
+  retention   String
+  title       String
+  physicalLoc String?
+  fileId      BigInt?
+  contractId  BigInt?
+  projectId   BigInt?
+  status      String    @default("zai_ku") // zai_ku 在库 / borrowed 借出 / destroyed 销毁（存 code）
+  dueAt       DateTime? @db.Timestamptz(6)
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  createdBy   BigInt?
+  updatedBy   BigInt?
+  deletedAt   DateTime? @db.Timestamptz(6)
+
+  @@index([category])
+  @@index([projectId])
+  @@map("archive")
+}
+
+/// T-82 借阅（FR-M12-003：双审批/证照外带/≤5 工作日逾期催还）
+model ArchiveBorrow {
+  id         BigInt    @id @default(autoincrement())
+  archiveId  BigInt
+  borrowerId BigInt
+  purpose    String
+  needApprove2 Boolean @default(false)
+  approver1Id BigInt?
+  approver2Id BigInt?
+  approvedAt DateTime? @db.Timestamptz(6)
+  outAt      DateTime? @db.Timestamptz(6)
+  dueAt      DateTime? @db.Timestamptz(6)
+  returnedAt DateTime? @db.Timestamptz(6)
+  status     String    @default("pending") // pending/approved/rejected/out/returned/overdue
+  createdAt  DateTime  @default(now()) @db.Timestamptz(6)
+  createdBy  BigInt?
+
+  @@index([status])
+  @@map("archive_borrow")
+}
+
+/// 备份管理台账（FR-M12-009 3-2-1）
+model BackupRecord {
+  id        BigInt   @id @default(autoincrement())
+  kind      String
+  target    String
+  fileRef   String
+  sha256    String?
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  createdBy BigInt?
+
+  @@map("backup_record")
+}
+
 // ============================ 支撑域（T-71~T-79） ============================
 
 /// 部门（01 册 §三 14 部门实测；path 物化路径支撑子树查询；chainCode 价值链归属）
