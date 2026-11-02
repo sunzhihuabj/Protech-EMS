@@ -86,13 +86,13 @@ class S17KbMetricTest {
     void createDef() {
         loginAs("admin@demo");
         Resp created = post("/api/v1/kb/metrics",
-                Map.of("metricCode", "S17.MO.DELIVERY", "boardId", 2,
+                Map.of("metricCode", "S17.TEST.DELIVERY", "boardId", 2,
                         "metricName", "S17 demo 订单准时交付率", "target", 100));
         assertEquals(0, created.code(), created.body().toString());
-        assertEquals("S17.MO.DELIVERY", ((Map<?, ?>) created.data()).get("metricCode"));
+        assertEquals("S17.TEST.DELIVERY", ((Map<?, ?>) created.data()).get("metricCode"));
 
         Resp again = post("/api/v1/kb/metrics",
-                Map.of("metricCode", "S17.MO.DELIVERY", "boardId", 2, "metricName", "重复"));
+                Map.of("metricCode", "S17.TEST.DELIVERY", "boardId", 2, "metricName", "重复"));
         assertEquals(4001, again.code(), "重复编码应 409");
     }
 
@@ -101,21 +101,21 @@ class S17KbMetricTest {
     @DisplayName("快照灯色：GREEN(100) / YELLOW(95) / RED(70)")
     void snapshotLight() {
         loginAs("admin@demo");
-        Resp green = post("/api/v1/kb/metrics/S17.MO.DELIVERY/snapshots",
+        Resp green = post("/api/v1/kb/metrics/S17.TEST.DELIVERY/snapshots",
                 Map.of("period", "2026-08", "value", "100"));
         assertEquals(0, green.code(), green.body().toString());
         assertEquals("GREEN", ((Map<?, ?>) green.data()).get("status"));
 
-        Resp yellow = post("/api/v1/kb/metrics/S17.MO.DELIVERY/snapshots",
+        Resp yellow = post("/api/v1/kb/metrics/S17.TEST.DELIVERY/snapshots",
                 Map.of("period", "2026-09", "value", "95"));
         assertEquals("YELLOW", ((Map<?, ?>) yellow.data()).get("status"), "95/100 ≥0.9 应黄");
 
-        Resp red = post("/api/v1/kb/metrics/S17.MO.DELIVERY/snapshots",
+        Resp red = post("/api/v1/kb/metrics/S17.TEST.DELIVERY/snapshots",
                 Map.of("period", "2026-10", "value", "70"));
         assertEquals("RED", ((Map<?, ?>) red.data()).get("status"), "70/100 <0.8 应红");
 
         // 同期修正幂等
-        Resp fixed = post("/api/v1/kb/metrics/S17.MO.DELIVERY/snapshots",
+        Resp fixed = post("/api/v1/kb/metrics/S17.TEST.DELIVERY/snapshots",
                 Map.of("period", "2026-10", "value", "100"));
         assertEquals(0, fixed.code());
         assertEquals("GREEN", ((Map<?, ?>) fixed.data()).get("status"));
@@ -126,7 +126,7 @@ class S17KbMetricTest {
     @DisplayName("趋势下钻：三期快照 + 绿灯率")
     void trend() {
         loginAs("admin@demo");
-        Resp trend = get("/api/v1/kb/metrics/S17.MO.DELIVERY/trend?periods=12");
+        Resp trend = get("/api/v1/kb/metrics/S17.TEST.DELIVERY/trend?periods=12");
         assertEquals(0, trend.code(), trend.body().toString());
         Map<String, Object> data = trend.data();
         assertEquals(3, ((java.util.List<?>) data.get("periods")).size(), "应含 3 期快照");

@@ -15,6 +15,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.HashMap;
 import java.util.List;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
@@ -29,9 +30,13 @@ public class KbMetricService {
 
     private final KbMetricDefMapper defMapper;
     private final KbMetricSnapshotMapper snapshotMapper;
-    public KbMetricService(KbMetricDefMapper defMapper, KbMetricSnapshotMapper snapshotMapper) {
+    private final javax.sql.DataSource dataSource;
+
+    public KbMetricService(KbMetricDefMapper defMapper, KbMetricSnapshotMapper snapshotMapper,
+                           javax.sql.DataSource dataSource) {
         this.defMapper = defMapper;
         this.snapshotMapper = snapshotMapper;
+        this.dataSource = dataSource;
     }
 
     /** 指标口径定义 */
@@ -134,4 +139,89 @@ public class KbMetricService {
         return ratio.compareTo(yellowRatio) >= 0 ? "YELLOW" : "RED";
     }
 
+    /**
+     * SPRINT-KPI1（F7）：九板指标自动取数——已验证列名的 11 项指标逐码计算并快照（UK 幂等修正口径）。
+     * 单指标失败不阻塞其余（取数失败→快照缺失→看板显示 —，不误报）。
+     */
+    @Transactional
+    public Map<String, Object> autoFetchAll(String period) {
+        org.springframework.jdbc.core.JdbcTemplate jdbc = new org.springframework.jdbc.core.JdbcTemplate(dataSource);
+        Map<String, java.math.BigDecimal> catalog = new LinkedHashMap<>();
+        try {
+            catalog.put("S17.MO.DELIVERY", ratio(jdbc,
+                    "SELECT COUNT(*) FROM mes_production_order WHERE deleted=0 AND status='COMPLETED'",
+                    "SELECT COUNT(*) FROM mes_production_order WHERE deleted=0"));
+            catalog.put("MES.FINISH.RATE", ratio(jdbc,
+                    "SELECT COALESCE(SUM(finished_qty),0) FROM mes_production_order WHERE deleted=0",
+                    "SELECT COALESCE(SUM(plan_qty),0) FROM mes_production_order WHERE deleted=0"));
+            catalog.put("QMS.FIRSTPASS", ratio(jdbc,
+                    "SELECT COUNT(*) FROM qms_inspection WHERE deleted=0 AND result='PASS' AND defect_count=0",
+                    "SELECT COUNT(*) FROM qms_inspection WHERE deleted=0"));
+            // 跨库可移植：日期边界在 Java 端算好作字面量（DATE_FORMAT/CURDATE/DATE_SUB 为 MySQL 专属）
+            String monthStart = period + "-01";
+            String monthEnd = java.time.LocalDate.now().withDayOfMonth(1).plusMonths(1).toString();
+            String slowBefore = java.time.LocalDate.now().minusDays(180).toString();
+            catalog.put("CT.AMOUNT.MONTH", single(jdbc,
+                    "SELECT COALESCE(SUM(amount),0)/10000 FROM ct_contract WHERE deleted=0 "
+                            + "AND created_at >= '" + monthStart + "' AND created_at < '" + monthEnd + "'"));
+            catalog.put("CT.COUNT.MONTH", single(jdbc,
+                    "SELECT COUNT(*) FROM ct_contract WHERE deleted=0 AND created_at >= '" + monthStart
+                            + "' AND created_at < '" + monthEnd + "'"));
+            catalog.put("PRJ.PROGRESS.AVG", single(jdbc,
+                    "SELECT COALESCE(AVG(progress_pct),0) FROM prj_project WHERE deleted=0"));
+            catalog.put("PRJ.OVERDUE.COUNT", single(jdbc,
+                    "SELECT COUNT(*) FROM prj_project WHERE deleted=0 AND plan_end < CURRENT_DATE "
+                            + "AND status NOT IN ('COMPLETED','CLOSED','CANCELLED')"));
+            catalog.put("INV.SLOW.RATE", ratio(jdbc,
+                    "SELECT COUNT(*) FROM inv_batch WHERE deleted=0 AND qty>0 AND receipt_date < '" + slowBefore + "'",
+                    "SELECT COUNT(*) FROM inv_batch WHERE deleted=0 AND qty>0"));
+            catalog.put("KB.CARD.RED.COUNT", single(jdbc,
+                    "SELECT COUNT(*) FROM kb_card WHERE deleted=0 AND status IN ('RED','BLOCKED','ESCALATED')"));
+            catalog.put("KB.CARD.CLOSE.RATE", ratio(jdbc,
+                    "SELECT COUNT(*) FROM kb_card WHERE deleted=0 AND status='CLOSED'",
+                    "SELECT COUNT(*) FROM kb_card WHERE deleted=0 AND status IN ('RED','BLOCKED','ESCALATED','CLOSED')"));
+        } catch (Exception ex) {
+            org.slf4j.LoggerFactory.getLogger(KbMetricService.class).warn("指标取数目录构建失败：{}", ex.getMessage());
+        }
+        int ok = 0;
+        int fail = 0;
+        for (Map.Entry<String, java.math.BigDecimal> e : catalog.entrySet()) {
+            if (e.getValue() == null) {
+                continue;
+            }
+            try {
+                snapshot(e.getKey(), period, e.getValue());
+                ok++;
+            } catch (Exception ex) {
+                fail++;
+                org.slf4j.LoggerFactory.getLogger(KbMetricService.class)
+                        .warn("指标快照失败 {}={}: {}", e.getKey(), e.getValue(), ex.getMessage());
+            }
+        }
+        Map<String, Object> summary = new HashMap<>();
+        summary.put("period", period);
+        summary.put("fetched", ok);
+        summary.put("failed", fail);
+        summary.put("catalogSize", catalog.size());
+        return summary;
+    }
+
+    private java.math.BigDecimal ratio(org.springframework.jdbc.core.JdbcTemplate jdbc, String numSql, String denSql) {
+        java.math.BigDecimal num = single(jdbc, numSql);
+        java.math.BigDecimal den = single(jdbc, denSql);
+        if (num == null || den == null || den.signum() == 0) {
+            return null;
+        }
+        return num.multiply(java.math.BigDecimal.valueOf(100))
+                .divide(den, 2, java.math.RoundingMode.HALF_UP);
+    }
+
+    private java.math.BigDecimal single(org.springframework.jdbc.core.JdbcTemplate jdbc, String sql) {
+        try {
+            return jdbc.queryForObject(sql, java.math.BigDecimal.class);
+        } catch (Exception ex) {
+            org.slf4j.LoggerFactory.getLogger(KbMetricService.class).warn("取数 SQL 失败: {} -> {}", sql, ex.getMessage());
+            return null;
+        }
+    }
 }
