@@ -59,6 +59,7 @@ public class MdmController {
     }
 
     @GetMapping("/customers/groups")
+    @RequirePermission("mdm:customer:edit")
     public ApiResponse<List<Map<String, Object>>> groupSummary() {
         return ApiResponse.ok(customerService.groupSummary());
     }
@@ -77,6 +78,7 @@ public class MdmController {
 
     /** FR-MDM-05：按任意名称（全称/简称/别名）解析主体 */
     @GetMapping("/customers/resolve")
+    @RequirePermission("mdm:customer:edit")
     public ApiResponse<Long> resolveCustomer(@RequestParam String name) {
         return ApiResponse.ok(customerService.findByAnyName(name));
     }
@@ -166,6 +168,7 @@ public class MdmController {
 
     /** FR-MDM-13：名称自动生成器 */
     @GetMapping("/projects/name-rule")
+    @RequirePermission("mdm:project:create")
     public ApiResponse<Map<String, String>> nameRule(@RequestParam String ownerName,
                                                      @RequestParam String farmFullName,
                                                      @RequestParam(required = false) String phase,
@@ -175,6 +178,7 @@ public class MdmController {
 
     /** FR-MDM-12：三重查重（对比卡数据源） */
     @GetMapping("/projects/triple-check")
+    @RequirePermission("mdm:project:edit")
     public ApiResponse<List<Map<String, Object>>> tripleCheck(@RequestParam(required = false) String farmFullName,
                                                               @RequestParam(required = false) String shortName,
                                                               @RequestParam(required = false) Long ownerId) {

@@ -128,6 +128,7 @@ public class ProjectController {
 
     /** FR-PRJ-24：我的任务 */
     @GetMapping("/my-tasks")
+    @RequirePermission("project:view")
     public ApiResponse<PageResp<PrjTask>> myTasks(PageReq pageReq) {
         return ApiResponse.ok(taskService.myTasks(pageReq));
     }
@@ -208,6 +209,7 @@ public class ProjectController {
 
     /** FR-PRJ-22 关键路径算法（CPM） */
     @GetMapping("/{id}/critical-path")
+    @RequirePermission("project:view")
     public ApiResponse<com.projlife.project.service.CpmService.CpmResult> criticalPath(@PathVariable Long id) {
         return ApiResponse.ok(cpmService.calculate(id));
     }

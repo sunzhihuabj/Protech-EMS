@@ -129,6 +129,7 @@ public class InventoryController {
 
     /** BR-05：25h 未补签锁定（job 每小时入口） */
     @PostMapping("/replenish/lock-overdue")
+    @RequirePermission("inv:replenish:approve")
     public ApiResponse<Integer> lockOverdue() {
         return ApiResponse.ok(replenishService.lockOverdueBackfills());
     }

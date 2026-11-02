@@ -64,6 +64,7 @@ public class ArcController {
 
     /** 逾期扫描（job 入口） */
     @PostMapping("/borrows/overdue-scan")
+    @RequirePermission("arc:manage")
     public ApiResponse<Integer> overdueScan() {
         return ApiResponse.ok(archiveService.overdueScan());
     }

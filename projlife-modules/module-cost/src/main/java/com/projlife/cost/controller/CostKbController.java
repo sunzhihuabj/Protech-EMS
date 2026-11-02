@@ -117,6 +117,7 @@ public class CostKbController {
 
     /** FR-KB-07 红灯 3 天升级（job 入口） */
     @PostMapping("/kb/cards/escalate")
+    @RequirePermission("kb:card:manage")
     public ApiResponse<Integer> escalate() {
         return ApiResponse.ok(cardService.escalateRedCards());
     }
@@ -176,6 +177,7 @@ public class CostKbController {
 
     /** 档案鉴定提醒扫描（job 入口，A-36 口径） */
     @PostMapping("/arc/appraisal-scan")
+    @RequirePermission("arc:manage")
     public ApiResponse<Integer> appraisalScan() {
         return ApiResponse.ok(appraisalService.appraisalScan());
     }
