@@ -12,6 +12,8 @@ import com.projlife.integration.notify.DingTalkTokenManager;
 import com.projlife.integration.shb.ShbClient;
 import com.projlife.integration.shb.ShbConfig;
 import com.projlife.integration.shb.ShbTokenManager;
+import com.projlife.integration.tplus.TplusClient;
+import com.projlife.integration.tplus.TplusConfig;
 import com.projlife.security.auth.RequirePermission;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,11 +47,14 @@ public class IntegrationOpsController {
     private final ShbConfig shbConfig;
     private final ShbClient shbClient;
     private final ShbTokenManager shbTokenManager;
+    private final TplusConfig tplusConfig;
+    private final TplusClient tplusClient;
     private final IntegrationAuditRecorder auditRecorder;
 
     public IntegrationOpsController(DingTalkConfig dingTalkConfig, DingTalkClient dingTalkClient,
                                     DingTalkNotifyAdapter dingTalkAdapter, DingTalkTokenManager tokenManager,
                                     ShbConfig shbConfig, ShbClient shbClient, ShbTokenManager shbTokenManager,
+                                    TplusConfig tplusConfig, TplusClient tplusClient,
                                     ObjectProvider<IntegrationAuditRecorder> auditRecorder) {
         this.dingTalkConfig = dingTalkConfig;
         this.dingTalkClient = dingTalkClient;
@@ -58,6 +63,8 @@ public class IntegrationOpsController {
         this.shbConfig = shbConfig;
         this.shbClient = shbClient;
         this.shbTokenManager = shbTokenManager;
+        this.tplusConfig = tplusConfig;
+        this.tplusClient = tplusClient;
         this.auditRecorder = auditRecorder.getIfAvailable();
     }
 
@@ -180,6 +187,40 @@ public class IntegrationOpsController {
             summary.put("lastError", lastError);
         }
         return ApiResponse.ok(summary);
+    }
+
+    // ==================== 捷信通T+ ====================
+
+    /** 实例存活探测（GET 门户页，有 HTTP 响应即 UP）+ 配置齐备性 */
+    @GetMapping("/tplus/health")
+    @RequirePermission("sys:config")
+    public ApiResponse<Map<String, Object>> tplusHealth() {
+        Map<String, Object> health = new LinkedHashMap<>();
+        health.put("enabled", tplusConfig.isEnabled());
+        health.put("configured", tplusConfig.configured());
+        health.put("jwtConfigured", tplusConfig.jwtConfigured());
+        health.put("tokenMode", tplusConfig.getTokenMode());
+        health.put("baseUrl", tplusConfig.getBaseUrl());
+        if (tplusConfig.isEnabled()) {
+            TplusClient.TplusResult probe = tplusClient.probe();
+            health.put("probe", probe.ok ? "UP" : "DOWN");
+            health.put("probeDetail", probe.ok ? probe.raw : probe.message);
+        }
+        return ApiResponse.ok(health);
+    }
+
+    /**
+     * 通用 v2 查询透传（sys:config 管控）。
+     * body: {service:"Inventory", method:"Query", args:{...}}；13.0 可用性以官方接口版本标注为准。
+     */
+    @PostMapping("/tplus/query")
+    @RequirePermission("sys:config")
+    public ApiResponse<Object> tplusQuery(@RequestBody Map<String, Object> body) {
+        String service = String.valueOf(body.getOrDefault("service", "Inventory"));
+        String method = String.valueOf(body.getOrDefault("method", "Query"));
+        @SuppressWarnings("unchecked")
+        Map<String, Object> args = (Map<String, Object>) body.getOrDefault("args", new LinkedHashMap<>());
+        return ApiResponse.ok(tplusClient.call(service, method, args));
     }
 
     // ---- 工具 ----
