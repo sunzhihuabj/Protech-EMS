@@ -60,4 +60,10 @@ INSERT IGNORE INTO kb_metric_def (id, metric_code, board_id, metric_name, formul
  (9007, 'PRJ.OVERDUE.COUNT',1,'逾期项目数',      'plan_end 已过未完工项目计数',        'prj_project',          0.00,   '{"maxValue":0,"precision":0}', 0, 'V23'),
  (9008, 'INV.SLOW.RATE',   3, '呆滞批次率%',      '库龄>180 天在库批次 / 在库批次',     'inv_batch',            5.00,   '{"yellowRatio":1.0,"redRatio":2.0,"precision":1}', 0, 'V23'),
  (9009, 'KB.CARD.RED.COUNT',1,'看板当前红灯数',  'RED/BLOCKED/ESCALATED 卡计数',       'kb_card',              0.00,   '{"maxValue":3,"precision":0}', 0, 'V23'),
- (9010, 'KB.CARD.CLOSE.RATE',1,'红灯闭环率%',    'CLOSED / (红灯+闭环) 卡计数',        'kb_card',              90.00,  '{"yellowRatio":0.9,"redRatio":0.8,"precision":0}', 0, 'V23');
+ (9010, 'KB.CARD.CLOSE.RATE',1,'红灯闭环率%',    'CLOSED / (红灯+闭环) 卡计数',        'kb_card',              90.00,  '{"yellowRatio":0.9,"redRatio":0.8,"precision":0}', 0, 'V23'),
+ (9011, 'CRM.FUNNEL.AMOUNT',4,'在途商机额(万)',   'Σexpect_amount（未输未转）',         'crm_opportunity',      NULL,   NULL, 0, 'V23'),
+ (9012, 'CRM.WIN.RATE',    4, '商机赢单率%',      'CONVERTED / (CONVERTED+LOST)',       'crm_opportunity',      50.00,  '{"yellowRatio":0.9,"redRatio":0.8,"precision":0}', 0, 'V23'),
+ (9013, 'BID.PIPELINE.AMOUNT',5,'在途标讯额(万)','Σbudget_amount（未截止）',           'bid_notice',           NULL,   NULL, 0, 'V23'),
+ (9014, 'SCM.PO.PENDING',  3, '在途采购单数',     '未完工采购单计数',                   'scm_purchase_order',   0.00,   '{"maxValue":10,"precision":0}', 0, 'V23'),
+ (9015, 'QMS.8D.OPEN',     3, '未关闭 8D 数',     'OPEN 8D 计数',                       'qms_8d',               0.00,   '{"maxValue":2,"precision":0}', 0, 'V23'),
+ (9016, 'CT.PAYMENT.RATE', 1, '回款进度%',        'Σactual_amount / Σamount',           'ct_contract_payment_plan', 100.00, '{"yellowRatio":0.9,"redRatio":0.8,"precision":1}', 0, 'V23');

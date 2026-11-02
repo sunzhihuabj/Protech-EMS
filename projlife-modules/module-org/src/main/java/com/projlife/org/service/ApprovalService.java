@@ -96,6 +96,8 @@ public class ApprovalService {
         nodeMapper.updateById(node);
 
         SysApproval approval = mustApproval(node.getApprovalId());
+        org.slf4j.MDC.put("approvalType", approval.getApprovalType());
+        org.slf4j.MDC.put("targetId", String.valueOf(approval.getTargetId()));
         if (node.getNodeSeq() >= approval.getTotalNodes()) {
             approval.setStatus("APPROVED");
             eventPublisher.publishEvent(new ApprovalCompletedEvent(
@@ -130,6 +132,8 @@ public class ApprovalService {
         node.setActedAt(LocalDateTime.now());
         nodeMapper.updateById(node);
         SysApproval approval = mustApproval(node.getApprovalId());
+        org.slf4j.MDC.put("approvalType", approval.getApprovalType());
+        org.slf4j.MDC.put("targetId", String.valueOf(approval.getTargetId()));
         approval.setStatus("REJECTED");
         approvalMapper.updateById(approval);
         eventPublisher.publishEvent(new ApprovalCompletedEvent(

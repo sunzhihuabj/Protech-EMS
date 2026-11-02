@@ -175,6 +175,23 @@ public class KbMetricService {
             catalog.put("INV.SLOW.RATE", ratio(jdbc,
                     "SELECT COUNT(*) FROM inv_batch WHERE deleted=0 AND qty>0 AND receipt_date < '" + slowBefore + "'",
                     "SELECT COUNT(*) FROM inv_batch WHERE deleted=0 AND qty>0"));
+            // SPRINT-KPI1b：销售/供应链/质量扩展（列名实证）
+            catalog.put("CRM.FUNNEL.AMOUNT", single(jdbc,
+                    "SELECT COALESCE(SUM(expect_amount),0)/10000 FROM crm_opportunity WHERE deleted=0 "
+                            + "AND status NOT IN ('LOST','CONVERTED')"));
+            catalog.put("CRM.WIN.RATE", ratio(jdbc,
+                    "SELECT COUNT(*) FROM crm_opportunity WHERE deleted=0 AND status='CONVERTED'",
+                    "SELECT COUNT(*) FROM crm_opportunity WHERE deleted=0 AND status IN ('CONVERTED','LOST')"));
+            catalog.put("BID.PIPELINE.AMOUNT", single(jdbc,
+                    "SELECT COALESCE(SUM(budget_amount),0)/10000 FROM bid_notice WHERE deleted=0 "
+                            + "AND deadline_at >= CURRENT_DATE"));
+            catalog.put("SCM.PO.PENDING", single(jdbc,
+                    "SELECT COUNT(*) FROM scm_purchase_order WHERE deleted=0 AND status NOT IN ('COMPLETED','CLOSED','CANCELLED')"));
+            catalog.put("QMS.8D.OPEN", single(jdbc,
+                    "SELECT COUNT(*) FROM qms_8d WHERE deleted=0 AND status NOT IN ('CLOSED')"));
+            catalog.put("CT.PAYMENT.RATE", ratio(jdbc,
+                    "SELECT COALESCE(SUM(actual_amount),0) FROM ct_contract_payment_plan WHERE deleted=0",
+                    "SELECT COALESCE(SUM(amount),0) FROM ct_contract_payment_plan WHERE deleted=0"));
             catalog.put("KB.CARD.RED.COUNT", single(jdbc,
                     "SELECT COUNT(*) FROM kb_card WHERE deleted=0 AND status IN ('RED','BLOCKED','ESCALATED')"));
             catalog.put("KB.CARD.CLOSE.RATE", ratio(jdbc,

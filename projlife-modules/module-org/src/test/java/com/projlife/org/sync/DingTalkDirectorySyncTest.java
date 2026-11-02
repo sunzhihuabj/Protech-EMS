@@ -65,8 +65,9 @@ class DingTalkDirectorySyncTest {
             try {
                 CAPTURED.put("dept1_token", String.valueOf(ex.getRequestHeaders().getFirst("x-acs-dingtalk-access-token")));
                 respond(ex, 200, "{\"result\":[{\"dept_id\":10,\"name\":\"工程部\"},{\"dept_id\":20,\"name\":\"销售部\"}]}");
+            } catch (RuntimeException e) {
+                throw e;
             } catch (Exception e) {
-                e.printStackTrace();
                 throw new RuntimeException(e);
             }
         });

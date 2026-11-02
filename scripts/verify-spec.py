@@ -28,6 +28,7 @@ REGISTERED = {
     'sys_department', 'sys_user', 'sys_role', 'sys_user_role', 'sys_permission',
     'sys_role_permission', 'sys_dict_type', 'sys_dict_item', 'sys_operation_log',
     'sys_code_sequence', 'sys_attachment', 'sys_import_batch', 'sys_notification', 'sys_config', 'sys_approval', 'sys_approval_node',
+    'sys_dingtalk_binding',  # SPRINT-INT2 钉钉通讯录绑定（用户立项扩编）
     # T-MDM 12
     'md_legal_entity', 'md_customer', 'md_customer_alias', 'md_wind_farm', 'md_project',
     'md_project_alias', 'md_project_product', 'md_project_change', 'md_material', 'md_code_map',

@@ -33,7 +33,7 @@ import java.util.UUID;
 /**
  * AI 统一入口（13 册）：/ai/v1/call 与 /ai/v1/health。
  * 调用链：鉴权校验（S0 简化为内网网段信任，S9 加网关签名）→ 配置解析 → mock/真实路由 → 写调用日志 → 响应。
- * 路由三级：① api-key+model-endpoint+model-name 齐备 → OpenAI 兼容 chat/completions（真实推理）；
+ * 路由三级：① api-key+model-endpoint+model-name 齐备 → chat/completions 协议兼容 chat/completions（真实推理）；
  *          ② 仅 model-endpoint → 内网模型裸协议透传；
  *          ③ 均为空 → mock（S0 默认）。
  * 任何异常不向业务方抛网络错误：统一返回 DEGRADED，保证业务不阻塞（00 册 C-12 降级链）。
@@ -54,7 +54,7 @@ public class AiGatewayController {
     @Value("${projlife.ai.model-endpoint:}")
     private String modelEndpoint;
 
-    /** OpenAI 兼容端点的 Bearer Key；非空即启用真实推理模式 */
+    /** chat/completions 协议兼容端点的 Bearer Key；非空即启用真实推理模式 */
     @Value("${projlife.ai.api-key:}")
     private String apiKey;
 
@@ -109,7 +109,7 @@ public class AiGatewayController {
 
         try {
             if (realMode()) {
-                // 真实推理模式：OpenAI 兼容 chat/completions
+                // 真实推理模式：chat/completions 协议兼容 chat/completions
                 ChatResult result = callChatModel(aiCode, bizType, payload);
                 response.put("status", "SUCCESS");
                 response.put("isMock", false);
@@ -184,7 +184,7 @@ public class AiGatewayController {
         if (realMode()) {
             health.put("mode", "LLM");
             health.put("model", modelName);
-            health.put("message", "OpenAI 兼容真实推理模式");
+            health.put("message", "chat/completions 协议兼容真实推理模式");
         } else if (modelEndpoint == null || modelEndpoint.isEmpty()) {
             health.put("mode", "MOCK");
             health.put("status", "MOCK");
@@ -211,7 +211,7 @@ public class AiGatewayController {
         return health;
     }
 
-    /** 是否启用 OpenAI 兼容真实推理：key + endpoint + model 三者齐备 */
+    /** 是否启用 chat/completions 协议兼容真实推理：key + endpoint + model 三者齐备 */
     private boolean realMode() {
         return apiKey != null && !apiKey.isEmpty()
                 && modelEndpoint != null && !modelEndpoint.isEmpty()
@@ -242,7 +242,7 @@ public class AiGatewayController {
     }
 
     /**
-     * OpenAI 兼容 chat/completions 调用（NVIDIA integrate API 同协议适配）。
+     * chat/completions 协议兼容 chat/completions 调用（NVIDIA integrate API 同协议适配）。
      * 请求：{model, messages:[system 契约提示词, user 业务载荷], temperature, max_tokens}
      * 响应：choices[0].message.content → 提取 JSON → data；usage.total_tokens 记账。
      */

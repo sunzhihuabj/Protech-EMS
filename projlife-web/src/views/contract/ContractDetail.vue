@@ -111,6 +111,21 @@
         </el-timeline-item>
       </el-timeline>
     </el-card>
+
+    <!-- 7 审批记录（SPRINT-PRJ2：R8 审批流真实实例 + 节点时间线） -->
+    <el-card shadow="never" style="margin-top: 16px">
+      <div slot="header"><b>审批记录（CONTRACT_REVIEW{{ approval.approvalNo ? ' · ' + approval.approvalNo : '' }}）</b></div>
+      <el-empty v-if="!approval.approvalNo" description="未走审批流（projlife.approval.enabled=false 直达，或未提交评审）" :image-size="50" />
+      <el-timeline v-else>
+        <el-timeline-item v-for="n in approvalNodes" :key="n.nodeSeq"
+                          :type="n.status === 'APPROVED' ? 'success' : (n.status === 'REJECTED' ? 'danger' : (n.status === 'PENDING' ? 'primary' : 'info'))"
+                          :timestamp="n.actedAt || ''">
+          <b>#{{ n.nodeSeq }} {{ n.nodeName }}</b> ·
+          <pt-status-tag :value="n.status" :dict="'PENDING:待审批,APPROVED:已通过,REJECTED:已驳回,SKIPPED:已跳过'" />
+          <span v-if="n.comment" class="muted">意见：{{ n.comment }}</span>
+        </el-timeline-item>
+      </el-timeline>
+    </el-card>
   </div>
 </template>
 
@@ -125,6 +140,8 @@ export default {
     return {
       c: {},
       related: { projects: [], invoices: [], paymentPlans: [] },
+      approval: {},
+      approvalNodes: [],
       logs: [],
       statusDict: 'DRAFT:编辑中,REVIEWED:已评审,SIGNED:已签署,PERFORMING:履行中,ACCEPTED:已验收,WARRANTY:质保期中,CLOSED:已关闭,CHANGED:已变更'
     }
@@ -143,6 +160,17 @@ export default {
   methods: {
     load() {
       this.$http.get(`/contract/${this.id}`).then(body => { this.c = body.data }).catch(showError)
+      // SPRINT-PRJ2：R8 审批流真实实例（CONTRACT_REVIEW by target）+ 节点
+      this.$http.get(`/approval/target/CONTRACT_REVIEW/${this.id}`).then(body => {
+        this.approval = body.data || {}
+        if (this.approval.id) {
+          this.$http.get(`/approval/${this.approval.id}/nodes`).then(nb => {
+            this.approvalNodes = nb.data || []
+          }).catch(() => {})
+        } else {
+          this.approvalNodes = []
+        }
+      }).catch(() => {})
       // SPRINT-PRJ1（F9）：关联单据链（项目/开票/收款计划）
       this.$http.get(`/contract/${this.id}/related`).then(body => {
         this.related = body.data || { projects: [], invoices: [], paymentPlans: [] }

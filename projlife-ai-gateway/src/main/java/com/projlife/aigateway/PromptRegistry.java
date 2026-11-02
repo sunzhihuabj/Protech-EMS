@@ -4,7 +4,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * Prompt 注册表（13 册 §2 契约）：按 AI 接口编号给出系统提示词与输出 JSON 契约说明。
- * 真实模型（OpenAI 兼容 chat/completions）与 mock 返回同一套数据结构，业务侧无感切换。
+ * 真实模型（chat/completions 协议兼容 chat/completions）与 mock 返回同一套数据结构，业务侧无感切换。
  */
 @Component
 public class PromptRegistry {

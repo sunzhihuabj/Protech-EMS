@@ -159,7 +159,6 @@ class S27KbMeetingTest {
         com.projlife.cost.service.KbMeetingService svc =
                 new com.projlife.cost.service.KbMeetingService(mm, bm, new com.fasterxml.jackson.databind.ObjectMapper());
         byte[] pdf = svc.meetingPdf(9L);
-        System.out.println("[DIRECT] len=" + pdf.length + " head=" + new String(pdf, 0, 4));
         assertTrue(pdf.length > 500);
     }
 

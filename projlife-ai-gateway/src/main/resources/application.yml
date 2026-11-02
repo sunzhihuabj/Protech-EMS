@@ -24,7 +24,7 @@ management:
 
 projlife:
   ai:
-    # 模型端点（OpenAI 兼容 chat/completions 全 URL）；为空即 mock 模式（S0 默认）
+    # 模型端点（chat/completions 协议兼容 chat/completions 全 URL）；为空即 mock 模式（S0 默认）
     model-endpoint: ${PROJLIFE_AI_MODEL_ENDPOINT:}
     # Bearer Key（测试阶段经环境变量注入；生产轮换 + 仅内网分发，严禁入库入码）
     api-key: ${PROJLIFE_AI_API_KEY:}

@@ -15,7 +15,7 @@
     - 总大小上限 10GB（防磁盘爆满）
 
   格式：
-    %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [%X{userId:-}/%X{username:-}] %logger{36} - %msg%n
+    %d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [A:%X{approvalType:-}#%X{targetId:-}] [%X{userId:-}/%X{username:-}] %logger{36} - %msg%n
 
   异步：所有文件 appender 包 AsyncWrapper（不阻塞业务线程）
   ==================================================================
@@ -27,6 +27,7 @@
     <property name="MAX_HISTORY" value="90"/>
     <property name="MAX_FILE_SIZE" value="100MB"/>
     <property name="TOTAL_SIZE_CAP" value="10GB"/>
+    <!-- SPRINT-PRJ2（F18）：审批业务上下文（ApprovalService MDC 注入，日志与业务单据可关联） -->
     <property name="PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level [%X{traceId:-}] [%X{userId:-}/%X{username:-}] %logger{36} - %msg%n"/>
 

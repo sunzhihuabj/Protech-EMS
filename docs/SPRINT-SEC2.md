@@ -50,3 +50,19 @@
 ## 验证
 - S28SpcAutoCollectTest 2/2（3 检验→3 点位→控制限 ucl≥cl≥lcl、lcl 截 0、未出控标记）
 - 前端 npm build 通过；全反应堆回归见提交说明
+
+---
+
+# SPRINT-PRJ2（同日追加）：审计 F3 定向落地 + F18 审批 MDC + 指标目录 16 项
+
+## 修复内容
+| 项 | 内容 |
+|---|---|
+| F3 数据范围（定向） | CrmOpportunityMapper selectList/selectPage 覆写 + @DataScopeRule(selfIdColumn=owner_id)——R04 商务(SELF) 商机仅本人；ALL/DEPT/PROJECT 角色不受影响（规则未声明 dept/project 列时条件不生成）。R11 仓储「本仓库」口径需框架扩 WAREHOUSE 范围类型，随部署批次 |
+| F18 审批 MDC | ApprovalService approve/reject 取得实例后 MDC.put(approvalType/targetId)，logback PATTERN 增 [A:type#id] 段——审批日志与业务单据可关联 |
+| 指标目录 16 项 | +CRM.FUNNEL.AMOUNT / CRM.WIN.RATE / BID.PIPELINE.AMOUNT / SCM.PO.PENDING / QMS.8D.OPEN / CT.PAYMENT.RATE（列名逐一实证），V23 同步种 6 定义（累计 16） |
+| P5 审批记录真实数据 | ContractDetail 七区第 7 区接真实审批流：GET /approval/target/CONTRACT_REVIEW/{id} + /{approvalId}/nodes → 节点时间线（状态灯/意见/时间），未走流显空态说明 |
+
+## 验证
+- S1/S2/S3/V4Align CRM 流 24 测试全绿（SELF 范围不破坏既有断言）
+- 编译 + 全反应堆回归（见提交）
