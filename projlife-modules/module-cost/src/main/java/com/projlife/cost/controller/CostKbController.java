@@ -149,6 +149,20 @@ public class CostKbController {
         return ApiResponse.ok(meetingService.listByBoard(boardId));
     }
 
+    /** 纪要详情（含逐卡结论 items，SPRINT-KB1） */
+    @GetMapping("/kb/meetings/{id}")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<java.util.Map<String, Object>> meetingDetail(@PathVariable Long id) {
+        return ApiResponse.ok(meetingService.detail(id));
+    }
+
+    /** 看板清单（boardCode→id 解析，SPRINT-KB1） */
+    @GetMapping("/kb/boards")
+    @RequirePermission("kb:card:manage")
+    public ApiResponse<java.util.List<com.projlife.cost.entity.KbBoard>> boards() {
+        return ApiResponse.ok(meetingService.boards());
+    }
+
     /** 纪要 PDF 导出（FR-KB-11，PDFBox，亮色白底） */
     @GetMapping("/kb/meetings/{id}/pdf")
     @RequirePermission("kb:card:manage")

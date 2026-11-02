@@ -3,18 +3,24 @@
   <div class="pl-page">
     <el-card shadow="never">
       <div slot="header" class="pl-meeting-head">
-        <b>会议纪要 · {{ boardCode }} 板</b>
-        <span class="muted">{{ meetingDate }} · 时长 30 分钟议程</span>
+        <b>会议纪要 · {{ boardName }}</b>
+        <span class="muted">{{ meetingDate }} · 时长 {{ durationMinutes }} 分钟</span>
         <div class="spacer"></div>
+        <el-button size="small" icon="el-icon-download" @click="exportPdf">导出 PDF</el-button>
         <el-button size="small" icon="el-icon-printer" @click="$window && $window.print()">打印（自动亮色）</el-button>
       </div>
 
-      <el-descriptions :column="4" size="small" border>
+      <el-descriptions :column="5" size="small" border>
         <el-descriptions-item label="参会人">{{ host }}</el-descriptions-item>
         <el-descriptions-item label="红灯总数">{{ redTotal }}</el-descriptions-item>
+        <el-descriptions-item label="过堂">{{ records.length }}</el-descriptions-item>
         <el-descriptions-item label="闭环">{{ closedCount }}</el-descriptions-item>
         <el-descriptions-item label="未闭环过堂">{{ skipped }}</el-descriptions-item>
       </el-descriptions>
+
+      <div v-if="minutesText" style="margin:12px 0;font-size:13px;color:var(--ink-2)">
+        {{ minutesText }}
+      </div>
 
       <h4 style="margin: 16px 0 8px">过堂结论（逐卡）</h4>
       <el-table :data="records" size="small">
@@ -35,31 +41,56 @@
 
 <script>
 import { PtStatusTag } from '@/components/pt'
+import { showError } from '@/api/request'
 
 export default {
   name: 'MeetingMinutes',
   components: { PtStatusTag },
   data() {
     return {
-      boardCode: this.$route.params.id || 'TOTAL',
-      meetingDate: new Date().toLocaleString('zh-CN'),
-      host: '',
-      records: []
+      meeting: {},
+      items: [],
+      minutesText: ''
     }
   },
   computed: {
-    redTotal() { return this.records.length },
-    closedCount() { return this.records.filter(r => r.result === 'CLOSED').length },
-    skipped() { return this.records.filter(r => r.result === 'SKIPPED').length }
+    // 服务端数据源（SPRINT-KB1）：/kb/meetings/{id} 落库纪要（FR-KB-11）
+    boardName() {
+      const m = this.meeting || {}
+      return m.boardId != null ? '板 #' + m.boardId : '—'
+    },
+    meetingDate() { return (this.meeting || {}).meetingDate || '—' },
+    durationMinutes() { return (this.meeting || {}).durationMinutes || 30 },
+    host() { return (this.meeting || {}).attendees || '—' },
+    redTotal() { return (this.meeting || {}).redCount || 0 },
+    records() { return this.items },
+    closedCount() { return (this.meeting || {}).closedCount || 0 },
+    skipped() { return this.items.filter(r => r.result === 'SKIPPED').length }
   },
   mounted() {
-    // 纪要来源：会议模式的逐卡记录（sessionStorage，FR-KB-11 骨架；生产落 kb_meeting 表）
-    try {
-      const saved = JSON.parse(sessionStorage.getItem('pl:kb:meeting:' + this.boardCode) || 'null')
-      this.records = (saved && saved.records) || []
-      this.host = (saved && saved.host) || (this.$store.state.user || {}).realName || '—'
-    } catch (e) { /* 忽略 */ }
+    this.load()
     try { this.$store.dispatch('fetchMe').catch(() => {}) } catch (e) { /* 忽略 */ }
+  },
+  methods: {
+    load() {
+      const id = this.$route.params.id
+      this.$http.get('/kb/meetings/' + id).then(body => {
+        this.meeting = body.data.meeting || {}
+        this.items = body.data.items || []
+        this.minutesText = body.data.minutesText || ''
+      }).catch(showError)
+    },
+    exportPdf() {
+      const id = this.$route.params.id
+      this.$http.get('/kb/meetings/' + id + '/pdf', { responseType: 'blob' }).then(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = 'meeting-' + id + '.pdf'
+        a.click()
+        URL.revokeObjectURL(url)
+      }).catch(showError)
+    }
   }
 }
 </script>

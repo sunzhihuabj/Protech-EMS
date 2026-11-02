@@ -112,6 +112,8 @@ export default {
       meetingStartedAt: null,
       meetingIndex: 0,
       threeQ: { where: '', who: '', when: '' },
+      outcomes: [],   // 逐卡结论（SPRINT-KB1）：{title,where,who,when,result:CLOSED|SKIPPED}
+      boardsMap: {},  // boardCode→id（/kb/boards 解析）
       now: Date.now(),
       nowTimer: null,
       saveTimer: null,
@@ -191,6 +193,7 @@ export default {
         if (saved && saved.boardCode === this.boardCode) {
           this.meetingIndex = saved.index || 0
           this.threeQ = saved.threeQ || { where: '', who: '', when: '' }
+          this.outcomes = saved.outcomes || []
           this.$message.info('已恢复未提交的过堂内容')
         }
       } catch (e) { /* 忽略 */ }
@@ -200,7 +203,8 @@ export default {
       // 30s 自动暂存（键含板编码；切段/刷新后恢复）
       try {
         sessionStorage.setItem('pl:kb:threeq', JSON.stringify({
-          boardCode: this.boardCode, index: this.meetingIndex, threeQ: this.threeQ, at: Date.now()
+          boardCode: this.boardCode, index: this.meetingIndex, threeQ: this.threeQ,
+          outcomes: this.outcomes, at: Date.now()
         }))
       } catch (e) { /* 忽略 */ }
     },
@@ -209,12 +213,17 @@ export default {
       const card = this.redCards[this.meetingIndex]
       const solution = `卡在哪：${this.threeQ.where}｜谁解决：${this.threeQ.who}｜何时解决：${this.threeQ.when}`
       http.post(`/kb/cards/${card.id}/close`, { solution }).then(() => {
+        this.outcomes.push({ title: card.title, where: this.threeQ.where, who: this.threeQ.who,
+          when: this.threeQ.when, result: 'CLOSED' })
         this.$message.success('已记录并闭环')
         this.nextCard()
       }).catch(showErrorDefault)
     },
     /** 三问不全 → 记为未闭环过堂（写纪要口径，不关单） */
     skipCurrent() {
+      const card = this.redCards[this.meetingIndex]
+      this.outcomes.push({ title: card ? card.title : '', where: this.threeQ.where,
+        who: this.threeQ.who, when: this.threeQ.when, result: 'SKIPPED' })
       this.$message.info('已记为未闭环过堂（计入纪要）')
       this.nextCard()
     },
@@ -224,16 +233,26 @@ export default {
     },
     /** 结束会议（FR-KB-11）：纪要落库 kb_meeting → 跳纪要页 */
     endMeeting() {
+      // 逐卡结论落库（SPRINT-KB1）：promisesJson=outcomes；计数取真实口径
+      const closed = this.outcomes.filter(o => o.result === 'CLOSED').length
+      const skipped = this.outcomes.filter(o => o.result === 'SKIPPED')
+      const skippedText = skipped.length
+        ? '未闭环过堂：' + skipped.map(o => o.title).join('、') + '。'
+        : ''
       http.post('/kb/meetings', {
-        boardId: 1,
+        boardId: this.boardsMap[this.boardCode] || 1,
         meetingDate: new Date().toISOString().slice(0, 10),
         durationMinutes: Math.max(30, Math.round(this.elapsedMin)),
         redCount: this.redCards.length,
-        reviewedCount: this.redCards.length,
-        closedCount: this.closedCards.length,
-        minutes: '会议纪要自动生成（FR-KB-11）：红灯 ' + this.redCards.length + ' 张，逐卡结论见卡片台账'
+        reviewedCount: this.outcomes.length,
+        closedCount: closed,
+        promisesJson: JSON.stringify(this.outcomes),
+        minutes: '会议纪要自动生成（FR-KB-11）：红灯 ' + this.redCards.length + ' 张，过堂 '
+          + this.outcomes.length + ' 张（闭环 ' + closed + '）。' + skippedText + '逐卡结论见 promisesJson。'
       }).then(body => {
         this.$message.success('纪要已落库 id=' + body.data.id)
+        sessionStorage.removeItem('pl:kb:threeq')
+        this.outcomes = []
         this.$router.push({ name: 'kbMeeting', params: { id: String(body.data.id) } })
       }).catch(showError)
     },
@@ -259,6 +278,12 @@ export default {
         } else {
           this.metrics = []
         }
+      }).catch(() => {})
+      // 看板映射（boardCode→id，SPRINT-KB1）
+      http.get('/kb/boards').then(body => {
+        const map = {}
+        ;(body.data || []).forEach(b => { map[b.boardCode] = b.id })
+        this.boardsMap = map
       }).catch(() => {})
       // 卡池：红灯/进行/闭环（BLOCKED 亦入红灯区并列可见）
       http.get('/kb/cards', { params: { pageNum: 1, pageSize: 100 } }).then(body => {
