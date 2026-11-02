@@ -1,13 +1,19 @@
 package com.projlife.integration.ops;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.projlife.common.api.ApiResponse;
 import com.projlife.common.exception.BizException;
 import com.projlife.common.exception.ErrorCode;
+import com.projlife.common.spi.IntegrationAuditRecorder;
 import com.projlife.integration.notify.DingTalkClient;
 import com.projlife.integration.notify.DingTalkConfig;
 import com.projlife.integration.notify.DingTalkNotifyAdapter;
 import com.projlife.integration.notify.DingTalkTokenManager;
+import com.projlife.integration.shb.ShbClient;
+import com.projlife.integration.shb.ShbConfig;
+import com.projlife.integration.shb.ShbTokenManager;
 import com.projlife.security.auth.RequirePermission;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,29 +28,42 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 集成运维端点（SPRINT-INT1）：真实健康检查/测试发送/回查，供 /sys/monitor 与部署 Runbook 冒烟。
- * 全部 sys:config 权限（对齐 IntegrationController 口径）。任何探测失败不抛网络异常，返回结果对象。
+ * 集成运维端点（SPRINT-INT1）：真实健康检查/测试发送/手动对账，供 /sys/monitor 与部署 Runbook 冒烟。
+ * 全部 sys:config 权限（对齐 IntegrationController 口径）。探测失败不抛网络异常，返回结果对象。
  */
 @RestController
 @RequestMapping("/api/v1/integ/ops")
 public class IntegrationOpsController {
 
+    private static final String DINGTALK = "DINGTALK";
+    private static final String SHB = "SHB";
+
     private final DingTalkConfig dingTalkConfig;
     private final DingTalkClient dingTalkClient;
     private final DingTalkNotifyAdapter dingTalkAdapter;
     private final DingTalkTokenManager tokenManager;
+    private final ShbConfig shbConfig;
+    private final ShbClient shbClient;
+    private final ShbTokenManager shbTokenManager;
+    private final IntegrationAuditRecorder auditRecorder;
 
     public IntegrationOpsController(DingTalkConfig dingTalkConfig, DingTalkClient dingTalkClient,
-                                    DingTalkNotifyAdapter dingTalkAdapter, DingTalkTokenManager tokenManager) {
+                                    DingTalkNotifyAdapter dingTalkAdapter, DingTalkTokenManager tokenManager,
+                                    ShbConfig shbConfig, ShbClient shbClient, ShbTokenManager shbTokenManager,
+                                    ObjectProvider<IntegrationAuditRecorder> auditRecorder) {
         this.dingTalkConfig = dingTalkConfig;
         this.dingTalkClient = dingTalkClient;
         this.dingTalkAdapter = dingTalkAdapter;
         this.tokenManager = tokenManager;
+        this.shbConfig = shbConfig;
+        this.shbClient = shbClient;
+        this.shbTokenManager = shbTokenManager;
+        this.auditRecorder = auditRecorder.getIfAvailable();
     }
 
     // ==================== 钉钉 ====================
 
-    /** 配置齐备性健康检查（不消耗 token 调用次数以外的任何远端资源） */
+    /** 配置齐备性健康检查（不发起任何远端调用） */
     @GetMapping("/dingtalk/health")
     @RequirePermission("sys:config")
     public ApiResponse<Map<String, Object>> dingtalkHealth() {
@@ -57,7 +76,7 @@ public class IntegrationOpsController {
         return ApiResponse.ok(health);
     }
 
-    /** 测试发送（channel: AUTO/WORK/ROBOT）；WORK 用 dingUserId 或 receiverId(走映射) */
+    /** 测试发送（channel: AUTO/WORK/ROBOT）；WORK 用 dingUserId 或 userIds */
     @PostMapping("/dingtalk/test-notify")
     @RequirePermission("sys:config")
     public ApiResponse<Object> dingtalkTestNotify(@RequestBody Map<String, Object> body) {
@@ -71,7 +90,7 @@ public class IntegrationOpsController {
             return ApiResponse.ok(dingTalkClient.sendWorkNotify(resolveUserIds(body), title,
                     "#### " + title + "\n\n" + content));
         }
-        // AUTO：adapter 全链路（含降级链）
+        // AUTO：adapter 全链路（含 L1→L2 降级链）
         Object receiverRaw = body.get("receiverId");
         Long receiverId = receiverRaw == null ? null : Long.valueOf(String.valueOf(receiverRaw));
         boolean sent = dingTalkAdapter.send(receiverId, title, content, "OPS_TEST", null);
@@ -104,6 +123,67 @@ public class IntegrationOpsController {
         return ApiResponse.ok(result);
     }
 
+    // ==================== 售后宝 ====================
+
+    /** 配置齐备性健康检查（禁用 token 端点探测——50 次/天纪律） */
+    @GetMapping("/shb/health")
+    @RequirePermission("sys:config")
+    public ApiResponse<Map<String, Object>> shbHealth() {
+        Map<String, Object> health = new LinkedHashMap<>();
+        health.put("enabled", shbConfig.isEnabled());
+        health.put("configured", shbConfig.configured());
+        health.put("baseUrl", shbConfig.getBaseUrl());
+        health.put("webhookKeySet", shbConfig.getWebhookSharedKey() != null && !shbConfig.getWebhookSharedKey().isEmpty());
+        health.put("todayTokenFetch", shbTokenManager.todayFetchCount());
+        return ApiResponse.ok(health);
+    }
+
+    /**
+     * 手动增量对账（拉取事件列表，逐事件落 int_sync_log）。
+     * body: {hours:24, pageSize:50, maxPages:10}；对报告②§七.6"Webhook+定时对账双通道"的兜底跳。
+     */
+    @PostMapping("/shb/sync-events")
+    @RequirePermission("sys:config")
+    public ApiResponse<Map<String, Object>> shbSyncEvents(@RequestBody(required = false) Map<String, Object> body) {
+        int hours = intOf(body, "hours", shbConfig.getSyncWindowHours());
+        int pageSize = intOf(body, "pageSize", shbConfig.getPageSize());
+        int maxPages = intOf(body, "maxPages", 10);
+        String timeFilter = ShbClient.timeWindow(hours);
+
+        Map<String, Object> summary = new LinkedHashMap<>();
+        int total = 0;
+        int pages = 0;
+        String lastError = null;
+        for (int pageNum = 1; pageNum <= maxPages; pageNum++) {
+            ShbClient.ShbResult r = shbClient.getEvents(pageNum, pageSize, null, timeFilter);
+            if (!r.ok) {
+                lastError = r.errorCode + " " + r.message;
+                break;
+            }
+            pages = pageNum;
+            JsonNode list = r.data.path("list");
+            if (list.isMissingNode() || !list.isArray() || list.isEmpty()) {
+                break;
+            }
+            total += list.size();
+            for (JsonNode event : list) {
+                audit(SHB, "PULL", event.path("eventNo").asText(null), "SUCCESS", null, truncate(event.toString()));
+            }
+            if (list.size() < ShbClient.normalizePageSize(pageSize)) {
+                break;
+            }
+        }
+        summary.put("total", total);
+        summary.put("pages", pages);
+        summary.put("timeFilter", timeFilter);
+        if (lastError != null) {
+            summary.put("lastError", lastError);
+        }
+        return ApiResponse.ok(summary);
+    }
+
+    // ---- 工具 ----
+
     private List<String> resolveUserIds(Map<String, Object> body) {
         Object userIds = body.get("userIds");
         List<String> ids = new ArrayList<>();
@@ -119,6 +199,28 @@ public class IntegrationOpsController {
         if (ids.isEmpty()) {
             throw BizException.of(ErrorCode.PARAM_INVALID, "工作通知测试需提供 dingUserId 或 userIds");
         }
-        return ids.isEmpty() ? Collections.emptyList() : ids;
+        return ids;
+    }
+
+    private static int intOf(Map<String, Object> body, String key, int def) {
+        if (body == null || body.get(key) == null) {
+            return def;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(body.get(key)));
+        } catch (NumberFormatException ex) {
+            return def;
+        }
+    }
+
+    private static String truncate(String s) {
+        return s == null ? null : (s.length() > 60000 ? s.substring(0, 60000) : s);
+    }
+
+    private void audit(String adapterCode, String direction, String remoteId, String status,
+                       String errorMessage, String payloadJson) {
+        if (auditRecorder != null) {
+            auditRecorder.record(adapterCode, direction, remoteId, status, errorMessage, payloadJson);
+        }
     }
 }

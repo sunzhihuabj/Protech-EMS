@@ -45,6 +45,7 @@ public class SecurityConfig {
             "/api/agent/v1/capabilities",
             "/api/internal/bid/**", // DMZ 拉模式任务接口（mTLS 占位，V4-05 M18）
             "/api/internal/jobs/**", // 内部任务扫描端点（job 进程调用，mTLS 占位，A-36）
+            "/api/internal/shb/**", // 售后宝 Webhook 推送回调（共享密钥+原始落库，A-40；SPRINT-INT1）
             "/swagger-ui.html",
             "/doc.html",
             "/webjars/**",
