@@ -22,7 +22,7 @@
 | 1 | DB 连接（MySQL 8.0 8.0 兼容） | 主数据 | 连通 + `flyway info` 正常 |
 | 2 | Redis 地址+密码 | 缓存 | `PING` 通 |
 | 3 | JWT_SECRET（≥32 随机） | 令牌签名 | 已生成并注入 |
-| 4 | 内网模型端点 + Key（OpenAI 兼容） | AI-001~016 真实推理 | `POST {endpoint}/chat/completions` 200 |
+| 4 | 模型端点 + Key + 模型名（OpenAI 兼容） | AI-001~016 真实推理 | `POST {endpoint}/chat/completions` 200；三者注入 `PROJLIFE_AI_MODEL_ENDPOINT/API_KEY/MODEL_NAME`（测试阶段已接入 NVIDIA integrate API + z-ai/glm-5.3-flash，实测 AI-002 抽取 6.4s、AI-001 风险分析 16~81s；生产轮换 Key 并切回内网端点对齐 BR-AI-02） |
 | 5 | 钉钉企业内部应用 AppKey/AppSecret（+可选机器人 webhook） | 通知主通道 D-08 | 获取 token 200 + 测试通知达 |
 | 6 | 企微凭据（备用） | 通知备通道 | 同上 |
 | 7 | 微信小程序 AppID/Secret + 服务器域名备案 | 工人端 BR-08 | 小程序 code2session 通 |
@@ -48,7 +48,7 @@ cd projlife-web && npm ci && npm run build   # 产物 dist/
 
 ## 五、接入步骤（凭据就绪后）
 
-1. **真实模型**：注入 `PROJLIFE_AI_MODEL_ENDPOINT/KEY` → 重启 ai-gateway → 冒烟 `/ai/v1/call`（AI-001 风险分析）确认走真实推理；降级链保持不动（模型失联自动 DEGRADED，业务不阻塞）。
+1. **真实模型**：注入 `PROJLIFE_AI_MODEL_ENDPOINT + PROJLIFE_AI_API_KEY + PROJLIFE_AI_MODEL_NAME`（三者齐备即启用 OpenAI 兼容真实推理；`PROJLIFE_AI_DISABLE_THINKING=true` 默认关闭思维链）→ 重启 ai-gateway → `GET /ai/v1/health` 应报 `mode=LLM, status=UP` → 冒烟 `/ai/v1/call`（AI-001 风险分析）确认响应含 `isMock=false` + `modelVersion`；降级链保持不动（模型失联自动 DEGRADED 回落 mock，业务不阻塞，`ai_call_log.status=DEGRADED` 可查证）。可选 `PROJLIFE_AI_TIMEOUT_MS`（默认 90000）。
 2. **钉钉**：注入 `DINGTALK_ENABLED=true + APP_KEY/SECRET` → 重启主应用 → 通知中心触发一条工作通知验证；企微备用同法。
 3. **定时任务**：注入 `JOB_ENABLED=true + JOB_GATEWAY + 系统账号` → 启动 projlife-job → 验证 ShedLock 行锁表与 02:00 红灯升级日志。
 4. **小程序（BR-08 工人端）**：凭据就绪后按 03 册小程序切片开发（后端 `eng_worker`/`thd_worker_project`/水印接口已就绪）。

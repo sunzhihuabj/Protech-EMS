@@ -24,9 +24,16 @@ management:
 
 projlife:
   ai:
-    # 内网模型端点；为空即 mock 模式（S0 默认）。严禁配置任何公网 AI 服务地址（BR-AI-02）
+    # 模型端点（OpenAI 兼容 chat/completions 全 URL）；为空即 mock 模式（S0 默认）
     model-endpoint: ${PROJLIFE_AI_MODEL_ENDPOINT:}
-    timeout-ms: 8000
+    # Bearer Key（测试阶段经环境变量注入；生产轮换 + 仅内网分发，严禁入库入码）
+    api-key: ${PROJLIFE_AI_API_KEY:}
+    # 推理模型名；key+endpoint+model 三者齐备即启用真实推理，否则回退 mock
+    model-name: ${PROJLIFE_AI_MODEL_NAME:}
+    # 关闭思维链（实测 glm-5.3-flash 38.9s→16.4s；deepseek-v4.1-flash 思维链失控 236s 耗尽 token）
+    disable-thinking: ${PROJLIFE_AI_DISABLE_THINKING:true}
+    # 模型读超时 ms（真实推理含网络波动建议 ≥90000）
+    timeout-ms: ${PROJLIFE_AI_TIMEOUT_MS:90000}
 
 logging:
   file:
