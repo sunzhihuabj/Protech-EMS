@@ -40,3 +40,5 @@
 | A-41 | 2026-11-03 | INT1 | 钉钉事件订阅（Stream/HTTP 回调 300+ 事件）本批次不做（需公网回调地址与 AES 加解密密钥），随生产部署批次；本批次钉钉侧只做出站触达 | 调研①§六.9；INT1 §2.5 |
 | A-42 | 2026-11-03 | INT1 | T+ GetRealNameTPlusToken 的 password 加密方式未在公开资料披露：HTTPS 链路明文承载；实施侧若要求加密再补加密实现 | 调研③§三（"password加密"细节未公开） |
 | A-43 | 2026-11-03 | INT1 | T+ token 响应包裹结构未完全公开：客户端按 access_token/accessToken/data.access_token 四种路径容错解析，联调时以真实响应为准收紧 | 调研③（无响应样例） |
+| A-44 | 2026-11-03 | INT2 | 钉钉通讯录匹配顺序：MOBILE（sys_user.phone 精确）→ NAME（realName 全表唯一才匹配）→ NONE；MANUAL 人工绑定优先级最高且永不被同步覆盖；重名记 NONE 供人工绑定 | 调研①；SPRINT-INT2 §一 |
+| A-45 | 2026-11-03 | INT2 | 钉钉 subDepts 响应字段 dept_id/deptId 双写容错解析；user/list 响应结构以联调实测收紧（公开文档样例有限） | 调研①§2.1 |

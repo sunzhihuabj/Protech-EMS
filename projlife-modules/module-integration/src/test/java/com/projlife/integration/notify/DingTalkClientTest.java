@@ -242,6 +242,46 @@ class DingTalkClientTest {
     }
 
     @Test
+    @DisplayName("userid 解析优先级：静态映射 > 通讯录绑定表（resolver SPI，INT2）> 机器人兜底")
+    void resolverPrecedence() {
+        DingTalkConfig config = workConfig();
+        config.setWebhook("http://127.0.0.1:" + port + "/robot/send");
+        config.setWebhookSecret(SECRET);
+        DingTalkClient client = newClient(config);
+        DingTalkNotifyAdapter adapter = new DingTalkNotifyAdapter(config, client);
+        // 静态映射含 30，不含 31；resolver 31→dtBound、99→null
+        config.setUserMapping("30:dtStatic");
+        adapter.setUserResolver(new com.projlife.common.spi.DingtalkUserResolver() {
+            @Override
+            public String resolveBySysUserId(Long sysUserId) {
+                return sysUserId == 31L ? "dtBound" : null;
+            }
+
+            @Override
+            public String resolveUnionIdBySysUserId(Long sysUserId) {
+                return null;
+            }
+        });
+
+        // 30 走静态映射（发送 userid=dtStatic）
+        CAPTURED.remove("async_body");
+        assertTrue(adapter.send(30L, "t", "c", "biz", "1"));
+        assertTrue(readJson(CAPTURED.get("async_body")).get("userid_list").toString().contains("dtStatic"),
+                "静态映射应优先");
+
+        // 31 走绑定表 resolver
+        CAPTURED.remove("async_body");
+        assertTrue(adapter.send(31L, "t", "c", "biz", "1"));
+        assertTrue(readJson(CAPTURED.get("async_body")).get("userid_list").toString().contains("dtBound"),
+                "resolver 应命中绑定表");
+
+        // 99 无绑定 → 机器人兜底
+        ROBOT_HITS.set(0);
+        assertTrue(adapter.send(99L, "t", "c", "biz", "1"), "无绑定应降级机器人且成功");
+        assertEquals(1, ROBOT_HITS.get());
+    }
+
+    @Test
     @DisplayName("user-mapping 静态映射解析（A-39）")
     void userMapping() {
         DingTalkConfig config = workConfig();

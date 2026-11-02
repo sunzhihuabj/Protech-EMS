@@ -304,6 +304,84 @@ public class DingTalkClient {
         }
     }
 
+    // ==================== 通讯录（SPRINT-INT2） ====================
+
+    /** 通用 API 结果（通讯录同步用；每次调用不单独落审计，由同步服务按运行汇总） */
+    public static class ApiResult {
+        public boolean ok;
+        public String reason;
+        public JsonNode data;
+
+        public static ApiResult ok(JsonNode data) {
+            ApiResult r = new ApiResult();
+            r.ok = true;
+            r.data = data;
+            return r;
+        }
+
+        public static ApiResult fail(String reason) {
+            ApiResult r = new ApiResult();
+            r.ok = false;
+            r.reason = reason;
+            return r;
+        }
+    }
+
+    /**
+     * 子部门列表（新版 REST，Header 鉴权，报告①§2.1）：GET /v1.0/departments/{deptId}/subDepts
+     * → {"result":[{"dept_id":..,"name":..},..]}（A-45：字段容错解析 dept_id/deptId）。
+     */
+    public ApiResult listSubDepartments(long deptId) {
+        if (!config.tokenConfigured()) {
+            return ApiResult.fail("钉钉凭据未配置");
+        }
+        try {
+            String token = tokenManager.getToken();
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("x-acs-dingtalk-access-token", token);
+            org.springframework.http.HttpEntity<Void> entity = new org.springframework.http.HttpEntity<>(headers);
+            JsonNode resp = restTemplate.exchange(
+                    config.getApiBase() + "/v1.0/departments/" + deptId + "/subDepts",
+                    org.springframework.http.HttpMethod.GET, entity, JsonNode.class).getBody();
+            if (resp == null) {
+                return ApiResult.fail("子部门接口空响应");
+            }
+            JsonNode result = resp.has("result") ? resp.path("result") : resp;
+            return ApiResult.ok(result);
+        } catch (Exception ex) {
+            return ApiResult.fail("子部门查询失败：" + ex.getMessage());
+        }
+    }
+
+    /**
+     * 部门用户详情列表（旧版 topapi，Query 鉴权，报告①§2.1）：POST /topapi/v2/user/list
+     * body {dept_id, cursor, size≤100} → result.list[{userid,name,unionid,mobile?}], has_more, next_cursor。
+     */
+    public ApiResult listDeptUsers(long deptId, long cursor) {
+        if (!config.tokenConfigured()) {
+            return ApiResult.fail("钉钉凭据未配置");
+        }
+        try {
+            String token = tokenManager.getToken();
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            Map<String, Object> body = new LinkedHashMap<>();
+            body.put("dept_id", deptId);
+            body.put("cursor", cursor);
+            body.put("size", 100);
+            JsonNode resp = restTemplate.postForObject(
+                    config.getOapiBase() + "/topapi/v2/user/list?access_token=" + token,
+                    new HttpEntity<>(body, headers), JsonNode.class);
+            if (resp == null || !"0".equals(resp.path("errcode").asText("-1"))) {
+                return ApiResult.fail("部门用户查询失败："
+                        + (resp == null ? "空响应" : "errcode=" + resp.path("errcode").asText() + " " + resp.path("errmsg").asText("")));
+            }
+            return ApiResult.ok(resp.path("result"));
+        } catch (Exception ex) {
+            return ApiResult.fail("部门用户查询异常：" + ex.getMessage());
+        }
+    }
+
     // ==================== 内部 ====================
 
     /** 旧版 topapi 调用（Query token；认证类 errcode 清缓存重试一次，C1 兜底） */

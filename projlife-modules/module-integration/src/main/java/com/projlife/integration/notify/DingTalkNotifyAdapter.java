@@ -10,11 +10,12 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- * 钉钉通知适配器（SPRINT-INT1，替换原 DingtalkStubNotifyAdapter，D-08 通知主通道）：
+ * 钉钉通知适配器（SPRINT-INT1，SPRINT-INT2 增强，D-08 通知主通道）：
  * 降级链（风险表）：工作通知（L1，需完整应用凭据）→ 群机器人（L2，最小凭据）→ 站内通知恒可达。
  * available()=false 或全部通道失败时返回 false，调用侧自动降级为仅站内（不抛异常、不阻塞）。
  *
- * A-39：sys_user.id → 钉钉 userid 静态映射（user-mapping 配置）；未映射的接收人跳过外发并记审计。
+ * userid 解析顺序（A-39/INT2）：yml 静态映射 → sys_dingtalk_binding 绑定表（通讯录同步产物，
+ * DingtalkUserResolver SPI）→ 无映射则工作通知跳过、走机器人兜底。
  */
 @Component
 public class DingTalkNotifyAdapter {
@@ -29,9 +30,18 @@ public class DingTalkNotifyAdapter {
     @Autowired(required = false)
     private IntegrationAuditRecorder auditRecorder;
 
+    /** 通讯录绑定表解析器（SPRINT-INT2，module-org 实现） */
+    @Autowired(required = false)
+    private com.projlife.common.spi.DingtalkUserResolver userResolver;
+
     public DingTalkNotifyAdapter(DingTalkConfig config, DingTalkClient client) {
         this.config = config;
         this.client = client;
+    }
+
+    /** 测试注入口 */
+    void setUserResolver(com.projlife.common.spi.DingtalkUserResolver resolver) {
+        this.userResolver = resolver;
     }
 
     /** 渠道是否可用（enabled 且 L1/L2 至少一个通道凭据齐备） */
@@ -62,7 +72,7 @@ public class DingTalkNotifyAdapter {
                 }
                 log.warn("钉钉工作通知失败，降级机器人 receiverId={} reason={}", receiverId, r.reason);
             } else {
-                log.debug("receiverId={} 无钉钉 userid 映射（A-39），走机器人通道", receiverId);
+                log.debug("receiverId={} 无钉钉 userid 绑定（静态映射/通讯录均未命中，A-39/INT2），走机器人通道", receiverId);
             }
         }
 
@@ -81,12 +91,17 @@ public class DingTalkNotifyAdapter {
         return false;
     }
 
-    /** sys_user.id → 钉钉 userid（静态映射，A-39） */
+    /**
+     * sys_user.id → 钉钉 userid：静态映射（A-39 测试期）优先，其次通讯录绑定表（INT2）。
+     */
     private String resolveDingUserId(Long receiverId) {
         if (receiverId == null) {
             return null;
         }
         Map<Long, String> mapping = config.parseUserMapping();
-        return mapping.get(receiverId);
+        if (mapping.containsKey(receiverId)) {
+            return mapping.get(receiverId);
+        }
+        return userResolver == null ? null : userResolver.resolveBySysUserId(receiverId);
     }
 }
