@@ -31,6 +31,9 @@ public class IntSyncLog extends BaseEntity {
     /** 错误信息 */
     private String errorMessage;
 
+    /** 请求/响应载荷快照（webhook 原始报文必存，A-40；SPRINT-INT1 V21 新增列） */
+    private String payloadJson;
+
     /** 重试次数 */
     private Integer retryCount;
 
@@ -99,6 +102,14 @@ public class IntSyncLog extends BaseEntity {
 
     public void setPushedAt(LocalDateTime pushedAt) {
         this.pushedAt = pushedAt;
+    }
+
+    public String getPayloadJson() {
+        return payloadJson;
+    }
+
+    public void setPayloadJson(String payloadJson) {
+        this.payloadJson = payloadJson;
     }
 
 }
