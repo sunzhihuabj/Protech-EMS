@@ -39,15 +39,17 @@ public class ContractController {
     private final ContractAiService aiService;
     private final ContractChangeService changeService;
     private final ContractDispatchService dispatchService;
+    private final com.projlife.contract.service.ContractRelatedService relatedService;
 
     public ContractController(ContractService contractService, ContractFinanceService financeService,
                               ContractAiService aiService, ContractChangeService changeService,
-                              ContractDispatchService dispatchService) {
+                              ContractDispatchService dispatchService, com.projlife.contract.service.ContractRelatedService relatedService) {
         this.contractService = contractService;
         this.financeService = financeService;
         this.aiService = aiService;
         this.changeService = changeService;
         this.dispatchService = dispatchService;
+        this.relatedService = relatedService;
     }
 
     // ---------- 起草 / 台账 ----------
@@ -234,6 +236,13 @@ public class ContractController {
     }
 
     // ---------- 收款 / 开票 ----------
+
+    /** SPRINT-PRJ1（审计 F9）：关联单据链 合同→项目→开票→收款计划 */
+    @GetMapping("/{id}/related")
+    @RequirePermission("contract:view")
+    public ApiResponse<java.util.Map<String, Object>> related(@PathVariable Long id) {
+        return ApiResponse.ok(relatedService.related(id));
+    }
 
     @GetMapping("/{id}/payment-plans")
     @RequirePermission("contract:view")

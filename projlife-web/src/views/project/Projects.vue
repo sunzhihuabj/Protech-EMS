@@ -230,9 +230,8 @@ columns: [
       }).catch(showError)
     },
     openDetail(row) {
-      this.current = row
-      this.detailDialog = true
-      this.refreshDetail()
+      // SPRINT-PRJ1（F11）：跳转项目甘特详情页（WBS 甘特 + CPM）
+      this.$router.push({ name: 'prjProjectDetail', params: { id: String(row.id) } })
     },
     refreshDetail() {
       this.detailLoading = true

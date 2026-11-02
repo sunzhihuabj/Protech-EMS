@@ -29,6 +29,7 @@ const routes = [
       { path: 'ct/contract/:id/filing', name: 'ctContractFiling', component: () => import('@/views/contract/ContractFiling.vue'), meta: { title: '建档备案', permCode: 'menu:contract' } },
       { path: 'ct/contract/:id', name: 'ctContractDetail', component: () => import('@/views/contract/ContractDetail.vue'), meta: { title: '合同详情', permCode: 'menu:contract' } },
       { path: 'prj/project', name: 'prjProject', component: () => import('@/views/project/Projects.vue'), meta: { title: '项目台账', permCode: 'menu:project' } },
+      { path: 'prj/project/:id', name: 'prjProjectDetail', component: () => import('@/views/project/ProjectDetail.vue'), meta: { title: '项目甘特详情', permCode: 'menu:project' } },
       { path: 'bid/notice', name: 'bidNotice', component: () => import('@/views/bid/BidIntel.vue'), meta: { title: '标讯台账', permCode: 'menu:bid' } },
       // ③ 研发工艺
       { path: 'plm/bom', name: 'plmBom', component: () => import('@/views/plm/Boms.vue'), meta: { title: 'BOM 台账', permCode: 'menu:plm' } },

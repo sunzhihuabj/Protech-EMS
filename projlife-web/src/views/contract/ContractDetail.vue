@@ -72,13 +72,27 @@
       <el-col :span="8">
         <el-card shadow="never" style="margin-bottom: 16px">
           <div slot="header"><b>关联单据</b></div>
-          <el-timeline>
-            <el-timeline-item v-for="p in links" :key="p.name" :type="p.id ? 'primary' : 'info'">
-              <b>{{ p.name }}</b>
-              <span v-if="p.id">：{{ p.id }}</span>
-              <span v-else class="muted">未创建</span>
-            </el-timeline-item>
-          </el-timeline>
+          <div class="rel-group"><b class="rel-title">关联项目（{{ related.projects.length }}）</b>
+            <div v-if="!related.projects.length" class="muted">未创建</div>
+            <div v-for="p in related.projects" :key="'p'+p.id" class="rel-row">
+              <el-link type="primary" @click="$router.push({ name: 'prjProjectDetail', params: { id: String(p.id) } })">{{ p.projectNo }}</el-link>
+              <span>{{ p.projectName }}</span><span class="muted">{{ p.status }} · {{ p.progressPct == null ? '—' : p.progressPct + '%' }}</span>
+            </div>
+          </div>
+          <div class="rel-group"><b class="rel-title">开票（{{ related.invoices.length }}）</b>
+            <div v-if="!related.invoices.length" class="muted">未创建</div>
+            <div v-for="i in related.invoices" :key="'i'+i.id" class="rel-row">
+              <span>{{ i.invoiceNo }}</span><span>{{ i.invoiceType }}</span>
+              <span class="muted">¥{{ i.amount }} · {{ i.status }}</span>
+            </div>
+          </div>
+          <div class="rel-group"><b class="rel-title">收款计划（{{ related.paymentPlans.length }}）</b>
+            <div v-if="!related.paymentPlans.length" class="muted">未创建</div>
+            <div v-for="pl in related.paymentPlans" :key="'pl'+pl.id" class="rel-row">
+              <span>{{ pl.phaseName }}</span><span>{{ pl.percentage }}%</span>
+              <span class="muted">¥{{ pl.amount }} · 计划 {{ pl.planDate }} · {{ pl.status }}</span>
+            </div>
+          </div>
         </el-card>
         <el-card shadow="never">
           <div slot="header"><b>附件（只读水印件，BR-07）</b></div>
@@ -110,7 +124,7 @@ export default {
   data() {
     return {
       c: {},
-      links: [],
+      related: { projects: [], invoices: [], paymentPlans: [] },
       logs: [],
       statusDict: 'DRAFT:编辑中,REVIEWED:已评审,SIGNED:已签署,PERFORMING:履行中,ACCEPTED:已验收,WARRANTY:质保期中,CLOSED:已关闭,CHANGED:已变更'
     }
@@ -129,15 +143,10 @@ export default {
   methods: {
     load() {
       this.$http.get(`/contract/${this.id}`).then(body => { this.c = body.data }).catch(showError)
-      this.$http.get(`/contract/${this.id}/ai/risks`).then(body => {
-        // 风险条目并入关联信息（暂以计数呈现，避免假数据）
-        this.links = [
-          { name: '项目（BR-01 评审必挂）', id: (this.c.projectIds && this.c.projectIds[0]) || '' },
-          { name: 'AI 风险条目', id: (body.data || []).length ? (body.data.length + ' 条') : '' }
-        ]
-      }).catch(() => {
-        this.links = [{ name: '项目（BR-01 评审必挂）', id: (this.c.projectIds && this.c.projectIds[0]) || '' }]
-      })
+      // SPRINT-PRJ1（F9）：关联单据链（项目/开票/收款计划）
+      this.$http.get(`/contract/${this.id}/related`).then(body => {
+        this.related = body.data || { projects: [], invoices: [], paymentPlans: [] }
+      }).catch(() => {})
       this.$http.get('/sys/operation-log', { params: { pageNum: 1, pageSize: 10, targetType: 'ct_contract', targetId: this.id } })
         .then(body => { this.logs = (body.data && body.data.records) || [] }).catch(() => {})
     },
@@ -166,4 +175,7 @@ export default {
 .pl-readonly-tip { font-size: 12px; color: var(--ink-3); margin-right: auto; }
 .pl-num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--ink-3); font-size: 12px; }
+.rel-group { margin-bottom: 10px; }
+.rel-title { font-size: 13px; color: var(--ink-2); display: block; margin-bottom: 4px; }
+.rel-row { display: flex; gap: 8px; align-items: center; font-size: 12px; padding: 2px 0; }
 </style>
