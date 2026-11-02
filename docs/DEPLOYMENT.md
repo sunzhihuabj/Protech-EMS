@@ -23,7 +23,9 @@
 | 2 | Redis 地址+密码 | 缓存 | `PING` 通 |
 | 3 | JWT_SECRET（≥32 随机） | 令牌签名 | 已生成并注入 |
 | 4 | 模型端点 + Key + 模型名（OpenAI 兼容） | AI-001~016 真实推理 | `POST {endpoint}/chat/completions` 200；三者注入 `PROJLIFE_AI_MODEL_ENDPOINT/API_KEY/MODEL_NAME`（测试阶段已接入 NVIDIA integrate API + z-ai/glm-5.3-flash，实测 AI-002 抽取 6.4s、AI-001 风险分析 16~81s；生产轮换 Key 并切回内网端点对齐 BR-AI-02） |
-| 5 | 钉钉企业内部应用 AppKey/AppSecret（+可选机器人 webhook） | 通知主通道 D-08 | 获取 token 200 + 测试通知达 |
+| 5 | 钉钉企业内部应用 AppKey/AppSecret/agentId（+可选群机器人 webhook/secret） | 通知主通道 D-08（SPRINT-INT1 已实现：工作通知+机器人+待办，L1→L2 降级链） | 注入 `PROJLIFE_DINGTALK_*` → `GET /api/v1/integ/ops/dingtalk/health` available=true → `/dingtalk/test-notify` 测试送达 |
+| 5b | 售后宝 appKey/appSecret + 固定公网 IP 白名单（Webhook 推送需企业版+） | 事件/工单同步（INT-SHB） | 注入 `PROJLIFE_SHB_*` → `/api/v1/integ/ops/shb/health` configured=true → `/shb/sync-events` 拉取成功落 int_sync_log |
+| 5c | T+ 三件套 appKey/appSecret/私钥 + orgId + 账套号 | 存货/基础档案同步（INT-TPLUS，13.0 红线见 SPRINT-INT1） | 注入 `PROJLIFE_TPLUS_*` → `/api/v1/integ/ops/tplus/health` probe=UP → `/tplus/query` Inventory/Query 成功 |
 | 6 | 企微凭据（备用） | 通知备通道 | 同上 |
 | 7 | 微信小程序 AppID/Secret + 服务器域名备案 | 工人端 BR-08 | 小程序 code2session 通 |
 | 8 | DMZ 抓取机 + 标讯域名清单合规审查 | FR-BID 抓取调度 | robots 审查记录归档 |
@@ -49,7 +51,9 @@ cd projlife-web && npm ci && npm run build   # 产物 dist/
 ## 五、接入步骤（凭据就绪后）
 
 1. **真实模型**：注入 `PROJLIFE_AI_MODEL_ENDPOINT + PROJLIFE_AI_API_KEY + PROJLIFE_AI_MODEL_NAME`（三者齐备即启用 OpenAI 兼容真实推理；`PROJLIFE_AI_DISABLE_THINKING=true` 默认关闭思维链）→ 重启 ai-gateway → `GET /ai/v1/health` 应报 `mode=LLM, status=UP` → 冒烟 `/ai/v1/call`（AI-001 风险分析）确认响应含 `isMock=false` + `modelVersion`；降级链保持不动（模型失联自动 DEGRADED 回落 mock，业务不阻塞，`ai_call_log.status=DEGRADED` 可查证）。可选 `PROJLIFE_AI_TIMEOUT_MS`（默认 90000）。
-2. **钉钉**：注入 `DINGTALK_ENABLED=true + APP_KEY/SECRET` → 重启主应用 → 通知中心触发一条工作通知验证；企微备用同法。
+2. **钉钉（SPRINT-INT1 已实现）**：注入 `PROJLIFE_DINGTALK_ENABLED=true + APP_KEY/APP_SECRET/AGENT_ID`（最小凭据路径：仅配 `WEBHOOK + WEBHOOK_SECRET` 即可用群机器人通道）→ 重启主应用 → `GET /api/v1/integ/ops/dingtalk/health` 验证 available=true → `POST /api/v1/integ/ops/dingtalk/test-notify {"channel":"AUTO","receiverId":30}` 全链路测试（工作通知失败自动降级机器人）；工作通知 task_id 已落 int_sync_log.remote_id，假成功用 `GET /dingtalk/notify-result?taskId=` 二次回查。企微备用同法。
+2b. **售后宝（SPRINT-INT1 已实现）**：售后宝PC端→系统设置→应用管理 创建 API 应用（IP 白名单填业务总台固定出口 IP）→ 注入 `PROJLIFE_SHB_ENABLED=true + APP_KEY/APP_SECRET + WEBHOOK_KEY` → 推送地址配 `https://<总台域名>/api/internal/shb/webhook?sharedKey=<KEY>` → `POST /api/v1/integ/ops/shb/sync-events {"hours":24}` 验证对账拉取。**纪律**：token 50 次/天（客户端已缓存+计数），健康检查勿用 token 端点探测。
+2c. **捷信通T+（SPRINT-INT1 已实现，通道B直连）**：畅捷通开放平台入驻拿三件套 → T+ 系统内账套主管授权 → 注入 `PROJLIFE_TPLUS_ENABLED=true + APP_KEY/APP_SECRET/ORG_ID/USER_NAME/PASSWORD/ACC_NUM/PRIVATE_KEY` → `GET /api/v1/integ/ops/tplus/health` 验证 probe=UP → `POST /tplus/query {"service":"Inventory","method":"Query","args":{}}` 冒烟。**13.0 红线**：仅用官方文档标注 13.0 可用的接口；「服务名称不正确/令牌信息不正确」优先查补丁。
 3. **定时任务**：注入 `JOB_ENABLED=true + JOB_GATEWAY + 系统账号` → 启动 projlife-job → 验证 ShedLock 行锁表与 02:00 红灯升级日志。
 4. **小程序（BR-08 工人端）**：凭据就绪后按 03 册小程序切片开发（后端 `eng_worker`/`thd_worker_project`/水印接口已就绪）。
 5. **DMZ 抓取**：部署机安装 crawler（调用 `/api/internal/bid/tasks` 拉模式，30s 轮询，mTLS 占位待证书）。

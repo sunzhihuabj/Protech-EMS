@@ -58,6 +58,34 @@ projlife:
   notify:
     wechat:
       enabled: false
+  # 外部系统接入（SPRINT-INT1）：凭据一律环境变量注入，未配置即 enabled=false 自动降级
+  integ:
+    dingtalk:
+      enabled: ${PROJLIFE_DINGTALK_ENABLED:false}
+      app-key: ${PROJLIFE_DINGTALK_APP_KEY:}
+      app-secret: ${PROJLIFE_DINGTALK_APP_SECRET:}
+      agent-id: ${PROJLIFE_DINGTALK_AGENT_ID:}
+      webhook: ${PROJLIFE_DINGTALK_WEBHOOK:}
+      webhook-secret: ${PROJLIFE_DINGTALK_WEBHOOK_SECRET:}
+      # 测试期静态映射 "sys_userId:钉钉userid"（生产批次上通讯录同步，A-39）
+      user-mapping: ${PROJLIFE_DINGTALK_USER_MAPPING:}
+    shb:
+      enabled: ${PROJLIFE_SHB_ENABLED:false}
+      app-key: ${PROJLIFE_SHB_APP_KEY:}
+      app-secret: ${PROJLIFE_SHB_APP_SECRET:}
+      base-url: ${PROJLIFE_SHB_BASE_URL:https://oapi.shb.ltd}
+      webhook-shared-key: ${PROJLIFE_SHB_WEBHOOK_KEY:}
+    tplus:
+      enabled: ${PROJLIFE_TPLUS_ENABLED:false}
+      base-url: ${PROJLIFE_TPLUS_BASE_URL:https://hbtgl.a4.cjtmsp.com}
+      app-key: ${PROJLIFE_TPLUS_APP_KEY:}
+      app-secret: ${PROJLIFE_TPLUS_APP_SECRET:}
+      org-id: ${PROJLIFE_TPLUS_ORG_ID:}
+      token-mode: ${PROJLIFE_TPLUS_TOKEN_MODE:REALNAME}
+      user-name: ${PROJLIFE_TPLUS_USER_NAME:}
+      password: ${PROJLIFE_TPLUS_PASSWORD:}
+      acc-num: ${PROJLIFE_TPLUS_ACC_NUM:}
+      private-key: ${PROJLIFE_TPLUS_PRIVATE_KEY:}
 
 logging:
   file:

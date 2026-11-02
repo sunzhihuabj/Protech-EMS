@@ -30,4 +30,13 @@
 
 | A-33 | 2026-10-31 | S15 | APS L1 简化口径：顺排（优先级→订单→工序序）+ 最小负载选资源 + 日产能工时（8h=480 分钟上限）；跨日拆分/模具人员深度调度随生产部署批次；齐套校验复用 aps_material_check.is_ready | V4-04 M06 |
 
-| A-35 | 2026-10-31 | S17 | 看板指标灯色完成率口径：value/target ≥1 GREEN / ≥0.9 YELLOW / 其余 RED；threshold_json 可覆盖 yellowRatio/redRatio；无目标值不判灯（默认 GREEN 不误报） | V4-05 M12 |
+| A-35 | 2026-10-31 | S17
+
+| A-36 | 2026-11-03 | S24（回补注册） | 内部任务端点 /api/internal/jobs/** 走白名单免 JWT，进程间认证以 mTLS 占位（生产批次补证书） | SPRINT-S24；SecurityConfig/InternalJobsController 注释引用 |
+| A-37 | 2026-11-03 | S24→INT1（回补注册） | 钉钉通道凭据占位（原 DingtalkStubNotifyAdapter enabled=false 桩）；SPRINT-INT1 已替换为真实实现（DingTalkNotifyAdapter），A-37 语义由"占位"变"已实现" | SPRINT-S24/INT1 |
+| A-38 | 2026-11-03 | INT1 | T+ 采纳通道 B 直连实例（13.0 专属云实测在线）；通道 A（开放平台 openapi.chanjet.com + openToken）留配置切换位不实现，如专属云策略变更再评估 | 调研③§三 C4 裁决 |
+| A-39 | 2026-11-03 | INT1 | sys_user 无钉钉 userid 列：钉钉触达用 yml 静态映射（PROJLIFE_DINGTALK_USER_MAPPING）+ 未映射接收人走机器人兜底；通讯录同步与免登随生产部署批次实现后废弃静态映射 | 调研①；INT1 §2.4 |
+| A-40 | 2026-11-03 | INT1 | 售后宝 Webhook 推送报文格式/签名方式公开资料未披露：接收端做可选共享密钥校验 + 原始报文全量落 int_sync_log.payload_json（V21 新增列）+ 恒快返 200，供人工对账与后续按真实报文适配 | 调研②§4.3/§七.6 |
+| A-41 | 2026-11-03 | INT1 | 钉钉事件订阅（Stream/HTTP 回调 300+ 事件）本批次不做（需公网回调地址与 AES 加解密密钥），随生产部署批次；本批次钉钉侧只做出站触达 | 调研①§六.9；INT1 §2.5 |
+| A-42 | 2026-11-03 | INT1 | T+ GetRealNameTPlusToken 的 password 加密方式未在公开资料披露：HTTPS 链路明文承载；实施侧若要求加密再补加密实现 | 调研③§三（"password加密"细节未公开） |
+| A-43 | 2026-11-03 | INT1 | T+ token 响应包裹结构未完全公开：客户端按 access_token/accessToken/data.access_token 四种路径容错解析，联调时以真实响应为准收紧 | 调研③（无响应样例） |

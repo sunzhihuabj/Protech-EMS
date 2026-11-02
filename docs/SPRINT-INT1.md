@@ -95,7 +95,68 @@ C1 采纳「新版 accessToken 全端通用 + 认证失败回退旧端点」；C
 
 ---
 
-## 三、实施记录（开发完成后回填）
+## 三、实施切片与提交清单
 
-（见文末「四、实施与验证记录」）
+| 切片 | 内容 | 测试 | commit |
+|---|---|---|---|
+| INT1-0 | 分析与方案（本文档 §一/§二） | — | docs 提交 |
+| INT1-1 | 公共 SPI `IntegrationAuditRecorder`（common）+ module-cost 落库实现（IntSyncRecorderImpl，异常吞掉不阻塞）+ IntSyncLog 实体扩展 payloadJson | 随各目标测试 | 钉钉提交 |
+| INT1-2 钉钉 | DingTalkConfig / DingTalkTokenManager（7200s 缓存+提前 10min 刷新+双检）/ DingTalkClient（工作通知分批≤100+task_id 持久化+进度回查防假成功；机器人 HMAC 加签；新版待办 Header 鉴权；认证 errcode 清缓存重试）/ DingTalkNotifyAdapter（替换 Stub，L1→L2 降级链 + A-39 静态映射）/ OPS 四端点 | 桩测试 8/8 | 钉钉提交 |
+| INT1-3 售后宝 | ShbConfig / ShbTokenManager（MD5 verifyCode + 2h TTL + 50 次/天计数 45 告警）/ ShbClient（get_events 分页归一 + 元数据 + 详情/日志 + 600ms 节流）/ ShbWebhookController（/api/internal/shb/webhook 白名单 + sharedKey + 原始落库 A-40）/ OPS health+sync-events | 桩测试 7/7 | 售后宝提交 |
+| INT1-4 T+ | TplusConfig（13.0 红线）/ TplusJwtSigner（RS256 零依赖，PKCS#8，私钥缺失显式报错）/ TplusTokenManager（RealName/Anonymous + 20h 缓存 + A-43 容错）/ TplusClient（Authorization Base64 四字段 + EXSM0001 重试 + 缺补丁提示 + 实例探测）/ OPS health+query | 桩测试 6/6（含 JWT RSA 验签互证） | T+ 提交 |
+| INT1-5 接线 | V21（payload_json 列 + 三适配器种子，已直导共享 MySQL 验证）/ application.yml integ 三段 / .env.example / deploy 示例 / DEPLOYMENT.md 凭据清单 5b/5c + Runbook 步骤 2/2b/2c / ASSUMPTIONS A-36~A-43 | 全量回归 | 接线提交 |
+
+## 四、实施与验证记录（2026-11-03）
+
+### 4.1 自测（协议桩，无需真实凭据）
+
+- 桩：JDK HttpServer 仿真三目标官方端点（token/错误码/请求体捕获），断言粒度为请求结构级：
+  - 钉钉：agent_id 必填、userid_list、markdown 结构、msg≤2048 字节截断（中文按 3 字节）、Query token（旧版）/Header token（新版）、HmacSHA256(timestamp+
++secret) 服务端重算可验、150 人自动分 2 批且 task_id 以 `|` 连接、token 缓存（两次远端调用仅一次取 token）、1301 限流提示。
+  - 售后宝：verifyCode=md5(appSecret_timestamp) 32 位小写可复算、errorCode 包裹判定、分页归一（99→50）、50 次/天到顶返回失败结果（不抛异常）、2QPS 节流（连续读取 ≥600ms）、Webhook 原始报文落库 + sharedKey 校验 + 未启用忽略。
+  - T+：Authorization 头 Base64 解码四字段齐全、authInfo JWT 三段且测试私钥对公钥验签通过（与 TplusJwtSigner 互证）、RealName 端点 IsFree=1 + _args 三字段、请求体无 type=Asyn（13.0 红线）、EXSM0001 清 token 重试成功、「服务名称不正确」自动附 13.0 提示、实例探测 404/200 均判 UP、私钥缺失显式 NO_PRIVATE_KEY 不降级。
+- 结果：**module-integration 21/21 全绿**（8+7+6）。
+
+### 4.2 自检要点
+
+- 降级铁律全链路：所有客户端不向外抛网络异常（返回结果对象）；审计落库失败仅 warn；适配器全失败时返回 false 由调用方降级站内。
+- 密钥零落码：所有凭据走环境变量（.gitignore 的 .env 注入），int_adapter.auth_config 不存密钥。
+- 健康检查纪律：SHB 禁用 token 端点探测（50 次/天）；T+ 探测仿 AI 网关（有 HTTP 响应即 UP）。
+- 交叉检查项：ShbClient.throttle 的 sleep 在 synchronized 块内（节流期间不并发读）；TplusJwtSigner 手拼 JSON 键值均为程序字面量（无注入面）。
+
+### 4.3 与需求比对（调研报告逐条对照）
+
+| 调研要求 | 落实 |
+|---|---|
+| ①Token 缓存+提前刷新（三家） | 三家 TokenManager 均 synchronized 双检 + 提前 10min（T+ 按官方建议 20h 一日一次） |
+| ①工作通知假成功须回查 | task_id 持久化 + 发送即回查 + OPS 二次回查端点（getsendprogress/getsendresult） |
+| ①机器人加签 | HmacSHA256 → Base64 → urlEncode，桩端重算验签通过 |
+| ①task_id/instanceId 持久化 | int_sync_log.remote_id（SPI IntegrationAuditRecorder 落库） |
+| ②token 50 次/天 + 2h | 当日计数（45 告警/50 拒绝）+ 2h 缓存；健康检查不消耗 |
+| ②分页仅 5/10/20/50 | normalizePageSize 就近归一（桩断言 99→50） |
+| ②读接口 2 QPS | 600ms 节流（桩断言实际间隔） |
+| ②Webhook+定时对账双通道 | Webhook 接收器 + OPS sync-events 手动对账（按 updateTime 窗口分页拉全） |
+| ②字段映射先行 | get_event_types/get_event_type_fields 已封装；写入类留待租户元数据确认（§2.5 排除） |
+| ③Authorization 三件套结构 | Base64(JSON{appKey,authInfo,orgId,access_token}) 桩端解码断言 |
+| ③Token 一天一次 | 20h 缓存 |
+| ③13.0 版本红线 | 无 Asyn + 只做查询类 + 缺补丁提示内置异常消息 |
+| ③订阅消息+对账双通道 | 本批次出站查询 + 对账；订阅消息（Webhook）需开放平台侧配置，列 A-38/后续批次 |
+
+### 4.4 损益验证（无损验证）
+
+- 全量回归：`mvn test` 全反应堆 25 模块 BUILD SUCCESS（103 E2E + 21 集成 + 既有全量）。
+- 共享库无损：V21 仅新增列 + INSERT IGNORE 种子，int_adapter/int_sync_log 既有数据零影响（ImportSql 直导 OK:2 statements，回查 3 行+列存在）。
+- 原项目仓库零改动：原仓库仍停在 protech-v2@080d75d 工作树干净；本批次全部提交在 projlife-dev@feature/dev。
+
+### 4.5 交付物清单
+
+- 代码：module-integration（notify/shb/tplus/ops 四包 12 类 + 3 测试类 21 用例）、module-cost（IntSyncRecorderImpl + IntSyncLog 扩展）、projlife-common（IntegrationAuditRecorder SPI）、projlife-security（PUBLIC_PATHS +1）。
+- SQL：db/migration/V21__integ_targets.sql。
+- 配置/文档：application.yml integ 三段、.env.example、deploy/.env.production.example、DEPLOYMENT.md（凭据 5/5b/5c + Runbook 2/2b/2c）、ASSUMPTIONS.md A-36~A-43、本 SPRINT 文档。
+
+### 4.6 凭据到位后的启用步骤（Runbook 摘要）
+
+1. 钉钉：注入 PROJLIFE_DINGTALK_* → 重启 → /api/v1/integ/ops/dingtalk/health → test-notify（AUTO 全链路含降级）。
+2. 售后宝：PC 端建 API 应用+IP 白名单 → 注入 PROJLIFE_SHB_* → 推送地址配 /api/internal/shb/webhook?sharedKey= → /ops/shb/sync-events 对账冒烟。
+3. T+：开放平台三件套 + 账套授权 → 注入 PROJLIFE_TPLUS_* → /ops/tplus/health probe=UP → /tplus/query Inventory/Query 冒烟。
 
