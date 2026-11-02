@@ -102,6 +102,32 @@ public class QmsController {
         if (characteristic != null && !characteristic.isEmpty()) {
             wrapper.eq(com.projlife.qms.entity.QmsSpcData::getCharacteristic, characteristic);
         }
-        return ApiResponse.ok(spcDataMapper.selectList(wrapper.last("LIMIT 100")));
+        java.util.List<com.projlife.qms.entity.QmsSpcData> rows = spcDataMapper.selectList(wrapper.last("LIMIT 100"));
+        // SPRINT-OPS1 F10：X 单值图控制限 mean±3σ（≥3 点才计算；PtSpcChart 直接读行上的 ucl/cl/lcl）
+        if (!rows.isEmpty()) {
+            java.util.Map<String, java.util.List<com.projlife.qms.entity.QmsSpcData>> groups = new java.util.LinkedHashMap<>();
+            rows.forEach(r -> groups.computeIfAbsent(r.getCharacteristic(), k -> new java.util.ArrayList<>()).add(r));
+            for (java.util.List<com.projlife.qms.entity.QmsSpcData> g : groups.values()) {
+                if (g.size() < 3) {
+                    continue;
+                }
+                double mean = g.stream().mapToDouble(r -> r.getValueX().doubleValue()).average().orElse(0);
+                double var = g.stream().mapToDouble(r -> {
+                    double d = r.getValueX().doubleValue() - mean;
+                    return d * d;
+                }).average().orElse(0);
+                double sigma = Math.sqrt(var);
+                double ucl = mean + 3 * sigma;
+                double lcl = Math.max(0, mean - 3 * sigma);
+                for (com.projlife.qms.entity.QmsSpcData r : g) {
+                    double v = r.getValueX().doubleValue();
+                    r.setCl(java.math.BigDecimal.valueOf(mean).setScale(4, java.math.RoundingMode.HALF_UP));
+                    r.setUcl(java.math.BigDecimal.valueOf(ucl).setScale(4, java.math.RoundingMode.HALF_UP));
+                    r.setLcl(java.math.BigDecimal.valueOf(lcl).setScale(4, java.math.RoundingMode.HALF_UP));
+                    r.setIsOutOfControl(v > ucl || v < lcl ? 1 : 0);
+                }
+            }
+        }
+        return ApiResponse.ok(rows);
     }
 }

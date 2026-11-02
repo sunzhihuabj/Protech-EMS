@@ -81,6 +81,16 @@ public class QmsService {
         if (inspection.getSampleSize() == null || inspection.getSampleSize() <= 0) {
             throw BizException.badRequest("抽样数必填且 >0");
         }
+        // SPRINT-OPS1：MySQL strict 防线（source_id/result NOT NULL 无默认，缺省 400 而非 500）
+        if (inspection.getSourceType() == null || inspection.getSourceType().isEmpty()) {
+            throw BizException.badRequest("来源类型必填");
+        }
+        if (inspection.getSourceId() == null) {
+            throw BizException.badRequest("来源单据必填");
+        }
+        if (inspection.getResult() == null || inspection.getResult().isEmpty()) {
+            throw BizException.badRequest("检验结论必填（E-28）");
+        }
         String prefix = inspection.getInspectionType();
         inspection.setInspectionNo(codeSequenceService.next(new com.projlife.org.service.code.CodeTypes.CodeRequest(
                 "QC:" + prefix + ":" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")),
@@ -88,7 +98,34 @@ public class QmsService {
         inspection.setInspectorId(UserContextHolder.currentUserId());
         inspection.setInspectionTime(LocalDateTime.now());
         inspectionMapper.insert(inspection);
+        // SPRINT-OPS1 F10：SPC 自动采集（缺陷率单值点；控制限由列表端点按序列计算）
+        autoCollectSpc(inspection);
         return inspection.getId();
+    }
+
+    /** F10：检验含缺陷数时自动写 SPC 点位（characteristic=类型:DR:物料） */
+    private void autoCollectSpc(QmsInspection inspection) {
+        try {
+            if (inspection.getDefectCount() == null || inspection.getSampleSize() == null
+                    || inspection.getSampleSize() <= 0 || inspection.getMaterialId() == null) {
+                return;
+            }
+            com.projlife.qms.entity.QmsSpcData point = new com.projlife.qms.entity.QmsSpcData();
+            point.setCharacteristic(inspection.getInspectionType() + ":DR:" + inspection.getMaterialId());
+            point.setSampleTime(inspection.getInspectionTime() == null
+                    ? LocalDateTime.now() : inspection.getInspectionTime());
+            point.setSubgroupNo(inspection.getId() == null ? null
+                    : (int) (inspection.getId() % 1000000000L));
+            point.setValueX(new java.math.BigDecimal(inspection.getDefectCount())
+                    .divide(new java.math.BigDecimal(inspection.getSampleSize()), 4,
+                            java.math.RoundingMode.HALF_UP));
+            point.setIsOutOfControl(0);
+            spcDataMapper.insert(point);
+        } catch (Exception ex) {
+            // 采集失败不阻塞检验主流程
+            org.slf4j.LoggerFactory.getLogger(QmsService.class)
+                    .warn("SPC 自动采集失败 inspection={}: {}", inspection.getInspectionNo(), ex.getMessage());
+        }
     }
 
     /** FR（09 册）AI 改判留痕：人工改判置 human_corrected=1 */

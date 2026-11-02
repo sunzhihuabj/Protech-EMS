@@ -29,3 +29,24 @@
 ## 四、验证
 - 全反应堆 `mvn test` BUILD SUCCESS（注解不改变既有授权路径，E2E 全绿佐证码对齐种子）
 - 过程修复：扫描漏检导致的 7 处重复注解（短形式+FQN 并存）→ 编译暴露 → 已清理
+
+---
+
+# SPRINT-OPS1（同日追加）：审计 F10/F14/F15 + 幽灵权限码
+
+## 修复内容
+| 项 | 内容 |
+|---|---|
+| F10 SPC 自动采集 | createInspection 自动写缺陷率点位（characteristic=类型:DR:物料，4 位小数，采集失败不阻塞检验）；/qms/spc 列表端按序列计算 X 单值图控制限 mean±3σ（≥3 点，lcl 截 0）+ isOutOfControl 标记；服务端补 sourceType/sourceId/result 必填校验（MySQL strict 防线） |
+| F14 全局搜索键盘导航 | MainLayout："/" 聚焦（非输入态）、Esc 清空关闭，beforeDestroy 合并清理 |
+| F15 库存台账求和 | availableQty 冷键回退改 DB 端 SUM 聚合（InvTransactionMapper.sumQtyBy），替代全量加载实体 |
+| 幽灵权限码 | 6 个注解码不在 sys_permission（恒 2002 死端点，含 sys:config——V19 冒烟 2 个失败实为它）：V23 补种 146-151，读码授予"持同级写码的角色"+R03/R20 全量，MySQL 已直导（9 语句） |
+
+## 过程发现与修复
+1. **种子 ID/正则双坑**：权限码收集正则漏带数字码（qms:8d:manage）→ 误判幽灵；种子 id 实际占用 144/145（V23 初版撞主键）→ 重排 146-151。
+2. **共享状态清理**：MySQL 半程失败的 V23 种子/授权行按 created_by='V23' 清理后重放（幂等 NOT EXISTS 保证可重跑）。
+3. **qms_inspection NOT NULL**（source_id/result 无默认）：H2 严格暴露 → 服务端 400 校验补齐。
+
+## 验证
+- S28SpcAutoCollectTest 2/2（3 检验→3 点位→控制限 ucl≥cl≥lcl、lcl 截 0、未出控标记）
+- 前端 npm build 通过；全反应堆回归见提交说明

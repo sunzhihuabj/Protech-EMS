@@ -33,10 +33,11 @@
             </el-breadcrumb-item>
           </el-breadcrumb>
           <!-- 全局搜索（并发 4 类：合同号/项目编码/物料码/客户名；每类前 5，≤20 条；/ 聚焦） -->
-          <el-select class="pl-search" v-model="searchHit" filterable remote clearable
+          <el-select ref="globalSearch" class="pl-search" v-model="searchHit" filterable remote clearable
                      size="small" :remote-method="doSearch" :loading="searching"
                      placeholder="搜索 合同号 / 项目编码 / 物料码 / 客户名（按 /）" popper-class="pl-search-popper"
-                     @focus="searchFocused = true" @clear="searchHits = []">
+                     @focus="searchFocused = true" @clear="searchHits = []"
+                     @keyup.esc.native="clearSearch">
             <template v-if="searchHits.length">
               <el-option v-for="h in searchHits" :key="h.type + h.id" :value="h.type + ':' + h.id"
                          :label="h.text">
@@ -121,6 +122,17 @@ export default {
     }
   },
   mounted() {
+    // SPRINT-OPS1 F14（UID-02 §四）：/ 聚焦全局搜索，Esc 清空关闭
+    this._keyNav = (e) => {
+      const tag = (e.target && e.target.tagName) || ''
+      const typing = tag === 'INPUT' || tag === 'TEXTAREA' || (e.target && e.target.isContentEditable)
+      if (e.key === '/' && !typing) {
+        e.preventDefault()
+        const ref = this.$refs.globalSearch
+        if (ref && ref.focus) { ref.focus() }
+      }
+    }
+    window.addEventListener('keydown', this._keyNav)
     // 折叠默认值：≥1536 展开，1366—1535 折叠（UID-02 §一.1）；用户切换持久化
     const saved = localStorage.getItem(SIDEBAR_KEY)
     this.collapsed = saved !== null
@@ -138,8 +150,14 @@ export default {
   beforeDestroy() {
     clearInterval(this.watermarkTimer)
     if (this.unsubscribeTheme) this.unsubscribeTheme()
+    if (this._keyNav) { window.removeEventListener('keydown', this._keyNav) }
   },
   methods: {
+    clearSearch() {
+      this.searchHit = ''
+      this.searchHits = []
+      this.searchFocused = false
+    },
     toggleCollapse() {
       this.collapsed = !this.collapsed
       try { localStorage.setItem(SIDEBAR_KEY, this.collapsed ? '1' : '0') } catch (e) { /* 忽略 */ }

@@ -177,16 +177,8 @@ public class InventoryService {
                 .eq(InvStockCache::getMaterialId, materialId)
                 .last("LIMIT 1"));
         if (cache == null) {
-            // 缓存无记录：以本地事务流水推算（只读口径，不写权威表）
-            List<InvTransaction> txns = transactionMapper.selectList(new LambdaQueryWrapper<InvTransaction>()
-                    .eq(InvTransaction::getLegalEntityId, legalEntityId)
-                    .eq(InvTransaction::getWarehouseCode, warehouseCode)
-                    .eq(InvTransaction::getMaterialId, materialId));
-            BigDecimal qty = BigDecimal.ZERO;
-            for (InvTransaction txn : txns) {
-                qty = qty.add(txn.getQty());
-            }
-            return qty;
+            // 缓存无记录：台账 DB 端 SUM 聚合（SPRINT-OPS1 F15：替代全量加载实体）
+            return transactionMapper.sumQtyBy(legalEntityId, warehouseCode, materialId);
         }
         return cache.getQtyAvailable();
     }
