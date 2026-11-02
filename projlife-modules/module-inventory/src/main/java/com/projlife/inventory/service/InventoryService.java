@@ -84,15 +84,35 @@ public class InventoryService {
         if (txn.getSourceType() == null || txn.getSourceType().isEmpty()) {
             throw BizException.badRequest("来源类型必填（PO/MO/MANUAL 等）");
         }
-        // BR-INV-02：出库校验可用量（ISSUE/负数量）
+        // BR-INV-02：出库校验可用量——SPRINT-SEC1 F4 原子条件扣减根除 TOCTOU：
+        // 先 UPDATE ... WHERE qty_available >= ? 原子预扣（并发两笔出库不可能同时通过）；
+        // 无行时回退台账推算校验（冷键首笔，refreshCache 将建行）。
+        boolean preDeducted = false;
         if ("ISSUE".equals(txn.getTxnType()) || (txn.getQty().signum() < 0
                 && !"COUNT_ADJ".equals(txn.getTxnType()) && !"ADJUST".equals(txn.getTxnType()))) {
-            BigDecimal available = availableQty(txn.getLegalEntityId(), txn.getWarehouseCode(), txn.getMaterialId());
-            if (available.add(txn.getQty()).signum() < 0) {
-                throw BizException.badRequest("可用量不足：当前可用 " + available + "，本次出库 " + txn.getQty().abs()
-                        + "（BR-INV-02 不允许负库存）");
+            BigDecimal need = txn.getQty().abs();
+            int deducted = stockCacheMapper.deductIfAvailable(
+                    txn.getLegalEntityId(), txn.getWarehouseCode(), txn.getMaterialId(), need);
+            if (deducted == 1) {
+                preDeducted = true;
+            } else {
+                InvStockCache row = stockCacheMapper.selectOne(new LambdaQueryWrapper<InvStockCache>()
+                        .eq(InvStockCache::getLegalEntityId, txn.getLegalEntityId())
+                        .eq(InvStockCache::getWarehouseCode, txn.getWarehouseCode())
+                        .eq(InvStockCache::getMaterialId, txn.getMaterialId())
+                        .last("LIMIT 1"));
+                if (row != null) {
+                    throw BizException.badRequest("可用量不足：当前可用 " + row.getQtyAvailable()
+                            + "，本次出库 " + need + "（BR-INV-02 不允许负库存）");
+                }
+                BigDecimal available = availableQty(txn.getLegalEntityId(), txn.getWarehouseCode(), txn.getMaterialId());
+                if (available.add(txn.getQty()).signum() < 0) {
+                    throw BizException.badRequest("可用量不足：当前可用 " + available + "，本次出库 " + need
+                            + "（BR-INV-02 不允许负库存）");
+                }
             }
         }
+        final boolean preDeductedFlag = preDeducted;
 
         txn.setTxnNo(codeSequenceService.next(new com.projlife.org.service.code.CodeTypes.CodeRequest(
                 "TX:" + LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd")),
@@ -123,7 +143,7 @@ public class InventoryService {
             txn.setSyncError(ex.getMessage() == null ? "未知异常" : ex.getMessage());
         }
         transactionMapper.updateById(txn);
-        refreshCache(txn);
+        refreshCache(txn, preDeductedFlag);
         return txn;
     }
 
@@ -171,8 +191,15 @@ public class InventoryService {
         return cache.getQtyAvailable();
     }
 
-    /** 缓存刷新（事务驱动；TTL 5 分钟口径 00 册 C-04） */
-    private void refreshCache(InvTransaction txn) {
+    /**
+     * 缓存刷新（事务驱动；TTL 5 分钟口径 00 册 C-04）。
+     * SPRINT-SEC1 F4：有行时改原子增量（并发安全）；出库已预扣时跳过（避免双重扣减）。
+     * 冷键建行为 select-then-insert（首笔并发窗口极小，建行后即全原子）。
+     */
+    private void refreshCache(InvTransaction txn, boolean preDeducted) {
+        if (preDeducted) {
+            return; // 扣减已在条件 UPDATE 中原子完成
+        }
         InvStockCache cache = stockCacheMapper.selectOne(new LambdaQueryWrapper<InvStockCache>()
                 .eq(InvStockCache::getLegalEntityId, txn.getLegalEntityId())
                 .eq(InvStockCache::getWarehouseCode, txn.getWarehouseCode())
@@ -183,19 +210,15 @@ public class InventoryService {
             cache.setLegalEntityId(txn.getLegalEntityId());
             cache.setWarehouseCode(txn.getWarehouseCode());
             cache.setMaterialId(txn.getMaterialId());
-            cache.setQtyOnHand(BigDecimal.ZERO);
+            cache.setQtyOnHand(txn.getQty());
             cache.setQtyAllocated(BigDecimal.ZERO);
-            cache.setQtyAvailable(BigDecimal.ZERO);
+            cache.setQtyAvailable(txn.getQty());
             cache.setBatchNo(txn.getBatchNo());
-        }
-        cache.setQtyOnHand(cache.getQtyOnHand().add(txn.getQty()));
-        cache.setQtyAvailable(cache.getQtyAvailable().add(txn.getQty()));
-        cache.setCachedAt(LocalDateTime.now());
-        cache.setTtlSeconds(300);
-        if (cache.getId() == null) {
+            cache.setCachedAt(LocalDateTime.now());
+            cache.setTtlSeconds(300);
             stockCacheMapper.insert(cache);
         } else {
-            stockCacheMapper.updateById(cache);
+            stockCacheMapper.addQty(cache.getId(), txn.getQty());
         }
     }
 

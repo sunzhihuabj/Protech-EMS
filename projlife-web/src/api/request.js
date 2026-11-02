@@ -30,6 +30,19 @@ http.interceptors.response.use(
   },
   error => {
     const body = error.response && error.response.data
+    // SPRINT-SEC1 F5：401 先静默换新 token 重试原请求（表单数据不丢），refresh 失败才跳登录
+    if (error.response && error.response.status === 401
+        && error.config && !error.config.__retried && !(error.config.url || '').includes('/auth/')) {
+      return tryRefresh().then(newToken => {
+        error.config.__retried = true
+        error.config.headers.Authorization = `Bearer ${newToken}`
+        return http.request(error.config)
+      }).catch(() => {
+        store.dispatch('forceLogout')
+        Message.error('登录已过期，请重新登录')
+        return Promise.reject(buildError(body || { code: 2001, message: '未登录' }))
+      })
+    }
     if (error.response && error.response.status === 401) {
       store.dispatch('forceLogout')
       Message.error((body && body.message) || '未登录或会话过期')
@@ -38,6 +51,32 @@ http.interceptors.response.use(
     return Promise.reject(buildError(body || { code: 9001, message: '网络异常' }))
   }
 )
+
+/** 刷新单飞：并发 401 只发一次 refresh（axios 裸调用防循环拦截） */
+let refreshing = null
+function tryRefresh() {
+  if (refreshing) {
+    return refreshing
+  }
+  const refreshToken = localStorage.getItem('pl_refresh_token')
+  if (!refreshToken) {
+    return Promise.reject(new Error('无 refresh token'))
+  }
+  refreshing = axios.post('/api/v1/auth/refresh', { refreshToken })
+    .then(resp => {
+      const data = resp.data && resp.data.data
+      if (!data || !data.accessToken) {
+        throw new Error('refresh 响应异常')
+      }
+      store.commit('SET_TOKEN', data.accessToken)
+      if (data.refreshToken) {
+        localStorage.setItem('pl_refresh_token', data.refreshToken)
+      }
+      return data.accessToken
+    })
+    .finally(() => { refreshing = null })
+  return refreshing
+}
 
 function buildError(body) {
   const err = new Error(body.message || '请求失败')

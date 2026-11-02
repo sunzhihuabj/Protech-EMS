@@ -35,7 +35,8 @@ public class OrgUserDetailsService implements UserDetailsProvider {
     private static final Logger log = LoggerFactory.getLogger(OrgUserDetailsService.class);
 
     private static final String CACHE_PREFIX = "user:ctx:";
-    private static final long CACHE_TTL_SECONDS = 1800;
+    // SPRINT-SEC1 F6：写路径 evict 已齐全（Role/User/AuthService）；TTL 1800→600 收紧直改 SQL 场景的陈旧窗口
+    private static final long CACHE_TTL_SECONDS = 600;
 
     private final SysUserMapper userMapper;
     private final SysUserRoleMapper userRoleMapper;
