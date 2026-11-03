@@ -30,7 +30,8 @@ public class InternalJobInvoker {
     @Value("${projlife.job.gateway:http://localhost:8080}")
     private String gateway;
 
-    @Value("${projlife.job.system-username:admin@demo}")
+    /** SPRINT-UID-R18：默认改 job-runner（V16 专用账号；admin@demo=R03 缺任务权限码会 403 静默失败，V16 注释明示） */
+    @Value("${projlife.job.system-username:job-runner}")
     private String username;
 
     @Value("${projlife.job.system-password:ProjLife@2026}")

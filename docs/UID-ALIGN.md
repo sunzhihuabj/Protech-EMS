@@ -77,4 +77,16 @@ R16 下批候选清掉 3 组功能 + 审核识别的审计遗留三项，详见 
 - **顺手修复**：ctContractDetail 路由重复、QMS 四子路由 permCode 对齐 V25 菜单、量具 API 权限面补授（V26，修 R16 菜单可见但接口 403）
 - **下批候选**：Element 按需引入（单独立项）、GET /pcs/routes 列表端点、UID-05 E2E 脚本化、安全专项批次（JWT typ/refresh rotation/按 ID 数据范围/SK- 取号等审核 P1，建议 SPRINT-SEC3）
 
-> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。
+## 八、R18 孤儿清账冲刺（2026-11-04，流程尾动作 + job 骨架补挂）
+
+孤儿全量盘点（45 孤儿端点 + 死菜单 + 死方法 + 僵尸码）后集中清账，详见 SPRINT-UID-R18.md：
+
+- **8D 逻辑死锁修复**：close8d 此前校验库内 D1/D4/D6 但全系统无回填入口——8D 永远无法合法关闭；关闭请求现可携带 D1~D8 回填（EightD.vue 纯壳页重建：列表+新建+关闭弹窗）
+- **尾动作接线六页**：检验纠正（correct 留痕+MES 联动）、MO 挂路线（routes 步骤编辑）、交底台账+确认已读（回执闭环）、MyTask 假页真实化（my-tasks+部门负载，原页调 /prj/project 本身 404）、ECO 影响面+任务依赖（CPM 前置）、T+ 对账（FR-INV-41 首个 Web 入口）
+- **job 骨架补挂**：新 InternalContractJobsController（remind-unread / payment-overdue-remind 两个死方法转正）+ BusinessScanTasks 挂 4 调度（BR-05 锁定/T+ 对账/合同双提醒）+ **V27 修 V16 授权半成品**（V16 注释称授 137/141/103，SQL 只落了 137——141/103 漏授致档案扫描与 Andon 升级 403 静默失败；V27 补授 141/103/91/96）+ InternalJobInvoker 默认账号改 job-runner
+- **死菜单修复**：menu:approval（V17 种码）ROUTE_BY_CODE 无映射 → /workbench/todo
+- **死代码清理**：QmsService.recordSpc/spcList、EngService.unitPage、ResetPasswordReq（全零引用核实）；file:download 补权限校验
+- **运行态验证**：146/0 无回归 + verify-spec 7/7 + npm build 过；8D 关闭 400 阻断→回填后 200；job-runner(E0020) 实测 V27 四码全通（91/96/103/141）
+- **下批候选**：R19 = SCM/MDM/ENG 模板页转正；SPRINT-SEC3 安全专项；30 僵尸权限码清退迁移
+
+> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17/R18.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。

@@ -160,20 +160,41 @@ public class QmsService {
         return report.getId();
     }
 
-    /** 验收要点：D6 未填不可关闭（09 册） */
+    /**
+     * 验收要点：D6 未填不可关闭（09 册）。
+     * SPRINT-UID-R18：close8d 此前无任何回填入口，库内 D1/D4/D6 永远为空导致 8D 逻辑死锁——
+     * 关闭请求可携带 D1~D8 步骤内容，非空项先落库再校验。
+     */
     @Audited(module = "qms", action = "close_8d", targetType = "qms_8d", targetId = "{0}")
     @Transactional
-    public void close8d(Long reportId) {
+    public void close8d(Long reportId, Map<String, String> steps) {
         Qms8d report = eightDMapper.selectById(reportId);
         if (report == null) {
             throw BizException.notFound("8D 报告不存在");
         }
+        if (steps != null && !steps.isEmpty()) {
+            applyIfPresent(steps, "d1Team", report::setD1Team);
+            applyIfPresent(steps, "d2Problem", report::setD2Problem);
+            applyIfPresent(steps, "d3Containment", report::setD3Containment);
+            applyIfPresent(steps, "d4RootCause", report::setD4RootCause);
+            applyIfPresent(steps, "d5Corrective", report::setD5Corrective);
+            applyIfPresent(steps, "d6Verify", report::setD6Verify);
+            applyIfPresent(steps, "d7Preventive", report::setD7Preventive);
+            applyIfPresent(steps, "d8Congratulate", report::setD8Congratulate);
+        }
         if (isBlank(report.getD1Team()) || isBlank(report.getD4RootCause()) || isBlank(report.getD6Verify())) {
-            throw BizException.badRequest("D6（效果验证）未填写不可关闭（09 册验收要点 3）");
+            throw BizException.badRequest("D1 团队/D4 根因/D6（效果验证）未填写不可关闭（09 册验收要点 3）");
         }
         report.setStatus("CLOSED");
         report.setClosedAt(LocalDateTime.now());
         eightDMapper.updateById(report);
+    }
+
+    private void applyIfPresent(Map<String, String> steps, String key, java.util.function.Consumer<String> setter) {
+        String v = steps.get(key);
+        if (v != null && !v.trim().isEmpty()) {
+            setter.accept(v.trim());
+        }
     }
 
     /** FR（09 册）：量具校准（超期自动锁定） */
@@ -203,6 +224,23 @@ public class QmsService {
         Page<QmsGauge> page = gaugeMapper.selectPage(
                 new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
         PageResp<QmsGauge> resp = new PageResp<>();
+        resp.setTotal(page.getTotal());
+        resp.setPages(page.getPages());
+        resp.setRecords(page.getRecords());
+        return resp;
+    }
+
+    /** FR-QMS-08~13：8D 报告分页台账（SPRINT-UID-R18 补列表端点，此前只有创建/关闭无列表） */
+    public PageResp<com.projlife.qms.entity.Qms8d> page8ds(PageReq pageReq, String status) {
+        LambdaQueryWrapper<com.projlife.qms.entity.Qms8d> wrapper = new LambdaQueryWrapper<com.projlife.qms.entity.Qms8d>()
+                .eq(com.projlife.qms.entity.Qms8d::getDeleted, 0)
+                .orderByDesc(com.projlife.qms.entity.Qms8d::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(com.projlife.qms.entity.Qms8d::getStatus, status);
+        }
+        Page<com.projlife.qms.entity.Qms8d> page = eightDMapper.selectPage(
+                new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
+        PageResp<com.projlife.qms.entity.Qms8d> resp = new PageResp<>();
         resp.setTotal(page.getTotal());
         resp.setPages(page.getPages());
         resp.setRecords(page.getRecords());
@@ -243,40 +281,5 @@ public class QmsService {
             throw BizException.notFound("检验单不存在");
         }
         return inspection;
-    }
-
-    /** FR-QMS-09 SPC 数据录入 + 出控判定（valueX 超出 UCL/LCL → isOutOfControl=1） */
-    @Transactional
-    public com.projlife.qms.entity.QmsSpcData recordSpc(com.projlife.qms.entity.QmsSpcData spc) {
-        if (spc.getCharacteristic() == null || spc.getCharacteristic().isEmpty()) {
-            throw BizException.badRequest("质量特征必填");
-        }
-        if (spc.getValueX() == null) {
-            throw BizException.badRequest("测量值必填");
-        }
-        if (spc.getSampleTime() == null) {
-            spc.setSampleTime(java.time.LocalDateTime.now());
-        }
-        // 出控判定：valueX > UCL 或 < LCL
-        if (spc.getUcl() != null && spc.getValueX().compareTo(spc.getUcl()) > 0) {
-            spc.setIsOutOfControl(1);
-        } else if (spc.getLcl() != null && spc.getValueX().compareTo(spc.getLcl()) < 0) {
-            spc.setIsOutOfControl(1);
-        } else {
-            spc.setIsOutOfControl(0);
-        }
-        spcDataMapper.insert(spc);
-        return spc;
-    }
-
-    /** SPC 数据查询（按特征过滤） */
-    public java.util.List<com.projlife.qms.entity.QmsSpcData> spcList(String characteristic) {
-        var wrapper = new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<com.projlife.qms.entity.QmsSpcData>()
-                .eq(com.projlife.qms.entity.QmsSpcData::getDeleted, 0)
-                .orderByAsc(com.projlife.qms.entity.QmsSpcData::getSampleTime);
-        if (characteristic != null && !characteristic.isEmpty()) {
-            wrapper.eq(com.projlife.qms.entity.QmsSpcData::getCharacteristic, characteristic);
-        }
-        return spcDataMapper.selectList(wrapper.last("LIMIT 100"));
     }
 }

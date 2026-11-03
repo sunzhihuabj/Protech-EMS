@@ -111,6 +111,18 @@
               <el-button v-permission="'contract:invoice:confirm'" size="mini" type="text" class="fin-act" @click="confirmInvoice(i)">确认开票</el-button>
             </div>
           </div>
+          <!-- SPRINT-UID-R18：交底台账 + 确认已读（此前发送后无回执闭环） -->
+          <div class="rel-group" style="margin-top:10px">
+            <b class="rel-title">交底台账（{{ dispatches.length }}）</b>
+            <div v-if="!dispatches.length" class="muted">未发起交底</div>
+            <div v-for="d in dispatches" :key="'dp'+d.id" class="rel-row">
+              <span>接收人 #{{ d.receiverId }}</span>
+              <span class="muted" :title="d.dispatchContent">{{ (d.dispatchContent || '').slice(0, 14) }}</span>
+              <span class="muted">{{ d.sentAt }}</span>
+              <span v-if="d.readAt" class="read-ok">已读</span>
+              <el-button v-else size="mini" type="text" class="fin-act" @click="confirmRead(d)">确认已读</el-button>
+            </div>
+          </div>
         </el-card>
         <!-- SPRINT-UID-R16：接入 file-service 文件上传中心 -->
         <el-card shadow="never">
@@ -279,7 +291,9 @@ export default {
       dpDialog: false, dpForm: {},
       // SPRINT-UID-R16：变更台账 + 附件
       changes: [],
-      attachments: []
+      attachments: [],
+      // SPRINT-UID-R18：交底台账
+      dispatches: []
     }
   },
   computed: {
@@ -321,6 +335,8 @@ export default {
       this.$http.get(`/contract/${this.id}/changes`).then(body => { this.changes = body.data || [] }).catch(() => {})
       this.$http.get('/files', { params: { bizType: 'CONTRACT', bizId: String(this.id) } })
         .then(body => { this.attachments = body.data || [] }).catch(() => {})
+      // SPRINT-UID-R18：交底台账
+      this.$http.get(`/contract/${this.id}/dispatches`).then(body => { this.dispatches = body.data || [] }).catch(() => {})
     },
     submitReview() { this.$http.post(`/contract/${this.id}/review/submit`).then(() => { this.$message.success('已提交评审'); this.load() }).catch(showError) },
     seal() { this.$http.post(`/contract/${this.id}/seal`, { copyCount: 1 }).then(() => { this.$message.success('已用印'); this.load() }).catch(showError) },
@@ -388,6 +404,14 @@ export default {
         this.$message.success('交底已发送 ' + (body.data || 0) + ' 人（及时率取数）')
         this.dpDialog = false
         this.dpForm = {}
+        this.load()
+      }).catch(showError)
+    },
+    /* ---------- SPRINT-UID-R18：交底回执 ---------- */
+    confirmRead(d) {
+      this.$http.post(`/contract/dispatches/${d.id}/read`).then(() => {
+        this.$message.success('已确认阅读（交底回执闭环）')
+        this.load()
       }).catch(showError)
     },
 
@@ -453,4 +477,5 @@ export default {
 .fin-act:hover { color: var(--pri-700, #155E6C); }
 .rel-title { font-size: 13px; color: var(--ink-2); display: block; margin-bottom: 4px; }
 .rel-row { display: flex; gap: 8px; align-items: center; font-size: 12px; padding: 2px 0; }
+.read-ok { color: var(--success, #67c23a); font-size: 12px; }
 </style>

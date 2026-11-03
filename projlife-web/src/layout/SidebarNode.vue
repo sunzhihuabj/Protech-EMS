@@ -15,6 +15,7 @@
 /** permCode → 路由映射（UID-05 §二 路由总表；后端菜单码 → 一级落位页） */
 const ROUTE_BY_CODE = {
   'menu:workbench': '/workbench',
+  'menu:approval': '/workbench/todo',
   'menu:crm': '/crm/opportunity',
   'menu:contract': '/ct/contract',
   'menu:project': '/prj/project',

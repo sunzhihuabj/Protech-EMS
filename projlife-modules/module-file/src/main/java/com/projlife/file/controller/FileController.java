@@ -45,8 +45,9 @@ public class FileController {
         return ApiResponse.ok(fileService.listByBiz(bizType, bizId));
     }
 
-    /** BR-07：仅输出水印合成件；无任何路径返回原文件 */
+    /** BR-07：仅输出水印合成件；无任何路径返回原文件。类注释口径"file:download 控下载"——R18 补上缺失的校验注解 */
     @GetMapping("/{id}/download")
+    @com.projlife.security.auth.RequirePermission("file:download")
     public ResponseEntity<byte[]> download(@PathVariable Long id) throws IOException {
         String realName = UserContextHolder.get() == null ? "未知用户" : UserContextHolder.get().getRealName();
         String userCode = UserContextHolder.get() == null ? "unknown" : UserContextHolder.get().getUserCode();

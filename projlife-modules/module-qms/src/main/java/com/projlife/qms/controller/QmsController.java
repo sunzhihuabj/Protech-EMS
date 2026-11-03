@@ -58,16 +58,26 @@ public class QmsController {
         return ApiResponse.ok();
     }
 
+    /** 8D 分页台账（SPRINT-UID-R18 补列表端点，此前只有创建/关闭无列表） */
+    @GetMapping("/8ds")
+    @RequirePermission("qms:inspect")
+    public ApiResponse<PageResp<Qms8d>> page8ds(PageReq pageReq,
+                                                @RequestParam(required = false) String status) {
+        return ApiResponse.ok(qmsService.page8ds(pageReq, status));
+    }
+
     @PostMapping("/8ds")
     @RequirePermission("qms:8d:manage")
     public ApiResponse<Long> create8d(@RequestBody Qms8d report) {
         return ApiResponse.ok(qmsService.create8d(report));
     }
 
+    /** 8D 关闭（SPRINT-UID-R18：body 可携带 D1~D8 步骤回填，D6 未填不可关闭校验不变） */
     @PostMapping("/8ds/{id}/close")
     @RequirePermission("qms:8d:manage")
-    public ApiResponse<Void> close8d(@PathVariable Long id) {
-        qmsService.close8d(id);
+    public ApiResponse<Void> close8d(@PathVariable Long id,
+                                     @RequestBody(required = false) Map<String, String> body) {
+        qmsService.close8d(id, body);
         return ApiResponse.ok();
     }
 

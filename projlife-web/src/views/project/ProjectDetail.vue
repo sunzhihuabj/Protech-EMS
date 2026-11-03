@@ -117,19 +117,54 @@
         </el-card>
       </el-col>
       <el-col :span="10">
-        <!-- ECO 管理 -->
+        <!-- ECO 管理（SPRINT-UID-R18：补影响面动作） -->
         <el-card shadow="never" :body-style="{ padding: '16px' }" style="margin-bottom: 12px">
           <div slot="header"><b>ECO 工程变更请求（{{ ecos.length }}）</b></div>
           <el-empty v-if="!ecos.length" description="暂无 ECO" :image-size="50" />
           <el-table v-else :data="ecos" size="mini" stripe>
             <el-table-column prop="ecoNo" label="编号" width="100" />
-            <el-table-column prop="changeContent" label="变更内容" min-width="170" show-overflow-tooltip />
-            <el-table-column prop="status" label="状态" width="90">
+            <el-table-column prop="changeContent" label="变更内容" min-width="140" show-overflow-tooltip />
+            <el-table-column prop="status" label="状态" width="84">
               <template slot-scope="{ row }">
                 <pt-status-tag :value="row.status || 'OPEN'" :dict="'OPEN:待审批,APPROVED:已通过,REJECTED:已驳回'" />
               </template>
             </el-table-column>
+            <el-table-column label="操作" width="76">
+              <template slot-scope="{ row }">
+                <el-button size="mini" type="text" @click="showEcoImpact(row)">影响面</el-button>
+              </template>
+            </el-table-column>
           </el-table>
+        </el-card>
+        <!-- SPRINT-UID-R18：任务依赖（此前 POST /tasks/{id}/dependencies 无任何前端入口） -->
+        <el-card shadow="never" :body-style="{ padding: '16px' }">
+          <div slot="header"><b>任务依赖（CPM 前置关系，FR-PRJ-21）</b></div>
+          <el-form size="small" label-width="90px">
+            <el-form-item label="本任务ID" required>
+              <el-select v-model="depForm.taskId" filterable placeholder="选择后继任务" style="width: 100%">
+                <el-option v-for="t in tasks" :key="'dt'+t.id" :value="t.id"
+                           :label="(t.wbsCode || '') + ' ' + t.taskName" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="前置任务" required>
+              <el-select v-model="depForm.preTaskId" filterable placeholder="选择前置任务" style="width: 100%">
+                <el-option v-for="t in tasks" :key="'pt'+t.id" :value="t.id"
+                           :label="(t.wbsCode || '') + ' ' + t.taskName" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="依赖类型">
+              <el-select v-model="depForm.depType" style="width: 100%">
+                <el-option value="FS" label="FS 完成-开始（默认）" /><el-option value="SS" label="SS 开始-开始" />
+                <el-option value="FF" label="FF 完成-完成" /><el-option value="SF" label="SF 开始-完成" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="搭接(天)">
+              <el-input-number v-model="depForm.lagDays" :precision="0" size="small" style="width: 100%" />
+            </el-form-item>
+            <el-button v-permission="'project:task:adjust_date'" size="small" type="primary" plain
+                       icon="el-icon-connection" @click="addDependency" style="width: 100%">建立依赖</el-button>
+          </el-form>
+          <p class="muted" style="margin: 8px 0 0">建立后自动参与 CPM 重算；环路由后端 400 阻断。</p>
         </el-card>
         <el-card shadow="never" :body-style="{ padding: '16px' }">
           <div slot="header"><b>说明</b></div>
@@ -141,6 +176,24 @@
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- ECO 影响面弹窗（FR-PRJ：变更波及的任务清单） -->
+    <el-dialog title="ECO 影响面（波及任务清单）" :visible.sync="ecoImpactDialog" width="520px">
+      <div v-if="ecoImpactTarget" class="muted" style="margin-bottom: 8px">
+        {{ ecoImpactTarget.ecoNo }} · {{ ecoImpactTarget.changeContent }}
+      </div>
+      <el-empty v-if="!ecoImpactTasks.length" description="该 ECO 未波及任何任务" :image-size="50" />
+      <el-table v-else :data="ecoImpactTasks" size="mini" max-height="320">
+        <el-table-column prop="wbsCode" label="WBS" width="100" />
+        <el-table-column prop="taskName" label="波及任务" min-width="160" />
+        <el-table-column prop="planEnd" label="计划完成" width="104" />
+        <el-table-column prop="status" label="状态" width="90">
+          <template slot-scope="{ row }">
+            <pt-status-tag :value="row.status || 'TODO'" :dict="'TODO:待处理,DOING:进行中,DONE:已完成,DELAYED:延期'" />
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
 
     <!-- 添加成员弹窗 -->
     <el-dialog title="添加项目成员" :visible.sync="addMemberDialog" width="360px">
@@ -182,6 +235,8 @@ export default {
       members: [],
       gateMap: {}, // {stageTaskId: {approved: boolean, gateNo: string}}
       ecos: [],
+      ecoImpactDialog: false, ecoImpactTarget: null, ecoImpactTasks: [],
+      depForm: { taskId: null, preTaskId: null, depType: 'FS', lagDays: 0 },
       addMemberDialog: false, addMemberForm: { userId: '', roleCode: 'MEMBER' }
     }
   },
@@ -294,6 +349,29 @@ export default {
     },
     gateStatusOf(row) {
       return row.status === 'DONE' ? 'PASSED' : 'PENDING'
+    },
+    /* ---------- SPRINT-UID-R18：ECO 影响面 + 任务依赖 ---------- */
+    showEcoImpact(row) {
+      this.ecoImpactTarget = row
+      this.ecoImpactDialog = true
+      this.$http.get(`/project/ecos/${row.id}/affected-tasks`, { params: { projectId: this.id } })
+        .then(b => { this.ecoImpactTasks = b.data || [] })
+        .catch(() => { this.ecoImpactTasks = [] })
+    },
+    addDependency() {
+      if (!this.depForm.taskId || !this.depForm.preTaskId) {
+        this.$message.warning('前后任务均必选')
+        return
+      }
+      if (this.depForm.taskId === this.depForm.preTaskId) {
+        this.$message.warning('任务不能依赖自身')
+        return
+      }
+      this.$http.post(`/project/tasks/${this.depForm.taskId}/dependencies`, this.depForm).then(() => {
+        this.$message.success('依赖已建立，CPM 将重算')
+        this.depForm = { taskId: null, preTaskId: null, depType: 'FS', lagDays: 0 }
+        this.load()
+      }).catch(showError)
     },
     gateInfoOf(row) {
       const info = this.gateMap[row.id] || {}

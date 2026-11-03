@@ -33,15 +33,18 @@ public class ContractFinanceService {
     private final CtInvoiceMapper invoiceMapper;
     private final CtReceiptMapper receiptMapper;
     private final com.projlife.mdm.api.MdmApi mdmApi;
+    private final com.projlife.org.service.NotificationService notificationService;
 
     public ContractFinanceService(CtContractMapper contractMapper, CtContractPaymentPlanMapper planMapper,
                                   CtInvoiceMapper invoiceMapper, CtReceiptMapper receiptMapper,
-                                  com.projlife.mdm.api.MdmApi mdmApi) {
+                                  com.projlife.mdm.api.MdmApi mdmApi,
+                                  com.projlife.org.service.NotificationService notificationService) {
         this.contractMapper = contractMapper;
         this.planMapper = planMapper;
         this.invoiceMapper = invoiceMapper;
         this.receiptMapper = receiptMapper;
         this.mdmApi = mdmApi;
+        this.notificationService = notificationService;
     }
 
     /** FR-CT-25 + BR-02：惰性冻结判定（job-worker 每日批量标记，接口层再校验双保险） */
@@ -153,6 +156,30 @@ public class ContractFinanceService {
         return planMapper.selectList(new LambdaQueryWrapper<CtContractPaymentPlan>()
                 .lt(CtContractPaymentPlan::getPlanDate, LocalDate.now())
                 .ne(CtContractPaymentPlan::getStatus, "RECEIVED"));
+    }
+
+    /** FR-CT-38 job 动作（SPRINT-UID-R18）：逾期收款计划按合同创建人发提醒，返回提醒计划行数 */
+    public int remindOverduePlans() {
+        List<CtContractPaymentPlan> overdue = overduePlans();
+        int count = 0;
+        for (CtContractPaymentPlan plan : overdue) {
+            CtContract contract = contractMapper.selectById(plan.getContractId());
+            if (contract == null || contract.getCreatedBy() == null) {
+                continue;
+            }
+            Long receiverId;
+            try {
+                receiverId = Long.valueOf(contract.getCreatedBy());
+            } catch (NumberFormatException ex) {
+                continue;
+            }
+            notificationService.send(receiverId, "CONTRACT_PAYMENT_OVERDUE",
+                    "【逾期提醒】收款计划已逾期", contract.getContractName() + " · " + plan.getPhaseName()
+                            + " · 计划日 " + plan.getPlanDate() + " · 金额 " + plan.getAmount(),
+                    "ct_contract", String.valueOf(plan.getContractId()), "INNER");
+            count++;
+        }
+        return count;
     }
 
     /** 合同的收款计划明细（FR-CT-04/34） */

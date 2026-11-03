@@ -185,20 +185,6 @@ public class EngService {
 
     // ---------- 机组（FR-ENG-21 一机一档，E-29） ----------
 
-    /** 机组分页（按项目档案筛选） */
-    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<EngUnit> unitPage(
-            com.projlife.common.api.PageReq pageReq, Long mdProjectId) {
-        com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<EngUnit> wrapper =
-                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<EngUnit>()
-                        .orderByDesc(EngUnit::getId);
-        if (mdProjectId != null) {
-            wrapper.eq(EngUnit::getMdProjectId, mdProjectId);
-        }
-        return unitMapper.selectPage(
-                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(
-                        pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
-    }
-
     /** FR-ENG-21：机组建档（U-{project_code}-{3位}） */
     @Audited(module = "eng", action = "create_unit", targetType = "eng_unit", targetId = "{0.unitNo}")
     @Transactional

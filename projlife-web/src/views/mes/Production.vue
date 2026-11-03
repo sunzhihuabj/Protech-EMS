@@ -15,6 +15,7 @@
           <pt-status-tag :value="row.moType" :dict="'STANDARD:标准,BATCH:批量,ENGINEERING:工程'" />
         </template>
         <template slot="actions" slot-scope="{ row }">
+          <el-button v-permission="'mes:order:create'" size="mini" type="text" @click="openRoutes(row)">挂路线</el-button>
           <el-button size="mini" type="text" @click="materialCheck(row)">齐套检查</el-button>
         </template>
       </pt-table>
@@ -73,6 +74,37 @@
       <div slot="footer">
         <el-button size="small" @click="moDialog = false">取消</el-button>
         <el-button size="small" type="primary" @click="createMo">创建</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- 挂路线弹窗（FR-MES-03：按步骤序列生成工序工单，R18 接线） -->
+    <el-dialog title="生成工序单（FR-MES-03 按步骤序列展开）" :visible.sync="routeDialog" width="640px">
+      <div v-if="routeTarget" class="muted" style="margin-bottom: 8px">
+        {{ routeTarget.moNo }} · 计划量 {{ routeTarget.planQty }}
+      </div>
+      <el-table :data="routeSteps" size="mini" border>
+        <el-table-column label="工序名称" required>
+          <template slot-scope="{ row }"><el-input v-model.trim="row.name" size="mini" placeholder="如 装配" /></template>
+        </el-table-column>
+        <el-table-column label="工序码" width="110">
+          <template slot-scope="{ row }"><el-input v-model.trim="row.code" size="mini" /></template>
+        </el-table-column>
+        <el-table-column label="需检验" width="70" align="center">
+          <template slot-scope="{ row }"><el-checkbox v-model="row.needInspection" /></template>
+        </el-table-column>
+        <el-table-column label="标准工时(h)" width="110" align="center">
+          <template slot-scope="{ row }"><el-input-number v-model="row.standardHours" :min="0" :precision="1" :controls="false" size="mini" style="width: 90px" /></template>
+        </el-table-column>
+        <el-table-column label="" width="60" align="center">
+          <template slot-scope="{ $index }">
+            <el-button size="mini" type="text" class="danger-text" @click="routeSteps.splice($index, 1)">删</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <el-button size="mini" type="text" icon="el-icon-plus" style="margin-top: 6px" @click="addStep">添加工序</el-button>
+      <div slot="footer">
+        <el-button size="small" @click="routeDialog = false">取消</el-button>
+        <el-button size="small" type="primary" @click="generateRoutes">生成工序单</el-button>
       </div>
     </el-dialog>
 
@@ -150,6 +182,7 @@ moCols: [
       tab: 'orders',
       orders: [], moLoading: false, moDialog: false, moForm: { moType: 'BATCH' },
       currentMo: null, processes: [], procLoading: false,
+      routeDialog: false, routeTarget: null, routeSteps: [],
       andonDialog: false, andonForm: { alertType: 'QUALITY' },
       mcDialog: false, mcResult: null,
       qcDialog: false, qcTarget: null, qcForm: { passed: true, rejectReason: '' }
@@ -179,6 +212,27 @@ moCols: [
         this.processes = body.data || []
         this.tab = 'processes'
       }).catch(showError).finally(() => { this.procLoading = false })
+    },
+    addStep() {
+      this.routeSteps.push({ name: '', code: '', needInspection: false, standardHours: 1 })
+    },
+    openRoutes(row) {
+      this.routeTarget = row
+      this.routeSteps = [
+        { name: '下料', code: 'XL', needInspection: false, standardHours: 2 },
+        { name: '装配', code: 'ZP', needInspection: false, standardHours: 4 },
+        { name: '检验', code: 'QC', needInspection: true, standardHours: 1 }
+      ]
+      this.routeDialog = true
+    },
+    generateRoutes() {
+      const steps = this.routeSteps.filter(s => s.name)
+      if (!steps.length) { this.$message.warning('至少保留一道有效工序（名称必填）'); return }
+      http.post(`/mes/orders/${this.routeTarget.id}/routes`, { steps }).then(body => {
+        this.$message.success('已生成 ' + body.data + ' 道工序单')
+        this.routeDialog = false
+        this.loadProcesses(this.routeTarget)
+      }).catch(showError)
     },
     start(row) {
       http.post(`/mes/processes/${row.id}/start`).then(() => {
@@ -229,3 +283,8 @@ moCols: [
   }
 }
 </script>
+
+<style scoped>
+.muted { color: var(--ink-3); font-size: 12px; }
+.danger-text { color: #f56c6c; }
+</style>

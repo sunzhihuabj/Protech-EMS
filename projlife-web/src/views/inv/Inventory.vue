@@ -6,6 +6,7 @@
         <div class="pl-toolbar">
           <el-button v-permission="'inv:scan'" size="small" type="primary" icon="el-icon-plus" @click="txnDialog = true">提交事务（T+ 幂等）</el-button>
           <el-button v-permission="'inv:count:manage'" size="small" icon="el-icon-refresh-right" @click="retryExceptions">重试异常事务</el-button>
+          <el-button v-permission="'inv:count:manage'" size="small" type="warning" plain icon="el-icon-document-checked" @click="openReconcile">T+ 对账（FR-INV-41）</el-button>
         </div>
         <el-form inline size="small">
           <el-form-item label="法人"><el-input v-model="availQuery.legalEntityId" style="width: 90px" /></el-form-item>
@@ -243,6 +244,30 @@
       </div>
     </el-dialog>
 
+    <!-- T+ 对账弹窗（FR-INV-41 每日对账，SPRINT-UID-R18 接线） -->
+    <el-dialog title="T+ 每日对账（FR-INV-41）" :visible.sync="recDialog" width="520px">
+      <el-form label-width="100px" size="small">
+        <el-form-item label="对账日" required>
+          <el-date-picker v-model="recForm.date" type="date" value-format="yyyy-MM-dd" style="width: 100%" />
+        </el-form-item>
+        <el-form-item label="法人主体ID" required><el-input-number v-model="recForm.legalEntityId" :min="1" :controls="false" style="width: 100%" /></el-form-item>
+      </el-form>
+      <el-descriptions v-if="recResult" :column="2" size="small" border style="margin-top: 8px">
+        <el-descriptions-item label="对账状态">
+          <el-tag size="mini" :type="recResult.status === 'CLOSED' ? 'success' : 'danger'">{{ recResult.status === 'CLOSED' ? '已平账' : '有差异' }}</el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item label="差异金额(元)">{{ recResult.diffAmount }}</el-descriptions-item>
+        <el-descriptions-item label="本地事务数">{{ recResult.localTxnCount }}</el-descriptions-item>
+        <el-descriptions-item label="T+ 已同步">{{ recResult.tPlusTxnCount }}</el-descriptions-item>
+        <el-descriptions-item label="差异数">{{ recResult.diffCount }}</el-descriptions-item>
+        <el-descriptions-item label="说明">差异行可用「重试异常事务」修复后重跑</el-descriptions-item>
+      </el-descriptions>
+      <div slot="footer">
+        <el-button size="small" @click="recDialog = false">关闭</el-button>
+        <el-button size="small" type="primary" :loading="recLoading" @click="doReconcile">执行对账</el-button>
+      </div>
+    </el-dialog>
+
     <!-- 处置弹窗 -->
     <el-dialog title="发起处置（E-39，DP 编号）" :visible.sync="disposeDialog" width="460px">
       <el-form label-width="110px" size="small">
@@ -288,7 +313,10 @@ export default {
       // SPRINT-UID-R15：处置单台账 + 补货全链（BR-05）
       disposalList: [], disposalLoading: false,
       rpList: [], rpLoading: false, rpStatus: '', rpDialog: false,
-      rpForm: { urgency: 'NORMAL', lines: [{ materialId: '', qty: 1, useLocation: '' }] }
+      rpForm: { urgency: 'NORMAL', lines: [{ materialId: '', qty: 1, useLocation: '' }] },
+      // SPRINT-UID-R18：T+ 对账
+      recDialog: false, recLoading: false, recResult: null,
+      recForm: { date: '', legalEntityId: 1 }
     }
   },
   mounted() {
@@ -395,6 +423,21 @@ export default {
         this.$message.success('事务已受理 ' + (d.txnNo || d.id || ''))
         this.txnDialog = false
       }).catch(showError)
+    },
+    /** SPRINT-UID-R18：T+ 每日对账（FR-INV-41；job 每日 4:00 自动跑，此处手动触发） */
+    openReconcile() {
+      this.recResult = null
+      this.recForm.date = new Date(Date.now() - 86400000).toISOString().slice(0, 10)
+      this.recForm.legalEntityId = Number(this.availQuery.legalEntityId) || 1
+      this.recDialog = true
+    },
+    doReconcile() {
+      if (!this.recForm.date) { this.$message.warning('对账日必填'); return }
+      this.recLoading = true
+      http.post('/inv/reconcile', { date: this.recForm.date, legalEntityId: String(this.recForm.legalEntityId) })
+        .then(body => {
+          this.recResult = body.data || {}
+        }).catch(showError).finally(() => { this.recLoading = false })
     },
     loadAvailable() {
       http.get('/inv/stock/available', { params: this.availQuery }).then(body => {

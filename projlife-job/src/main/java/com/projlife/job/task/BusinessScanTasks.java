@@ -29,6 +29,10 @@ public class BusinessScanTasks {
     @Value("${projlife.job.enabled:false}")
     private boolean enabled;
 
+    /** T+ 每日对账的法人主体（多法人生产经 PROJLIFE_JOB_LEGAL_ENTITY_ID 注入，SPRINT-UID-R18） */
+    @Value("${projlife.job.legal-entity-id:1}")
+    private Long legalEntityId;
+
     public BusinessScanTasks(InternalJobInvoker invoker) {
         this.invoker = invoker;
     }
@@ -93,6 +97,46 @@ public class BusinessScanTasks {
         int n = invoker.post("/api/v1/arc/appraisal-scan");
         if (enabled) {
             log.info("档案鉴定提醒扫描：{} 份距到期 ≤365 天", n);
+        }
+    }
+
+    // ---------- SPRINT-UID-R18：孤儿 job 入口补挂（此前端点无任何调用方） ----------
+
+    @Scheduled(cron = "0 15 * * * ?")
+    @SchedulerLock(name = "replenish-lock-overdue", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    public void replenishLockOverdue() {
+        int n = invoker.post("/api/v1/inv/replenish/lock-overdue");
+        if (enabled) {
+            log.info("补货逾期锁定（BR-05）：{} 单超 25h 未回填被锁定", n);
+        }
+    }
+
+    @Scheduled(cron = "0 0 4 * * ?")
+    @SchedulerLock(name = "inv-daily-reconcile", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    public void inventoryDailyReconcile() {
+        String yesterday = java.time.LocalDate.now().minusDays(1).toString();
+        int n = invoker.post("/api/v1/inv/reconcile",
+                "{\"date\":\"" + yesterday + "\",\"legalEntityId\":" + legalEntityId + "}");
+        if (enabled) {
+            log.info("T+ 每日对账（{}）完成：{} 条差异", yesterday, n);
+        }
+    }
+
+    @Scheduled(cron = "0 30 8 * * ?")
+    @SchedulerLock(name = "contract-dispatch-remind", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    public void contractDispatchRemind() {
+        int n = invoker.post("/api/internal/jobs/contract/remind-unread");
+        if (enabled) {
+            log.info("合同交底未读再提醒：{} 条", n);
+        }
+    }
+
+    @Scheduled(cron = "0 40 8 * * ?")
+    @SchedulerLock(name = "contract-payment-overdue-remind", lockAtMostFor = "PT10M", lockAtLeastFor = "PT1M")
+    public void contractPaymentOverdueRemind() {
+        int n = invoker.post("/api/internal/jobs/contract/payment-overdue-remind");
+        if (enabled) {
+            log.info("逾期收款计划提醒：{} 行", n);
         }
     }
 }
