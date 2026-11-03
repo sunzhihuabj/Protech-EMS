@@ -65,4 +65,16 @@ R15 未竟清单清掉 6 组，详见 SPRINT-UID-R16.md：
 - **QMS 菜单结构**：V25 把 menu:qms 升级四子菜单，顺带修复 8D/SPC 两个无菜单入口的孤儿页
 - **下批候选**：PCS 工艺、MES 齐套/工序质检、手动快照、审计遗留三项、Element 按需引入
 
-> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。
+## 七、R17 第三批功能补齐 + 审计遗留清账（2026-11-03，安全硬化）
+
+R16 下批候选清掉 3 组功能 + 审核识别的审计遗留三项，详见 SPRINT-UID-R17.md：
+
+- **内部端点共享密钥**：新增 InternalKeyFilter 守卫 /api/internal/jobs|bid/**（X-Internal-Key 头，PROJLIFE_INTERNAL_KEY 两端同值注入；S29 补 401 负向用例）——落实"内部端点必须共享密钥头校验"硬约束
+- **verify-spec 域名级收敛**：新增注释剥离器，第 3/4/6/7 项改为"去注释 + 代码语义上下文"命中（硬卡点仅认主源码 BizException/blockCode 行；测试存在性仅认方法声明），堵死"改注释过门禁"
+- **PCS 工艺新页** /plm/pcs（工艺文件台账/工艺路线/覆盖度矩阵三 tab）；V26 把 menu:plm 升级双子菜单（BOM/PCS），授权跟随持有面
+- **MES 齐套检查 + 工序质检**：Production.vue 行内接线（material-check 结果弹窗 / FINISHED 工序 qc 放行-退回）；修复幽灵权限码 mes:report → mes:process:work、Andon → mes:andon:raise
+- **手动快照**：CostCenter 成本快照 tab（POST /cost/snapshot）+ MetricDefs 行内指标快照（POST /kb/metrics/{code}/snapshots）
+- **顺手修复**：ctContractDetail 路由重复、QMS 四子路由 permCode 对齐 V25 菜单、量具 API 权限面补授（V26，修 R16 菜单可见但接口 403）
+- **下批候选**：Element 按需引入（单独立项）、GET /pcs/routes 列表端点、UID-05 E2E 脚本化、安全专项批次（JWT typ/refresh rotation/按 ID 数据范围/SK- 取号等审核 P1，建议 SPRINT-SEC3）
+
+> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。

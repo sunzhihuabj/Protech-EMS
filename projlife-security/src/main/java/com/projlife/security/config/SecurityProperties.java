@@ -13,6 +13,9 @@ public class SecurityProperties {
     /** HS256 密钥，生产从环境变量注入，禁止入库入码 */
     private String jwtSecret = "change-me-in-production-projlife-jwt-secret-0001";
 
+    /** 内部任务端点共享密钥（X-Internal-Key），生产经 PROJLIFE_INTERNAL_KEY 注入（SPRINT-UID-R17） */
+    private String internalKey = "dev-only-internal-key";
+
     /** access token 有效期（秒），默认 2 小时 */
     private long accessTtlSeconds = 7200;
 
@@ -31,6 +34,14 @@ public class SecurityProperties {
 
     public void setJwtSecret(String jwtSecret) {
         this.jwtSecret = jwtSecret;
+    }
+
+    public String getInternalKey() {
+        return internalKey;
+    }
+
+    public void setInternalKey(String internalKey) {
+        this.internalKey = internalKey;
     }
 
     public long getAccessTtlSeconds() {

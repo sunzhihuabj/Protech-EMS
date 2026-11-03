@@ -20,6 +20,8 @@ const ROUTE_BY_CODE = {
   'menu:project': '/prj/project',
   'menu:bid': '/bid/notice',
   'menu:plm': '/plm/bom',
+  'menu:plm:bom': '/plm/bom',
+  'menu:plm:pcs': '/plm/pcs',
   'menu:scm': '/scm/po',
   'menu:inv': '/inv/txn',
   'menu:mes': '/mes/order',

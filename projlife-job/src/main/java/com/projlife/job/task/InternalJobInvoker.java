@@ -36,6 +36,10 @@ public class InternalJobInvoker {
     @Value("${projlife.job.system-password:ProjLife@2026}")
     private String password;
 
+    /** 内部任务端点共享密钥（与主应用 projlife.security.internal-key 同值注入，SPRINT-UID-R17） */
+    @Value("${projlife.security.internal-key:dev-only-internal-key}")
+    private String internalKey;
+
     /** 登录换取 JWT 后 POST 指定 job 端点，返回业务数字结果；失败不抛出（任务日志留痕） */
     public int post(String path) { return post(path, null); }
 
@@ -56,6 +60,7 @@ public class InternalJobInvoker {
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
+            headers.set("X-Internal-Key", internalKey); // /api/internal/** 共享密钥门（InternalKeyFilter）
             if (token != null) {
                 headers.setBearerAuth(token);
             }

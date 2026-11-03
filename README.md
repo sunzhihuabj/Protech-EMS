@@ -29,8 +29,8 @@ cd projlife-api && mvn spring-boot:run
 # 3. 启动 AI 网关（可选，mock 模式）
 cd projlife-ai-gateway && mvn spring-boot:run
 
-# 4. 前端
-cd projlife-web && npm install && npm run build:themes && npm run dev
+# 4. 前端（主题为运行时令牌切换，无需预编译步骤）
+cd projlife-web && npm install && npm run dev
 ```
 
 默认账号：`admin@demo / ProjLife@2026`（首登强制改密）；演示账号见 `db/migration/V2__seed_base.sql`。
@@ -42,16 +42,16 @@ cd projlife-web && npm install && npm run build:themes && npm run dev
 3. 用新用户登录 → 菜单只剩工作台/消息中心（按权限渲染）
 4. 系统管理员改一条数据（冻结用户）→ 审计日志可查到 before/after
 5. `store@demo`（R11）登录 → 用户管理 → 403 无权限
-6. 个人设置 → 外观 → 切换 12 套主题之一 → 刷新后保持（sys_user.theme_code 持久化）
+6. 个人设置 → 外观 → 切换 24 组主题令牌之一 → 刷新后保持（sys_user.theme_code 持久化）
 7. 文件上传 PDF → 下载得到带水印版本（BR-07）
 8. `worker@demo`（R17）用 PC 端登录 → 403（BR-08）；`X-Client: mp` 小程序端放行
 
 ## 验证
 
 ```bash
-mvn test                      # 后端：S0 冒烟 13 用例（认证/RBAC/数据范围/审计/编码并发/字典保护/BR-08/AI 网关）
-python scripts/verify-spec.py # 规格一致性自检（表/字典/硬卡点/禁公网 AI/编码规范）
-cd projlife-web && npm run build:themes && npm run build   # 前端 12 套主题 + 构建
+mvn test                      # 后端全量测试（28 类 140+ 用例：认证/RBAC/数据范围/审计/编码并发/字典保护/BR 硬卡点/AI 网关/内部密钥门）
+python scripts/verify-spec.py # 规格一致性自检 7 项（表/字典/编码/硬卡点/禁公网 AI/编码规范/测试存在性；3/4/6/7 项域名级匹配）
+cd projlife-web && npm run build   # 前端构建（24 组主题令牌运行时切换，无预编译步骤）
 ```
 
 ## 文档

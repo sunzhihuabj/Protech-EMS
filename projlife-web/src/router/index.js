@@ -27,12 +27,12 @@ const routes = [
       { path: 'ct/contract', name: 'ctContract', component: () => import('@/views/contract/Contracts.vue'), meta: { title: '合同台账', permCode: 'menu:contract' } },
       { path: 'ct/contract/:id', name: 'ctContractDetail', component: () => import('@/views/contract/ContractDetail.vue'), meta: { title: '合同详情', permCode: 'menu:contract' } },
       { path: 'ct/contract/:id/filing', name: 'ctContractFiling', component: () => import('@/views/contract/ContractFiling.vue'), meta: { title: '建档备案', permCode: 'menu:contract' } },
-      { path: 'ct/contract/:id', name: 'ctContractDetail', component: () => import('@/views/contract/ContractDetail.vue'), meta: { title: '合同详情', permCode: 'menu:contract' } },
       { path: 'prj/project', name: 'prjProject', component: () => import('@/views/project/Projects.vue'), meta: { title: '项目台账', permCode: 'menu:project' } },
       { path: 'prj/project/:id', name: 'prjProjectDetail', component: () => import('@/views/project/ProjectDetail.vue'), meta: { title: '项目甘特详情', permCode: 'menu:project' } },
       { path: 'bid/notice', name: 'bidNotice', component: () => import('@/views/bid/BidIntel.vue'), meta: { title: '标讯台账', permCode: 'menu:bid' } },
-      // ③ 研发工艺
-      { path: 'plm/bom', name: 'plmBom', component: () => import('@/views/plm/Boms.vue'), meta: { title: 'BOM 台账', permCode: 'menu:plm' } },
+      // ③ 研发工艺（V26：menu:plm 升级子菜单）
+      { path: 'plm/bom', name: 'plmBom', component: () => import('@/views/plm/Boms.vue'), meta: { title: 'BOM 台账', permCode: 'menu:plm:bom' } },
+      { path: 'plm/pcs', name: 'plmPcs', component: () => import('@/views/plm/Pcs.vue'), meta: { title: 'PCS 工艺', permCode: 'menu:plm:pcs' } },
       // ④ 供应链
       { path: 'inv/txn', name: 'invTxn', component: () => import('@/views/inv/Inventory.vue'), meta: { title: '出入库作业', permCode: 'menu:inv' } },
       // ⑤ 生产质量
@@ -62,10 +62,10 @@ const routes = [
       { path: 'scm/supplier', name: 'scmSupplier', component: () => import('@/views/scm/Supplier.vue'), meta: { title: '供应商台账', permCode: 'menu:scm' } },
       { path: 'scm/po', name: 'scmPo', component: () => import('@/views/scm/PurchaseOrder.vue'), meta: { title: 'PO 台账', permCode: 'menu:scm' } },
       { path: 'scm/requirement', name: 'scmRequirement', component: () => import('@/views/scm/Requirement.vue'), meta: { title: '采购需求', permCode: 'menu:scm' } },
-      { path: 'qms/inspection', name: 'qmsInspection', component: () => import('@/views/qms/Inspection.vue'), meta: { title: '检验台账', permCode: 'menu:qms' } },
-      { path: 'qms/8d', name: 'qms8d', component: () => import('@/views/qms/EightD.vue'), meta: { title: '8D 报告', permCode: 'menu:qms' } },
-      { path: 'qms/spc', name: 'qmsSpc', component: () => import('@/views/qms/SpcChart.vue'), meta: { title: 'SPC 控制图', permCode: 'menu:qms' } },
-      { path: 'qms/gauges', name: 'qmsGauges', component: () => import('@/views/qms/QmsGauges.vue'), meta: { title: '量具台账', permCode: 'menu:qms' } },
+      { path: 'qms/inspection', name: 'qmsInspection', component: () => import('@/views/qms/Inspection.vue'), meta: { title: '检验台账', permCode: 'menu:qms:inspection' } },
+      { path: 'qms/8d', name: 'qms8d', component: () => import('@/views/qms/EightD.vue'), meta: { title: '8D 报告', permCode: 'menu:qms:8d' } },
+      { path: 'qms/spc', name: 'qmsSpc', component: () => import('@/views/qms/SpcChart.vue'), meta: { title: 'SPC 控制图', permCode: 'menu:qms:spc' } },
+      { path: 'qms/gauges', name: 'qmsGauges', component: () => import('@/views/qms/QmsGauges.vue'), meta: { title: '量具台账', permCode: 'menu:qms:gauges' } },
       { path: 'eam/asset', name: 'eamAsset', component: () => import('@/views/eam/Asset.vue'), meta: { title: '设备台账', permCode: 'menu:eam' } },
       { path: 'kb/my', name: 'kbMy', component: () => import('@/views/kb/KbMy.vue'), meta: { title: '我的看板订阅', permCode: 'menu:kb' } },
       { path: 'kb/metric', name: 'kbMetric', component: () => import('@/views/kb/MetricDefs.vue'), meta: { title: '指标口径', permCode: 'menu:kb' } },

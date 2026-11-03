@@ -22,6 +22,7 @@
 | 1 | DB 连接（MySQL 8.0 8.0 兼容） | 主数据 | 连通 + `flyway info` 正常 |
 | 2 | Redis 地址+密码 | 缓存 | `PING` 通 |
 | 3 | JWT_SECRET（≥32 随机） | 令牌签名 | 已生成并注入 |
+| 3b | INTERNAL_KEY（≥32 随机） | 内部任务端点共享密钥（X-Internal-Key，InternalKeyFilter 门；主应用与 job 进程两端同值注入 `PROJLIFE_INTERNAL_KEY`，SPRINT-UID-R17） | 缺头/错值访问 /api/internal/** 返回 401 |
 | 4 | 模型端点 + Key + 模型名（OpenAI 兼容） | AI-001~016 真实推理 | `POST {endpoint}/chat/completions` 200；三者注入 `PROJLIFE_AI_MODEL_ENDPOINT/API_KEY/MODEL_NAME`（测试阶段已接入 NVIDIA integrate API + z-ai/glm-5.3-flash，实测 AI-002 抽取 6.4s、AI-001 风险分析 16~81s；生产轮换 Key 并切回内网端点对齐 BR-AI-02） |
 | 5 | 钉钉企业内部应用 AppKey/AppSecret/agentId（+可选群机器人 webhook/secret） | 通知主通道 D-08（SPRINT-INT1 已实现：工作通知+机器人+待办，L1→L2 降级链） | 注入 `PROJLIFE_DINGTALK_*` → `GET /api/v1/integ/ops/dingtalk/health` available=true → `/dingtalk/test-notify` 测试送达 |
 | 5b | 售后宝 appKey/appSecret + 固定公网 IP 白名单（Webhook 推送需企业版+） | 事件/工单同步（INT-SHB） | 注入 `PROJLIFE_SHB_*` → `/api/v1/integ/ops/shb/health` configured=true → `/shb/sync-events` 拉取成功落 int_sync_log |

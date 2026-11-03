@@ -43,6 +43,33 @@
           </el-descriptions>
         </el-card>
       </el-tab-pane>
+      <el-tab-pane label="成本快照" name="snapshot">
+        <el-card shadow="never">
+          <div slot="header"><b>手动成本快照（七项归集 + 三口径毛利，按日固化）</b></div>
+          <el-form inline size="small">
+            <el-form-item label="项目ID"><el-input v-model.trim="snapForm.projectId" style="width: 80px" /></el-form-item>
+            <el-form-item label="快照日"><el-date-picker v-model="snapForm.date" type="date" value-format="yyyy-MM-dd" style="width: 130px" /></el-form-item>
+            <el-form-item><el-button v-permission="'cost:budget'" size="small" type="primary" icon="el-icon-camera" @click="takeSnapshot">生成快照</el-button></el-form-item>
+          </el-form>
+          <el-descriptions v-if="snapResult" :column="4" size="small" border>
+            <el-descriptions-item label="快照日">{{ snapResult.snapshotDate }}</el-descriptions-item>
+            <el-descriptions-item label="材料">{{ snapResult.materialCost }}</el-descriptions-item>
+            <el-descriptions-item label="人工">{{ snapResult.laborCost }}</el-descriptions-item>
+            <el-descriptions-item label="外协">{{ snapResult.outsourceCost }}</el-descriptions-item>
+            <el-descriptions-item label="差旅">{{ snapResult.travelCost }}</el-descriptions-item>
+            <el-descriptions-item label="现场">{{ snapResult.siteCost }}</el-descriptions-item>
+            <el-descriptions-item label="质量">{{ snapResult.qualityCost }}</el-descriptions-item>
+            <el-descriptions-item label="管理">{{ snapResult.mgmtCost }}</el-descriptions-item>
+            <el-descriptions-item label="总成本"><b>{{ snapResult.totalCost }}</b></el-descriptions-item>
+            <el-descriptions-item label="合同额">{{ snapResult.contractAmount }}</el-descriptions-item>
+            <el-descriptions-item label="毛利·合同口径">
+              <el-tag size="mini" :type="Number(snapResult.grossMarginContract) >= 0 ? 'success' : 'danger'">{{ marginPct(snapResult.grossMarginContract) }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item label="毛利·阶段口径">{{ marginPct(snapResult.grossMarginStage) }}</el-descriptions-item>
+          </el-descriptions>
+          <el-empty v-else description="选择项目与日期后生成快照（金额与毛利按当日归集口径固化）" />
+        </el-card>
+      </el-tab-pane>
     </el-tabs>
 
     <el-dialog title="归集成本（E-33 七项之一）" :visible.sync="itemDialog" width="460px">
@@ -82,7 +109,8 @@ export default {
       projectId: '1',
       summary: null, overrun: null,
       evmForm: { projectId: '1', date: '', pv: '', ev: '', ac: '' }, evmResult: null,
-      itemDialog: false, itemForm: { sourceType: 'MANUAL' }
+      itemDialog: false, itemForm: { sourceType: 'MANUAL' },
+      snapForm: { projectId: '1', date: '' }, snapResult: null
     }
   },
   methods: {
@@ -107,6 +135,17 @@ export default {
         this.evmResult = body.data
         this.$message.success('EVM 已计算并落快照')
       }).catch(showError)
+    },
+    takeSnapshot() {
+      if (!this.snapForm.projectId) { this.$message.warning('项目ID必填'); return }
+      http.post('/cost/snapshot', this.snapForm).then(body => {
+        this.snapResult = body.data
+        this.$message.success('成本快照已生成')
+      }).catch(showError)
+    },
+    marginPct(v) {
+      if (v === null || v === undefined || v === '') return '—'
+      return (Number(v) * 100).toFixed(2) + '%'
     }
   }
 }

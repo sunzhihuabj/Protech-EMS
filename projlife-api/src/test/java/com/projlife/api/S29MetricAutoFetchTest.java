@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
- * SPRINT-KPI1 E2E（F7）：九板指标自动取数——内部端点（白名单）触发 16 项目录取数，
+ * SPRINT-KPI1 E2E（F7）：九板指标自动取数——内部端点（X-Internal-Key 共享密钥门，UID-R17）触发 16 项目录取数，
  * 至少 5 项可得快照（部分指标在空库下分母为 0 跳过，属预期）。
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -28,11 +28,13 @@ class S29MetricAutoFetchTest {
     @Autowired
     private TestRestTemplate rest;
 
+    @org.springframework.boot.web.server.LocalServerPort
+    private int port;
+
     @Test
     @DisplayName("F7：metric-fetch 内部端点批量取数并落快照（UK 幂等可重跑）")
     void autoFetch() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpHeaders headers = internalHeaders();
         // 第一轮
         Map<?, ?> r1 = ((Map<?, ?>) rest.exchange("/api/internal/jobs/kb/metric-fetch",
                 HttpMethod.POST, new HttpEntity<>(headers), Map.class).getBody());
@@ -48,5 +50,37 @@ class S29MetricAutoFetchTest {
         assertEquals(0, ((Number) r2.get("code")).intValue(), r2.toString());
         assertEquals(fetched1, ((Number) ((Map<?, ?>) r2.get("data")).get("fetched")).intValue(),
                 "幂等重跑 fetched 应一致");
+    }
+
+    @Test
+    @DisplayName("UID-R17：内部端点缺 X-Internal-Key 一律 401（共享密钥门负向）")
+    void internalKeyRequired() {
+        // TestRestTemplate 对 401+POST 会触发 HttpClient 认证重试（HttpRetryException），改用原生 RestTemplate 断言状态码
+        String url = "http://localhost:" + port + "/api/internal/jobs/kb/metric-fetch";
+        org.springframework.web.client.RestTemplate plain = new org.springframework.web.client.RestTemplate();
+        org.springframework.http.HttpHeaders noKey = new org.springframework.http.HttpHeaders();
+        noKey.setContentType(MediaType.APPLICATION_JSON);
+        try {
+            plain.postForEntity(url, new HttpEntity<>(noKey), Map.class);
+            throw new AssertionError("缺共享密钥头必须 401，实际未抛出");
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            assertEquals(401, e.getRawStatusCode(), "缺共享密钥头必须 401");
+        }
+        org.springframework.http.HttpHeaders badKey = new org.springframework.http.HttpHeaders();
+        badKey.setContentType(MediaType.APPLICATION_JSON);
+        badKey.set("X-Internal-Key", "wrong-key");
+        try {
+            plain.postForEntity(url, new HttpEntity<>(badKey), Map.class);
+            throw new AssertionError("错误密钥必须 401，实际未抛出");
+        } catch (org.springframework.web.client.HttpClientErrorException e) {
+            assertEquals(401, e.getRawStatusCode(), "错误密钥必须 401");
+        }
+    }
+
+    private HttpHeaders internalHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        headers.set(com.projlife.security.web.InternalKeyFilter.HEADER, "dev-only-internal-key");
+        return headers;
     }
 }

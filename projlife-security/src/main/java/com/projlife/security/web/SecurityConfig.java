@@ -43,8 +43,8 @@ public class SecurityConfig {
             "/api/agent/v1/tasks",
             "/api/agent/v1/tasks/*",
             "/api/agent/v1/capabilities",
-            "/api/internal/bid/**", // DMZ 拉模式任务接口（mTLS 占位，V4-05 M18）
-            "/api/internal/jobs/**", // 内部任务扫描端点（job 进程调用，mTLS 占位，A-36）
+            "/api/internal/bid/**", // DMZ 拉模式任务接口（SPRINT-UID-R17：permitAll + InternalKeyFilter 共享密钥头校验，生产再补 mTLS）
+            "/api/internal/jobs/**", // 内部任务扫描端点（SPRINT-UID-R17：permitAll + InternalKeyFilter 共享密钥头校验，A-36）
             "/api/internal/shb/**", // 售后宝 Webhook 推送回调（共享密钥+原始落库，A-40；SPRINT-INT1）
             "/swagger-ui.html",
             "/doc.html",
@@ -53,7 +53,8 @@ public class SecurityConfig {
     };
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthFilter jwtAuthFilter,
+                                                   com.projlife.security.config.SecurityProperties securityProperties) throws Exception {
         AuthenticationEntryPoint entryPoint = (request, response, ex) -> {
             response.setStatus(401);
             response.setContentType("application/json;charset=UTF-8");
@@ -78,6 +79,7 @@ public class SecurityConfig {
                 .authenticationEntryPoint(entryPoint)
                 .accessDeniedHandler(deniedHandler)
                 .and()
+                .addFilterBefore(new InternalKeyFilter(securityProperties), UsernamePasswordAuthenticationFilter.class)
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }

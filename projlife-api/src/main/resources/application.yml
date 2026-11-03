@@ -51,6 +51,8 @@ projlife:
   security:
     # 生产必须经环境变量注入，禁止入库入码（16 册 §八 第 14 条）
     jwt-secret: ${PROJLIFE_JWT_SECRET:dev-only-projlife-jwt-secret-0123456789abcdef0123456789abcdef}
+    # 内部任务端点共享密钥（X-Internal-Key，InternalKeyFilter；job 进程与主应用两端同值注入）
+    internal-key: ${PROJLIFE_INTERNAL_KEY:dev-only-internal-key}
   storage:
     root: ${PROJLIFE_STORAGE_ROOT:./data/storage}
   ai-gateway:

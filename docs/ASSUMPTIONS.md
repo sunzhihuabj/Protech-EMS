@@ -42,3 +42,5 @@
 | A-43 | 2026-11-03 | INT1 | T+ token 响应包裹结构未完全公开：客户端按 access_token/accessToken/data.access_token 四种路径容错解析，联调时以真实响应为准收紧 | 调研③（无响应样例） |
 | A-44 | 2026-11-03 | INT2 | 钉钉通讯录匹配顺序：MOBILE（sys_user.phone 精确）→ NAME（realName 全表唯一才匹配）→ NONE；MANUAL 人工绑定优先级最高且永不被同步覆盖；重名记 NONE 供人工绑定 | 调研①；SPRINT-INT2 §一 |
 | A-45 | 2026-11-03 | INT2 | 钉钉 subDepts 响应字段 dept_id/deptId 双写容错解析；user/list 响应结构以联调实测收紧（公开文档样例有限） | 调研①§2.1 |
+| A-46 | 2026-11-03 | UID-R17 | 内部端点鉴权口径：/api/internal/jobs 与 /api/internal/bid 用"permitAll + InternalKeyFilter 共享密钥头（X-Internal-Key）"双层门（机器对机器不经登录），SHB Webhook 维持 controller 级 sharedKey（A-40）；dev 默认 dev-only-internal-key，生产 PROJLIFE_INTERNAL_KEY 强制注入并轮换；mTLS 仍为生产加固项（A-36 延续） | 审核报告 P0-1；硬约束"内部端点共享密钥头校验" |
+| A-47 | 2026-11-03 | UID-R17 | verify-spec 第 3/4/6/7 项升级域名级匹配（注释剥离+语义上下文）后，注释/测试文案中的敏感词不再计入——历史上"注释去 openai 字样"式整改不再必要也不再有效；BR-06 走脱敏通道无异常行，第 4 项如实列为后续切片口径而非 PASS 掩盖 | 审核报告 P2；lessons learned"字符串存在性检查可被注释绕过" |
