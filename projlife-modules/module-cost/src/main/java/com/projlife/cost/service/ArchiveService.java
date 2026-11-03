@@ -98,6 +98,18 @@ public class ArchiveService {
         return borrow;
     }
 
+    /** SPRINT-UID-R15：在借/全部借阅单列表（归还入口数据源，仅 OUT/OVERDUE 时传 status） */
+    @RequirePermission("arc:manage")
+    public List<ArcBorrow> borrows(String status) {
+        LambdaQueryWrapper<ArcBorrow> wrapper = new LambdaQueryWrapper<ArcBorrow>()
+                .eq(ArcBorrow::getDeleted, 0)
+                .orderByDesc(ArcBorrow::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(ArcBorrow::getStatus, status);
+        }
+        return borrowMapper.selectList(wrapper);
+    }
+
     /** 归还 */
     @RequirePermission("arc:manage")
     @Transactional

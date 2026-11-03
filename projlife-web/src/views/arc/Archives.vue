@@ -18,6 +18,27 @@
             <el-form-item><el-button v-permission="'arc:manage'" size="small" type="primary" @click="borrow">借出</el-button></el-form-item>
           </el-form>
           <p class="muted">借出后可归还；应还日已过由逾期扫描置 OVERDUE（job）。</p>
+          <el-table :data="borrows" size="small" border v-loading="borrowsLoading" style="margin-top:8px" aria-label="借阅单列表">
+            <el-table-column prop="id" label="ID" width="60" />
+            <el-table-column prop="borrowNo" label="借阅单号" width="150" />
+            <el-table-column prop="archiveId" label="档案ID" width="90" />
+            <el-table-column prop="borrowerId" label="借阅人" width="80" />
+            <el-table-column prop="purpose" label="用途" min-width="150" show-overflow-tooltip />
+            <el-table-column prop="borrowDate" label="借出日" width="110" />
+            <el-table-column prop="dueDate" label="应还日" width="110" />
+            <el-table-column label="状态" width="96">
+              <template slot-scope="{ row }">
+                <el-tag size="mini" :type="row.status === 'OUT' ? 'warning' : row.status === 'OVERDUE' ? 'danger' : 'success'">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="90" fixed="right">
+              <template slot-scope="{ row }">
+                <el-button v-if="row.status === 'OUT' || row.status === 'OVERDUE'" size="mini" type="text" class="arc-return"
+                           v-permission="'arc:manage'" @click="giveBack(row)">归还</el-button>
+                <span v-else class="pl-empty-val">—</span>
+              </template>
+            </el-table-column>
+          </el-table>
         </el-card>
       </el-tab-pane>
 
@@ -75,10 +96,30 @@ export default {
     return {
       tab: 'archives',
       archDialog: false, archForm: {}, archYear: '2026',
-      borrowForm: {}, destroyForm: {}, transferForm: {}
+      borrowForm: {}, destroyForm: {}, transferForm: {},
+      borrows: [], borrowsLoading: false
     }
   },
+  watch: {
+    tab(val) { if (val === 'borrow') this.loadBorrows() }
+  },
   methods: {
+    loadBorrows() {
+      this.borrowsLoading = true
+      http.get('/arc/borrows').then(body => { this.borrows = body.data || [] })
+        .catch(showError).finally(() => { this.borrowsLoading = false })
+    },
+    /** SPRINT-UID-R15：归还（POST /arc/borrows/{id}/return）——修复"借出后无归还按钮"断链 */
+    giveBack(row) {
+      this.$confirm(`归还借阅单 ${row.borrowNo}（档案 #${row.archiveId}）？归还后档案回 IN 可再借出。`, '归还确认', {
+        type: 'warning', confirmButtonText: '归还', cancelButtonText: '取消'
+      }).then(() => {
+        http.post(`/arc/borrows/${row.id}/return`).then(() => {
+          this.$message.success('已归还（档案置 IN）')
+          this.loadBorrows()
+        }).catch(showError)
+      }).catch(() => {})
+    },
     createArchive() {
       http.post('/arc/archives', { ...this.archForm, archiveYear: Number(this.archYear) }).then(body => {
         this.$message.success('档案已建 ' + body.data.archiveNo)
@@ -116,3 +157,7 @@ export default {
   }
 }
 </script>
+<style scoped>
+.muted { color: var(--ink-3); font-size: 13px; }
+.arc-return { color: var(--pri-500, #1F7B8C); font-weight: 600; }
+</style>

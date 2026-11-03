@@ -390,6 +390,13 @@ public class BidService {
         return subscribe;
     }
 
+    /** SPRINT-UID-R15：当前用户订阅规则（每用户一条，saveSubscribe 同键覆盖）——补 BidRule 页数据源 */
+    @RequirePermission("bid:push:subscribe")
+    public BidSubscribe mySubscribe() {
+        return subscribeMapper.selectOne(new LambdaQueryWrapper<BidSubscribe>()
+                .eq(BidSubscribe::getUserId, UserContextHolderUserId()).last("LIMIT 1"));
+    }
+
     /** 推送给匹配订阅条件的用户（INNER 站内演示；DINGTALK 随生产批次） */
     @RequirePermission("bid:notice:view")
     @Transactional

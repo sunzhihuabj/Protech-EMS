@@ -8,9 +8,35 @@ html, body, #app {
   /* 字族（UID-01 §二）：微软雅黑族 + 等宽 */
   font-family: var(--sans, "Microsoft YaHei UI", "Microsoft YaHei", "PingFang SC", sans-serif);
   color: var(--ink, #1C1D1F);
+  /* SPRINT-UID-R15：字体渲染优化（Windows DirectWrite 平滑 + 亚像素） */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 * { box-sizing: border-box; }
+
+/* SPRINT-UID-R15：全局数字等宽（金额/编码对齐不跳动，UID-01 §七数据可读性外延） */
+.el-table td, .el-table th, .el-descriptions__body, .el-statistic, .pl-num {
+  font-variant-numeric: tabular-nums;
+}
+
+/* SPRINT-UID-R15：弹窗/消息框小屏适配（手机/窄平板不溢出视口） */
+@media (max-width: 768px) {
+  .el-dialog { width: 92vw !important; max-width: 92vw; margin-top: 8vh !important; }
+  .el-message-box { width: 88vw !important; max-width: 88vw; }
+  .el-drawer { width: 88% !important; }
+}
+
+/* SPRINT-UID-R15：细滚动条统一视觉（令牌色，随主题联动；Firefox 同步收窄） */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line-2, #D5DAE0); border-radius: var(--r-pill, 999px); }
+::-webkit-scrollbar-thumb:hover { background: var(--ink-3, #98A5B1); }
+* { scrollbar-width: thin; scrollbar-color: var(--line-2, #D5DAE0) transparent; }
+
+/* SPRINT-UID-R15：卡片悬停轻交互（一致 180ms 过渡，prefers-reduced-motion 由主题层兜底） */
+.el-card { transition: box-shadow 180ms ease; }
 
 /* 禁止 body 滚动（UID-02 §一.2：内容区是唯一滚动容器；body 滚动会错位水印与 sticky） */
 body { overflow: hidden; }

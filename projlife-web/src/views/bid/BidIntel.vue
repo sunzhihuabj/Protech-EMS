@@ -44,6 +44,8 @@
           </template>
           <template slot="actions" slot-scope="{ row }">
             <el-button size="mini" type="text" @click.stop="openMatch(row)">打分</el-button>
+            <el-button v-if="row.status === 'ACTIVE'" size="mini" type="text" class="bid-score"
+                       v-permission="'bid:notice:view'" @click.stop="score(row)">评分</el-button>
             <el-button v-if="row.status === 'ACTIVE'" v-permission="'bid:notice:convert'" size="mini" type="text" @click.stop="convert(row)">转商机</el-button>
             <el-button v-if="row.status === 'ACTIVE'" size="mini" type="text" @click.stop="push(row)">推送订阅</el-button>
           </template>
@@ -211,6 +213,17 @@ noticeCols: [
       this.matchRow = row
       this.matchDrawer = true
       http.get(`/bid/notices/${row.id}/match`).then(body => { this.match = body.data }).catch(showError)
+    },
+    /** SPRINT-UID-R15：100 分制评分（FR-BID-08 POST /notices/{id}/score）——修复评分动作无入口 */
+    score(row) {
+      http.post(`/bid/notices/${row.id}/score`).then(body => {
+        const m = body.data || {}
+        this.$alert(`<div style="line-height:1.9">
+            <div><b>总分：</b><span style="color:var(--pri-500,#1F7B8C);font-weight:700;font-size:16px">${m.totalScore != null ? m.totalScore : '—'}</span> / 100</div>
+            <div><b>匹配要点：</b>${m.matchedKeywords || m.matchReason || '见"打分"抽屉明细'}</div>
+          </div>`, `评分：${row.title || row.noticeNo || '#' + row.id}`,
+          { dangerouslyUseHTMLString: true, confirmButtonText: '知道了' })
+      }).catch(showError)
     },
     feedback(type) {
       http.post('/bid/feedback', { noticeId: this.matchRow.id, feedbackType: type, note: '门户反馈' }).then(() => {

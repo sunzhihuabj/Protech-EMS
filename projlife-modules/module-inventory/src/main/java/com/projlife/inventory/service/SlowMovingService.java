@@ -158,6 +158,13 @@ public class SlowMovingService {
                 .eq(InvSlowMoving::getDeleted, 0).orderByDesc(InvSlowMoving::getId));
     }
 
+    /** SPRINT-UID-R15：处置单列表（审批/完成入口数据源，倒序） */
+    @RequirePermission("inv:slow:manage")
+    public List<InvDisposal> disposals() {
+        return disposalMapper.selectList(new LambdaQueryWrapper<InvDisposal>()
+                .eq(InvDisposal::getDeleted, 0).orderByDesc(InvDisposal::getId));
+    }
+
     private InvSlowMoving mustGet(Long id) {
         InvSlowMoving slow = slowMapper.selectById(id);
         if (slow == null) {

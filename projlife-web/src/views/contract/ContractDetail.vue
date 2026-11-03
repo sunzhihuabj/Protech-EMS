@@ -94,12 +94,80 @@
             </div>
           </div>
         </el-card>
+        <!-- SPRINT-UID-R15：财务与交底动作（开票/回款/交底/解冻——修复合同财务闭环无入口断链） -->
+        <el-card shadow="never" style="margin-bottom: 16px">
+          <div slot="header"><b>财务与交底</b></div>
+          <div class="fin-actions">
+            <el-button v-permission="'contract:invoice:apply'" size="small" type="primary" plain @click="invDialog = true">登记开票</el-button>
+            <el-button v-permission="'contract:payment:create'" size="small" type="primary" plain @click="rcDialog = true">登记回款</el-button>
+            <el-button v-permission="'contract:dispatch'" size="small" type="warning" plain @click="dpDialog = true">发起交底</el-button>
+            <el-button v-if="c.status === 'FROZEN'" v-permission="'contract:unfreeze'" size="small" type="success" plain @click="unfreeze">解除冻结</el-button>
+          </div>
+          <div class="rel-group" style="margin-top:10px">
+            <b class="rel-title">开票确认</b>
+            <div v-if="!related.invoices.some(i => i.status === 'PENDING')" class="muted">无待确认开票</div>
+            <div v-for="i in related.invoices.filter(x => x.status === 'PENDING')" :key="'cfm'+i.id" class="rel-row">
+              <span>{{ i.invoiceNo }}</span><span class="muted">¥{{ i.amount }}</span>
+              <el-button v-permission="'contract:invoice:confirm'" size="mini" type="text" class="fin-act" @click="confirmInvoice(i)">确认开票</el-button>
+            </div>
+          </div>
+        </el-card>
         <el-card shadow="never">
           <div slot="header"><b>附件（只读水印件，BR-07）</b></div>
           <p class="muted">暂无附件（上传入口随 file-service 批次）</p>
         </el-card>
       </el-col>
     </el-row>
+
+    <!-- SPRINT-UID-R15：登记开票弹窗 -->
+    <el-dialog title="登记开票（FR-CT-14）" :visible.sync="invDialog" width="460px">
+      <el-form label-width="100px" size="small">
+        <el-form-item label="发票类型" required>
+          <el-select v-model="invForm.invoiceType" style="width: 100%">
+            <el-option value="VAT_SPECIAL" label="增值税专用发票" /><el-option value="VAT_NORMAL" label="增值税普通发票" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="金额(元)" required><el-input-number v-model="invForm.amount" :min="0" style="width: 100%" /></el-form-item>
+        <el-form-item label="税额(元)"><el-input-number v-model="invForm.taxAmount" :min="0" style="width: 100%" /></el-form-item>
+        <el-form-item label="开票日期" required><el-date-picker v-model="invForm.invoiceDate" type="date" value-format="yyyy-MM-dd" style="width: 100%" /></el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button size="small" @click="invDialog = false">取消</el-button>
+        <el-button size="small" type="primary" @click="createInvoice">提交</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- SPRINT-UID-R15：登记回款弹窗 -->
+    <el-dialog title="登记回款（FR-CT-15）" :visible.sync="rcDialog" width="460px">
+      <el-form label-width="100px" size="small">
+        <el-form-item label="回款金额(元)" required><el-input-number v-model="rcForm.amount" :min="0" style="width: 100%" /></el-form-item>
+        <el-form-item label="回款日期" required><el-date-picker v-model="rcForm.receiptDate" type="date" value-format="yyyy-MM-dd" style="width: 100%" /></el-form-item>
+        <el-form-item label="方式">
+          <el-select v-model="rcForm.method" style="width: 100%">
+            <el-option value="BANK" label="银行转账" /><el-option value="BILL" label="票据" /><el-option value="OTHER" label="其他" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="银行流水号"><el-input v-model.trim="rcForm.bankRef" /></el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button size="small" @click="rcDialog = false">取消</el-button>
+        <el-button size="small" type="primary" @click="createReceipt(true)">登记并确认</el-button>
+        <el-button size="small" @click="createReceipt(false)">仅登记</el-button>
+      </div>
+    </el-dialog>
+
+    <!-- SPRINT-UID-R15：发起交底弹窗 -->
+    <el-dialog title="发起交底（FR-CT-10，交底及时率 KPI 数据源）" :visible.sync="dpDialog" width="460px">
+      <el-form label-width="110px" size="small">
+        <el-form-item label="接收人ID列表" required>
+          <el-input v-model.trim="dpForm.receiverIds" placeholder="逗号分隔，如：5,8,12" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button size="small" @click="dpDialog = false">取消</el-button>
+        <el-button size="small" type="primary" @click="createDispatch">发送交底</el-button>
+      </div>
+    </el-dialog>
 
     <!-- 6 流转时间轴（操作留痕承载；逆序） -->
     <el-card shadow="never" style="margin-top: 16px">
@@ -143,7 +211,11 @@ export default {
       approval: {},
       approvalNodes: [],
       logs: [],
-      statusDict: 'DRAFT:编辑中,REVIEWED:已评审,SIGNED:已签署,PERFORMING:履行中,ACCEPTED:已验收,WARRANTY:质保期中,CLOSED:已关闭,CHANGED:已变更'
+      statusDict: 'DRAFT:编辑中,REVIEWED:已评审,SIGNED:已签署,PERFORMING:履行中,ACCEPTED:已验收,WARRANTY:质保期中,CLOSED:已关闭,CHANGED:已变更',
+      // SPRINT-UID-R15：财务与交底动作
+      invDialog: false, invForm: { invoiceType: 'VAT_SPECIAL' },
+      rcDialog: false, rcForm: { method: 'BANK' },
+      dpDialog: false, dpForm: {}
     }
   },
   computed: {
@@ -181,7 +253,71 @@ export default {
     submitReview() { this.$http.post(`/contract/${this.id}/review/submit`).then(() => { this.$message.success('已提交评审'); this.load() }).catch(showError) },
     seal() { this.$http.post(`/contract/${this.id}/seal`, { copyCount: 1 }).then(() => { this.$message.success('已用印'); this.load() }).catch(showError) },
     goFiling() { this.$router.push(`/ct/contract/${this.id}/filing`) },
-    aiRisk() { this.$message.info('AI 风险分析入口见台账页（含降级链）') }
+    aiRisk() { this.$message.info('AI 风险分析入口见台账页（含降级链）') },
+
+    /* ---------- SPRINT-UID-R15：财务与交底闭环（原 4 组端点无 Web 入口） ---------- */
+    createInvoice() {
+      if (!this.invForm.amount || !this.invForm.invoiceDate) {
+        this.$message.warning('金额与开票日期必填')
+        return
+      }
+      this.$http.post('/contract/invoices', { ...this.invForm, contractId: Number(this.id) }).then(() => {
+        this.$message.success('开票已登记（待确认）')
+        this.invDialog = false
+        this.invForm = { invoiceType: 'VAT_SPECIAL' }
+        this.load()
+      }).catch(showError)
+    },
+    confirmInvoice(invoice) {
+      this.$http.post(`/contract/invoices/${invoice.id}/confirm`).then(() => {
+        this.$message.success('开票已确认')
+        this.load()
+      }).catch(showError)
+    },
+    createReceipt(andConfirm) {
+      if (!this.rcForm.amount || !this.rcForm.receiptDate) {
+        this.$message.warning('回款金额与日期必填')
+        return
+      }
+      const finish = msg => {
+        this.$message.success(msg)
+        this.rcDialog = false
+        this.rcForm = { method: 'BANK' }
+        this.load()
+      }
+      this.$http.post('/contract/receipts', { ...this.rcForm, contractId: Number(this.id) }).then(body => {
+        const rid = body.data
+        if (andConfirm) {
+          return this.$http.post(`/contract/receipts/${rid}/confirm`)
+            .then(() => finish('回款已登记并确认（回款进度指标取数）'))
+        }
+        finish('回款已登记（待确认）')
+        return null
+      }).catch(showError)
+    },
+    unfreeze() {
+      this.$prompt('解除冻结原因（必填）', '解除开票冻结', {
+        inputValidator: v => !!(v && v.trim()) || '原因必填',
+        confirmButtonText: '解除', cancelButtonText: '取消'
+      }).then(({ value }) => {
+        this.$http.post(`/contract/${this.id}/unfreeze`, { reason: value.trim() }).then(() => {
+          this.$message.success('已解除冻结')
+          this.load()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    createDispatch() {
+      const receiverIds = (this.dpForm.receiverIds || '').split(',').map(s => Number(s.trim())).filter(n => n > 0)
+      if (receiverIds.length === 0) {
+        this.$message.warning('请输入接收人ID列表')
+        return
+      }
+      this.$http.post(`/contract/${this.id}/dispatch`, { receiverIds }).then(body => {
+        this.$message.success('交底已发送 ' + (body.data || 0) + ' 人（及时率取数）')
+        this.dpDialog = false
+        this.dpForm = {}
+      }).catch(showError)
+    }
   }
 }
 </script>
@@ -204,6 +340,9 @@ export default {
 .pl-num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--ink-3); font-size: 12px; }
 .rel-group { margin-bottom: 10px; }
+.fin-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.fin-act { color: var(--pri-500, #1F7B8C); font-weight: 600; }
+.fin-act:hover { color: var(--pri-700, #155E6C); }
 .rel-title { font-size: 13px; color: var(--ink-2); display: block; margin-bottom: 4px; }
 .rel-row { display: flex; gap: 8px; align-items: center; font-size: 12px; padding: 2px 0; }
 </style>

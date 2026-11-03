@@ -67,10 +67,115 @@
               <el-button v-if="row.status === 'CANDIDATE'" size="mini" type="text" @click="confirmSlow(row)">确认（需归因）</el-button>
               <el-button v-if="row.status === 'CONFIRMED'" size="mini" type="text" @click="dispose(row)">发起处置</el-button>
             </template>
+          </el-table>
+        </el-table>
+
+        <!-- SPRINT-UID-R15：处置单台账（审批 L1/L2/L3 + 完成回填）——修复"发起后无审批/完成入口"断链 -->
+        <h4 class="inv-sub">处置单（DP 编号 · E-39 方式 · A-31 分级审批）</h4>
+        <el-table :data="disposalList" v-loading="disposalLoading" size="small" border>
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="disposalNo" label="处置单号" width="150" />
+          <el-table-column prop="slowMovingId" label="呆滞ID" width="80" />
+          <el-table-column prop="method" label="处置方式" width="110" />
+          <el-table-column prop="qty" label="数量" width="90" />
+          <el-table-column prop="expectAmount" label="预计金额" width="100" align="right" />
+          <el-table-column prop="actualAmount" label="实际金额" width="100" align="right">
+            <template slot-scope="{ row }">{{ row.actualAmount == null ? '—' : row.actualAmount }}</template>
+          </el-table-column>
+          <el-table-column prop="approvalLevel" label="审批级" width="90">
+            <template slot-scope="{ row }">{{ row.approvalLevel || '—' }}</template>
+          </el-table-column>
+          <el-table-column label="状态" width="96">
+            <template slot-scope="{ row }">
+              <el-tag v-if="row.disposedAt" size="mini" type="success">已完成</el-tag>
+              <el-tag v-else-if="row.approvedAt" size="mini" type="warning">待完成</el-tag>
+              <el-tag v-else size="mini" type="danger">待审批</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="150" fixed="right">
+            <template slot-scope="{ row }">
+              <el-button v-if="!row.approvedAt" size="mini" type="text" class="inv-act"
+                         v-permission="'inv:slow:manage'" @click="approveDisposal(row)">审批</el-button>
+              <el-button v-if="row.approvedAt && !row.disposedAt" size="mini" type="text" class="inv-act"
+                         v-permission="'inv:slow:manage'" @click="completeDisposal(row)">完成</el-button>
+              <span v-if="row.disposedAt" class="pl-empty-val">—</span>
+            </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
+
+      <!-- SPRINT-UID-R15：补货管理（BR-05 全链：申请→审批→发料→回填）——修复整块流程无 Web 入口 -->
+      <el-tab-pane label="补货" name="replenish">
+        <div class="pl-toolbar">
+          <el-button v-permission="'inv:replenish:create'" size="small" type="primary" icon="el-icon-plus" @click="rpDialog = true">补货申请</el-button>
+          <el-select v-model="rpStatus" size="small" style="width:140px" @change="loadReplenish">
+            <el-option value="" label="全部状态" />
+            <el-option value="PENDING" label="待审批" />
+            <el-option value="APPROVED" label="已审批" />
+            <el-option value="ISSUED" label="已发料" />
+            <el-option value="BACKFILLED" label="已回填" />
+            <el-option value="LOCKED" label="已锁定" />
+          </el-select>
+          <el-button size="small" icon="el-icon-refresh" @click="loadReplenish">刷新</el-button>
+        </div>
+        <el-table :data="rpList" v-loading="rpLoading" size="small" border>
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="replenishNo" label="补货单号" width="150" />
+          <el-table-column prop="mdProjectId" label="项目ID" width="90" />
+          <el-table-column prop="urgency" label="紧急度" width="90">
+            <template slot-scope="{ row }">
+              <el-tag size="mini" :type="row.urgency === 'URGENT' ? 'danger' : row.urgency === 'HIGH' ? 'warning' : 'info'">{{ row.urgency }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="reason" label="原因" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="amount" label="金额" width="100" align="right" />
+          <el-table-column prop="status" label="状态" width="110">
+            <template slot-scope="{ row }">
+              <el-tag size="mini" :type="row.status === 'BACKFILLED' ? 'success' : row.status === 'LOCKED' ? 'info' : 'warning'">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="180" fixed="right">
+            <template slot-scope="{ row }">
+              <el-button v-if="row.status === 'PENDING'" size="mini" type="text" class="inv-act"
+                         v-permission="'inv:replenish:approve'" @click="approveReplenish(row)">审批</el-button>
+              <el-button v-if="row.status === 'APPROVED'" size="mini" type="text" class="inv-act"
+                         v-permission="'inv:scan'" @click="issueReplenish(row)">发料</el-button>
+              <el-button v-if="row.status === 'ISSUED'" size="mini" type="text" class="inv-act"
+                         v-permission="'inv:replenish:create'" @click="backfillReplenish(row)">回填</el-button>
+              <span v-if="row.status === 'BACKFILLED' || row.status === 'LOCKED'" class="pl-empty-val">—</span>
+            </template>
+          </el-table-column>
+        </el-table>
+        <p class="muted">BR-05：发料后 25h 内未回填将由 job 锁定（lock-overdue）；审批→发料→回填全链留痕。</p>
+      </el-tab-pane>
     </el-tabs>
+
+    <!-- 补货申请弹窗 -->
+    <el-dialog title="补货申请（BR-05）" :visible.sync="rpDialog" width="560px">
+      <el-form label-width="100px" size="small">
+        <el-form-item label="项目ID" required><el-input v-model.trim="rpForm.mdProjectId" style="width: 200px" /></el-form-item>
+        <el-form-item label="紧急度">
+          <el-select v-model="rpForm.urgency" style="width: 200px">
+            <el-option value="NORMAL" label="NORMAL 普通" /><el-option value="HIGH" label="HIGH 高" /><el-option value="URGENT" label="URGENT 紧急" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="原因" required><el-input v-model="rpForm.reason" /></el-form-item>
+        <el-form-item label="金额(元)"><el-input-number v-model="rpForm.amount" :min="0" style="width: 200px" /></el-form-item>
+        <el-form-item label="明细行">
+          <div v-for="(line, idx) in rpForm.lines" :key="idx" style="display:flex;gap:8px;margin-bottom:6px">
+            <el-input v-model.trim="line.materialId" placeholder="物料ID" style="width: 120px" />
+            <el-input-number v-model="line.qty" :min="1" placeholder="数量" style="width: 130px" />
+            <el-input v-model.trim="line.useLocation" placeholder="使用地点" style="flex:1" />
+            <el-button size="mini" type="text" class="inv-act" @click="rpForm.lines.splice(idx, 1)">删除</el-button>
+          </div>
+          <el-button size="small" icon="el-icon-plus" @click="rpForm.lines.push({ materialId: '', qty: 1, useLocation: '' })">加一行</el-button>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button size="small" @click="rpDialog = false">取消</el-button>
+        <el-button size="small" type="primary" @click="createReplenish">提交申请</el-button>
+      </div>
+    </el-dialog>
 
     <!-- 事务弹窗 -->
     <el-dialog title="库存事务（幂等键必填）" :visible.sync="txnDialog" width="500px">
@@ -179,13 +284,111 @@ export default {
       countDialog: false, countForm: { countType: 'A' }, countFormLines: [{}],
       entryDialog: false, entryLines: [],
       slowList: [], slowLoading: false, slowDialog: false,
-      slowForm: { responsibility: 'DESIGN' }, disposeDialog: false, disposeForm: {}, disposeRow: null
+      slowForm: { responsibility: 'DESIGN' }, disposeDialog: false, disposeForm: {}, disposeRow: null,
+      // SPRINT-UID-R15：处置单台账 + 补货全链（BR-05）
+      disposalList: [], disposalLoading: false,
+      rpList: [], rpLoading: false, rpStatus: '', rpDialog: false,
+      rpForm: { urgency: 'NORMAL', lines: [{ materialId: '', qty: 1, useLocation: '' }] }
     }
   },
   mounted() {
     this.loadSlow()
+    this.loadDisposals()
+    this.loadReplenish()
+  },
+  watch: {
+    tab(val) {
+      if (val === 'slow') { this.loadSlow(); this.loadDisposals() }
+      if (val === 'replenish') this.loadReplenish()
+    }
   },
   methods: {
+    /** SPRINT-UID-R15：处置单审批（L1/L2/L3 分级） */
+    loadDisposals() {
+      this.disposalLoading = true
+      http.get('/inv/slow-moving/disposals').then(body => { this.disposalList = body.data || [] })
+        .catch(showError).finally(() => { this.disposalLoading = false })
+    },
+    approveDisposal(row) {
+      this.$prompt('审批级别（L1 主管 / L2 部门 / L3 总经理，按金额分级 A-31）', `审批处置单 ${row.disposalNo}`, {
+        inputPattern: /^L[123]$/, inputErrorMessage: '请输入 L1 / L2 / L3',
+        confirmButtonText: '通过', cancelButtonText: '取消'
+      }).then(({ value }) => {
+        http.post(`/inv/slow-moving/disposals/${row.id}/approve`, { level: value }).then(() => {
+          this.$message.success(`已按 ${value} 级审批通过`)
+          this.loadDisposals()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    completeDisposal(row) {
+      this.$prompt('实际处置金额（回填，元）', `完成处置单 ${row.disposalNo}`, {
+        inputPattern: /^\d+(\.\d{1,2})?$/, inputErrorMessage: '请输入金额（最多两位小数）',
+        confirmButtonText: '完成', cancelButtonText: '取消'
+      }).then(({ value }) => {
+        http.post(`/inv/slow-moving/disposals/${row.id}/complete`, { actualAmount: value }).then(() => {
+          this.$message.success('处置已完成（呆滞台账置 DISPOSED）')
+          this.loadDisposals()
+          this.loadSlow()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    /** SPRINT-UID-R15：补货全链（BR-05）：申请→审批→发料→回填 */
+    loadReplenish() {
+      this.rpLoading = true
+      http.get('/inv/replenish', { params: { pageNum: 1, pageSize: 50, status: this.rpStatus || undefined } })
+        .then(body => { this.rpList = (body.data && body.data.records) || [] })
+        .catch(showError).finally(() => { this.rpLoading = false })
+    },
+    createReplenish() {
+      if (!this.rpForm.mdProjectId || !this.rpForm.reason) {
+        this.$message.warning('项目ID与原因必填')
+        return
+      }
+      const lines = (this.rpForm.lines || []).filter(l => l.materialId)
+        .map(l => ({ materialId: Number(l.materialId), qty: l.qty, useLocation: l.useLocation || undefined }))
+      http.post('/inv/replenish', {
+        mdProjectId: Number(this.rpForm.mdProjectId),
+        reason: this.rpForm.reason,
+        urgency: this.rpForm.urgency,
+        amount: this.rpForm.amount || undefined,
+        lines
+      }).then(body => {
+        this.$message.success('补货申请已提交 ' + (body.data || ''))
+        this.rpDialog = false
+        this.rpForm = { urgency: 'NORMAL', lines: [{ materialId: '', qty: 1, useLocation: '' }] }
+        this.loadReplenish()
+      }).catch(showError)
+    },
+    approveReplenish(row) {
+      this.$confirm(`审批通过补货单 #${row.id}？通过后可发料。`, '补货审批', {
+        type: 'warning', confirmButtonText: '通过', cancelButtonText: '取消'
+      }).then(() => {
+        http.post(`/inv/replenish/${row.id}/approve`).then(() => {
+          this.$message.success('已审批通过')
+          this.loadReplenish()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    issueReplenish(row) {
+      this.$confirm(`发料补货单 #${row.id}？发料后 25h 内须回填（BR-05）。`, '发料确认', {
+        type: 'warning', confirmButtonText: '发料', cancelButtonText: '取消'
+      }).then(() => {
+        http.post(`/inv/replenish/${row.id}/issue`).then(() => {
+          this.$message.success('已发料，请及时回填')
+          this.loadReplenish()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    backfillReplenish(row) {
+      this.$confirm(`回填补货单 #${row.id} 实际用量？回填后流程闭环。`, '回填确认', {
+        type: 'warning', confirmButtonText: '回填', cancelButtonText: '取消'
+      }).then(() => {
+        http.post(`/inv/replenish/${row.id}/backfill`).then(() => {
+          this.$message.success('已回填，补货闭环')
+          this.loadReplenish()
+        }).catch(showError)
+      }).catch(() => {})
+    },
     submitTxn() {
       http.post('/inv/transactions', this.txnForm).then(body => {
         const d = body.data || {}
@@ -276,3 +479,9 @@ export default {
   }
 }
 </script>
+<style scoped>
+.inv-sub { margin: 16px 0 8px; font-size: 14px; color: var(--ink); }
+.inv-act { color: var(--pri-500, #1F7B8C); font-weight: 600; }
+.inv-act:hover { color: var(--pri-700, #155E6C); }
+.muted { color: var(--ink-3); font-size: 12px; }
+</style>

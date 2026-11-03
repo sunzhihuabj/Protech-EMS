@@ -26,6 +26,8 @@
           </template>
           <template slot="actions" slot-scope="{ row }">
             <el-button size="mini" type="text" @click.stop="openFollowup(row)">跟进</el-button>
+            <el-button v-if="row.status === 'TRACKING'" size="mini" type="text" class="opp-win"
+                       v-permission="'opportunity:convert'" @click.stop="convert(row)">赢单转合同</el-button>
             <el-button v-if="row.status === 'TRACKING'" size="mini" type="text" @click.stop="lose(row)">丢单</el-button>
             <el-button v-if="row.status === 'LOST'" size="mini" type="text" @click.stop="reopen(row)">重激活</el-button>
           </template>
@@ -195,6 +197,19 @@ export default {
         this.loadFunnel()
       }).catch(e => { if (e !== 'cancel') showError(e) })
     },
+    /** SPRINT-UID-R15：赢单转合同（FR-CRM-02 convert，TRACKING→WON 并关联合同）——修复"赢单后无入口"断链 */
+    convert(row) {
+      this.$prompt('输入已建档的合同 ID（合同台账列表首列）', `赢单转合同：${row.oppName}`, {
+        inputPattern: /^\d+$/, inputErrorMessage: '请输入合同 ID（纯数字）',
+        confirmButtonText: '确认赢单', cancelButtonText: '取消'
+      }).then(({ value }) => {
+        return this.$http.post(`/crm/opportunities/${row.id}/convert`, { contractId: Number(value) })
+      }).then(() => {
+        this.$message.success('已赢单并关联合同（漏斗转入合同阶段）')
+        this.load()
+        this.loadFunnel()
+      }).catch(e => { if (e !== 'cancel') showError(e) })
+    },
     reopen(row) {
       this.$http.post(`/crm/opportunities/${row.id}/reopen`).then(() => {
         this.$message.success('已重新激活为跟踪中')
@@ -208,4 +223,6 @@ export default {
 
 <style scoped>
 .muted { color: #98a5b1; font-size: 13px; }
+.opp-win { color: var(--pri-500, #1F7B8C); font-weight: 600; }
+.opp-win:hover { color: var(--pri-700, #155E6C); }
 </style>

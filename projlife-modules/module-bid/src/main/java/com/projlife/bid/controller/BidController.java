@@ -117,6 +117,13 @@ public class BidController {
         return ApiResponse.ok(bidService.saveSubscribe(subscribe));
     }
 
+    /** SPRINT-UID-R15：我的订阅规则（BidRule 页数据源，可为 null） */
+    @GetMapping("/subscribe")
+    @RequirePermission("bid:push:subscribe")
+    public ApiResponse<BidSubscribe> mySubscribe() {
+        return ApiResponse.ok(bidService.mySubscribe());
+    }
+
     /** FR-BID-10：按订阅条件推送 */
     @PostMapping("/notices/{id}/push")
     @RequirePermission("bid:push:subscribe")

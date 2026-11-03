@@ -138,6 +138,19 @@ export default {
     this.collapsed = saved !== null
       ? saved === '1'
       : (window.innerWidth < 1536)
+    // SPRINT-UID-R15：小屏自适应（≤1024 自动折叠、≥1200 恢复偏好；不覆盖用户持久化选择）
+    this._resizeNav = () => {
+      const w = window.innerWidth
+      if (w <= 1024 && !this._autoCollapsed) {
+        this._autoCollapsed = true
+        this.collapsed = true
+      } else if (w >= 1200 && this._autoCollapsed) {
+        this._autoCollapsed = false
+        const s = localStorage.getItem(SIDEBAR_KEY)
+        this.collapsed = s !== null ? s === '1' : (w < 1536)
+      }
+    }
+    window.addEventListener('resize', this._resizeNav)
     this.renderWatermark()
     // W1 几何：每 10s 单向位移 24px 后复位（UID-01 §八.6）
     this.watermarkTimer = setInterval(this.renderWatermark, 10000)
@@ -149,8 +162,9 @@ export default {
   },
   beforeDestroy() {
     clearInterval(this.watermarkTimer)
-    if (this.unsubscribeTheme) this.unsubscribeTheme()
+    if (this.unsubscribeTheme) { this.unsubscribeTheme() }
     if (this._keyNav) { window.removeEventListener('keydown', this._keyNav) }
+    if (this._resizeNav) { window.removeEventListener('resize', this._resizeNav) }
   },
   methods: {
     clearSearch() {
@@ -263,7 +277,8 @@ export default {
 }
 .pl-icon-btn:hover { background: var(--row-hover); color: var(--ink); }
 .pl-crumb { flex-shrink: 0; }
-.pl-search { width: 320px; }
+/* SPRINT-UID-R15：搜索框 flex 自适应（原固定 320px 小屏挤压操作区） */
+.pl-search { flex: 0 1 320px; min-width: 160px; width: auto; }
 .pl-search-type { font-size: 12px; color: var(--ink-3); margin-right: 8px; }
 .pl-header-right { display: flex; align-items: center; gap: 20px; }
 .pl-badge { cursor: pointer; font-size: 16px; color: var(--ink-2); }
@@ -276,5 +291,21 @@ export default {
 .pl-watermark {
   position: fixed; inset: 0; pointer-events: none; z-index: 3000;
   background-repeat: repeat;
+}
+
+/* ---------- SPRINT-UID-R15：响应式断点（跨设备适配，UID-02 栅格口径外延） ---------- */
+/* ≤1200：搜索框收缩、内容区收边距 */
+@media (max-width: 1200px) {
+  .pl-search { flex-basis: 220px; }
+  .pl-main { padding: 14px 16px 20px; }
+  .pl-header { padding: 0 12px; }
+}
+/* ≤768：隐藏面包屑、搜索框占满剩余空间、角标区收窄（平板/小笔记本） */
+@media (max-width: 768px) {
+  .pl-crumb { display: none; }
+  .pl-search { flex: 1 1 auto; min-width: 130px; }
+  .pl-header-right { gap: 12px; }
+  .pl-main { padding: 10px 12px 16px; }
+  .pl-user { max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 }
 </style>

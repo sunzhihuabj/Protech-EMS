@@ -127,6 +127,24 @@ public class ThdPortalService {
         return n;
     }
 
+    /** SPRINT-UID-R15：授权列表（门户管理数据源，可按 status 过滤，倒序） */
+    @RequirePermission("thd:portal")
+    public List<ThdWorkerProject> grants(String status) {
+        LambdaQueryWrapper<ThdWorkerProject> wrapper = new LambdaQueryWrapper<ThdWorkerProject>()
+                .orderByDesc(ThdWorkerProject::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(ThdWorkerProject::getStatus, status);
+        }
+        return workerProjectMapper.selectList(wrapper);
+    }
+
+    /** SPRINT-UID-R15：黑名单列表（含生效/已解除，倒序） */
+    @RequirePermission("thd:portal")
+    public List<ThdBlacklist> blacklists() {
+        return blacklistMapper.selectList(new LambdaQueryWrapper<ThdBlacklist>()
+                .orderByDesc(ThdBlacklist::getId));
+    }
+
     // ---------- 考核评价（FR-THD：四维均分定级） ----------
 
     @RequirePermission("thd:portal")

@@ -13,8 +13,35 @@
       <el-tab-pane label="人员项目授权" name="grants">
         <div class="pl-toolbar">
           <el-button v-permission="'thd:portal'" size="small" type="primary" icon="el-icon-key" @click="grantDialog = true">授权进场</el-button>
+          <span class="spacer"></span>
+          <el-select v-model="grantStatus" size="small" style="width:140px" @change="loadGrants">
+            <el-option value="" label="全部状态" />
+            <el-option value="GRANTED" label="生效中" />
+            <el-option value="EXPIRED" label="已到期" />
+            <el-option value="REVOKED" label="已撤销" />
+          </el-select>
         </div>
-        <p class="muted">黑名单生效人员将被拦截（THD-BLACKLISTED）；授权到期自动 EXPIRED（job 扫描）。</p>
+        <p class="muted">黑名单生效人员将被拦截（THD-BLACKLISTED）；授权到期自动 EXPIRED（job 扫描）；撤销需填原因。</p>
+        <el-table :data="grants" size="small" border v-loading="grantsLoading" aria-label="授权列表">
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="workerId" label="人员ID" width="90" />
+          <el-table-column prop="mdProjectId" label="项目ID" width="90" />
+          <el-table-column prop="authStart" label="授权起" width="110" />
+          <el-table-column prop="authEnd" label="授权止" width="110" />
+          <el-table-column label="状态" width="100">
+            <template slot-scope="{ row }">
+              <el-tag size="mini" :type="row.status === 'GRANTED' ? 'success' : row.status === 'REVOKED' ? 'danger' : 'info'">{{ row.status }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="frozenReason" label="冻结/撤销原因" min-width="150" show-overflow-tooltip />
+          <el-table-column label="操作" width="90" fixed="right">
+            <template slot-scope="{ row }">
+              <el-button v-if="row.status === 'GRANTED'" size="mini" type="text" class="thd-danger"
+                         v-permission="'thd:portal'" @click="revokeGrant(row)">撤销</el-button>
+              <span v-else class="pl-empty-val">—</span>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-tab-pane>
 
       <!-- 考核评价 -->
@@ -60,6 +87,26 @@
             <el-form-item><el-button v-permission="'thd:portal'" size="small" type="danger" @click="blacklistAdd">拉黑</el-button></el-form-item>
           </el-form>
           <p class="muted">解除走 /release（留解除日期）；解除后可重新授权进场。</p>
+          <el-table :data="blacklists" size="small" border v-loading="blLoading" style="margin-top:8px" aria-label="黑名单列表">
+            <el-table-column prop="id" label="ID" width="60" />
+            <el-table-column prop="targetType" label="对象类型" width="90" />
+            <el-table-column prop="targetId" label="对象ID" width="80" />
+            <el-table-column prop="reason" label="拉黑原因" min-width="160" show-overflow-tooltip />
+            <el-table-column prop="effectiveDate" label="生效日" width="110" />
+            <el-table-column prop="releaseDate" label="解除日" width="110" />
+            <el-table-column label="状态" width="90">
+              <template slot-scope="{ row }">
+                <el-tag size="mini" :type="row.status === 'ACTIVE' ? 'danger' : 'info'">{{ row.status }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="90" fixed="right">
+              <template slot-scope="{ row }">
+                <el-button v-if="row.status === 'ACTIVE'" size="mini" type="text" class="thd-danger"
+                           v-permission="'thd:portal'" @click="releaseBlacklist(row)">解除</el-button>
+                <span v-else class="pl-empty-val">—</span>
+              </template>
+            </el-table-column>
+          </el-table>
         </el-card>
       </el-tab-pane>
     </el-tabs>
@@ -104,11 +151,56 @@ export default {
       tab: 'notes',
       noteDialog: false, noteForm: {},
       grantDialog: false, grantForm: {},
+      grants: [], grantsLoading: false, grantStatus: '',
       evalForm: { targetType: 'CREW' }, evalResult: null,
-      blForm: { targetType: 'WORKER' }
+      blForm: { targetType: 'WORKER' },
+      blacklists: [], blLoading: false
+    }
+  },
+  mounted() {
+    this.loadGrants()
+    this.loadBlacklists()
+  },
+  watch: {
+    tab(val) {
+      if (val === 'grants') this.loadGrants()
+      if (val === 'blacklist') this.loadBlacklists()
     }
   },
   methods: {
+    loadGrants() {
+      this.grantsLoading = true
+      http.get('/thd/worker-projects', { params: { status: this.grantStatus || undefined } })
+        .then(body => { this.grants = body.data || [] })
+        .catch(showError).finally(() => { this.grantsLoading = false })
+    },
+    loadBlacklists() {
+      this.blLoading = true
+      http.get('/thd/blacklist').then(body => { this.blacklists = body.data || [] })
+        .catch(showError).finally(() => { this.blLoading = false })
+    },
+    revokeGrant(row) {
+      this.$prompt('撤销原因（必填）', '撤销授权 #' + row.id, {
+        inputValidator: v => !!(v && v.trim()) || '撤销原因必填',
+        confirmButtonText: '撤销', cancelButtonText: '取消'
+      }).then(({ value }) => {
+        http.post(`/thd/worker-projects/${row.id}/revoke`, { reason: value.trim() }).then(() => {
+          this.$message.success('授权已撤销')
+          this.loadGrants()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    releaseBlacklist(row) {
+      this.$confirm(`解除黑名单 #${row.id}（${row.targetType}/${row.targetId}）？解除后可重新授权进场。`, '解除确认', {
+        type: 'warning', confirmButtonText: '解除', cancelButtonText: '取消'
+      }).then(() => {
+        http.post(`/thd/blacklist/${row.id}/release`).then(() => {
+          this.$message.success('黑名单已解除')
+          this.loadBlacklists()
+          this.loadGrants()
+        }).catch(showError)
+      }).catch(() => {})
+    },
     createNote() {
       http.post('/thd/delivery-notes', this.noteForm).then(body => {
         const note = body.data
@@ -138,3 +230,7 @@ export default {
   }
 }
 </script>
+<style scoped>
+.thd-danger { color: var(--danger, #D93025); }
+.thd-danger:hover { color: var(--danger-ink, #B3261E); }
+</style>

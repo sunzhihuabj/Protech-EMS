@@ -73,4 +73,11 @@ public class SlowMovingController {
                                                  @RequestParam(required = false) Long materialId) {
         return ApiResponse.ok(slowMovingService.list(status, materialId));
     }
+
+    /** SPRINT-UID-R15：处置单列表（审批/完成入口数据源） */
+    @GetMapping("/disposals")
+    @RequirePermission("inv:slow:manage")
+    public ApiResponse<List<InvDisposal>> disposals() {
+        return ApiResponse.ok(slowMovingService.disposals());
+    }
 }

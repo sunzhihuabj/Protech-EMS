@@ -7,12 +7,15 @@ import com.projlife.eng.entity.ThdEvaluation;
 import com.projlife.eng.entity.ThdWorkerProject;
 import com.projlife.eng.service.ThdPortalService;
 import com.projlife.security.auth.RequirePermission;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -46,6 +49,13 @@ public class ThdPortalController {
         return ApiResponse.ok(portalService.grantWorker(grant));
     }
 
+    /** SPRINT-UID-R15：授权列表（撤销入口数据源；status 过滤可选） */
+    @GetMapping("/worker-projects")
+    @RequirePermission("thd:portal")
+    public ApiResponse<List<ThdWorkerProject>> grants(@RequestParam(required = false) String status) {
+        return ApiResponse.ok(portalService.grants(status));
+    }
+
     @PostMapping("/worker-projects/{id}/revoke")
     @RequirePermission("thd:portal")
     public ApiResponse<ThdWorkerProject> revoke(@PathVariable Long id, @RequestBody Map<String, String> body) {
@@ -62,6 +72,13 @@ public class ThdPortalController {
     @RequirePermission("thd:portal")
     public ApiResponse<ThdBlacklist> blacklistAdd(@RequestBody ThdBlacklist blacklist) {
         return ApiResponse.ok(portalService.blacklistAdd(blacklist));
+    }
+
+    /** SPRINT-UID-R15：黑名单列表（解除入口数据源） */
+    @GetMapping("/blacklist")
+    @RequirePermission("thd:portal")
+    public ApiResponse<List<ThdBlacklist>> blacklists() {
+        return ApiResponse.ok(portalService.blacklists());
     }
 
     @PostMapping("/blacklist/{id}/release")
