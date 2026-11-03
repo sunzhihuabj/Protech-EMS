@@ -38,7 +38,8 @@ const ROUTE_BY_CODE = {
   'menu:system:dept': '/sys/dept',
   'menu:system:dict': '/sys/dict',
   'menu:system:config': '/sys/config',
-  'menu:system:log': '/sys/log'
+  'menu:system:log': '/sys/log',
+  'menu:system:monitor': '/sys/monitor'
 }
 
 export default {

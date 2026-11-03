@@ -55,6 +55,7 @@ const routes = [
       { path: 'sys/dict', name: 'sysDict', component: () => import('@/views/system/Dicts.vue'), meta: { title: '数据字典', permCode: 'menu:system:dict' } },
       { path: 'sys/config', name: 'sysConfig', component: () => import('@/views/system/Configs.vue'), meta: { title: '系统参数', permCode: 'menu:system:config' } },
       { path: 'sys/log', name: 'sysLog', component: () => import('@/views/system/Logs.vue'), meta: { title: '审计日志', permCode: 'menu:system:log' } },
+      { path: 'sys/monitor', name: 'sysMonitor', component: () => import('@/views/sys/Monitor.vue'), meta: { title: '集成监控', permCode: 'menu:system:monitor' } },
       // 模板档占位（UID-05 模板条目：路由/菜单已登记，字段随切片细化——验收 1 无孤儿页面）
       { path: 'workbench/todo', name: 'workbenchTodo', component: () => import('@/views/workbench/Todo.vue'), meta: { title: '待办中心', permCode: 'menu:workbench' } },
       { path: 'workbench/my-task', name: 'workbenchMyTask', component: () => import('@/views/workbench/MyTask.vue'), meta: { title: '我的任务', permCode: 'menu:workbench' } },
