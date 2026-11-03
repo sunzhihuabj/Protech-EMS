@@ -54,6 +54,111 @@
         </div>
       </pt-form-section>
     </el-card>
+
+    <!-- SPRINT-UID-R16：成员管理 + 门控 + ECO 补齐 -->
+    <el-row :gutter="16" style="margin-top: 8px">
+      <el-col :span="14">
+        <!-- 成员管理 -->
+        <el-card shadow="never" :body-style="{ padding: '16px' }" style="margin-bottom: 12px">
+          <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
+            <b>项目成员（{{ members.length }}）</b>
+            <el-button v-permission="'project:member:manage'" size="mini" type="primary" plain @click="showAddMember">添加成员</el-button>
+          </div>
+          <el-empty v-if="!members.length" description="暂无项目成员" :image-size="50" />
+          <el-table v-else :data="members" size="mini">
+            <el-table-column prop="userId" label="用户ID" width="90" />
+            <el-table-column prop="roleCode" label="角色" width="120">
+              <template slot-scope="{ row }">{{ roleDict(row.roleCode) }}</template>
+            </el-table-column>
+            <el-table-column prop="joinDate" label="加入日" width="120" />
+            <el-table-column prop="leaveDate" label="退出日" width="120">
+              <template slot-scope="{ row }">{{ row.leaveDate || '—' }}</template>
+            </el-table-column>
+            <el-table-column label="在册" width="80">
+              <template slot-scope="{ row }">
+                <pt-status-tag :value="row.isActive === 0 ? 'INACTIVE' : 'ACTIVE'" :dict="'ACTIVE:在册,INACTIVE:已退出'" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="90">
+              <template slot-scope="{ row }">
+                <el-button v-if="row.isActive !== 0" v-permission="'project:member:manage'" size="mini" type="text"
+                           style="color:var(--danger,#f56c6c)" @click="removeMember(row)">移除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+        <!-- 门控管理 -->
+        <el-card shadow="never" :body-style="{ padding: '16px' }">
+          <div slot="header"><b>阶段门控（门控通过 = 放行下一阶段）</b></div>
+          <el-empty v-if="!gateTasks.length" description="项目暂无门控任务" :image-size="50" />
+          <el-table v-else :data="gateTasks" size="mini">
+            <el-table-column prop="wbsCode" label="WBS" width="100" />
+            <el-table-column prop="taskName" label="阶段任务" min-width="160" />
+            <el-table-column prop="planEnd" label="计划完成日" width="110" />
+            <el-table-column label="子任务" width="140">
+              <template slot-scope="{ row }">
+                <span class="muted">{{ gateInfoOf(row).doneCount }}/{{ gateInfoOf(row).totalChildren }} 完成</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="状态" width="100">
+              <template slot-scope="{ row }">
+                <pt-status-tag :value="gateStatusOf(row)" :dict="'PENDING:待通过,PASSED:已通过'" />
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="120">
+              <template slot-scope="{ row }">
+                <el-button v-if="gateStatusOf(row) === 'PENDING'" v-permission="'project:gate:review'"
+                           size="mini" type="primary" :disabled="!gateInfoOf(row).gateOpen"
+                           @click="passGate(row)">通过门控</el-button>
+                <span v-else class="muted">已放行</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+      </el-col>
+      <el-col :span="10">
+        <!-- ECO 管理 -->
+        <el-card shadow="never" :body-style="{ padding: '16px' }" style="margin-bottom: 12px">
+          <div slot="header"><b>ECO 工程变更请求（{{ ecos.length }}）</b></div>
+          <el-empty v-if="!ecos.length" description="暂无 ECO" :image-size="50" />
+          <el-table v-else :data="ecos" size="mini" stripe>
+            <el-table-column prop="ecoNo" label="编号" width="100" />
+            <el-table-column prop="changeContent" label="变更内容" min-width="170" show-overflow-tooltip />
+            <el-table-column prop="status" label="状态" width="90">
+              <template slot-scope="{ row }">
+                <pt-status-tag :value="row.status || 'OPEN'" :dict="'OPEN:待审批,APPROVED:已通过,REJECTED:已驳回'" />
+              </template>
+            </el-table-column>
+          </el-table>
+        </el-card>
+        <el-card shadow="never" :body-style="{ padding: '16px' }">
+          <div slot="header"><b>说明</b></div>
+          <ul style="font-size: 12px; color: var(--ink-2); line-height: 1.8; padding-left: 18px">
+            <li>角色枚举：OWNER（项目经理）/LEAD（模块负责人）/MEMBER（执行成员）</li>
+            <li>门控节点由任务计划中的 stageFlag=1 任务自动生成</li>
+            <li>ECO 未附旧料处置方案 → 后端 BR-09 阻断（HTTP 422）</li>
+          </ul>
+        </el-card>
+      </el-col>
+    </el-row>
+
+    <!-- 添加成员弹窗 -->
+    <el-dialog title="添加项目成员" :visible.sync="addMemberDialog" width="360px">
+      <el-form label-width="80px" size="small">
+        <el-form-item label="用户ID"><el-input v-model.trim="addMemberForm.userId" placeholder="数字用户 ID" /></el-form-item>
+        <el-form-item label="角色">
+          <el-select v-model="addMemberForm.roleCode" style="width: 100%">
+            <el-option value="OWNER" label="OWNER（项目经理）" />
+            <el-option value="LEAD" label="LEAD（模块负责人）" />
+            <el-option value="MEMBER" label="MEMBER（执行成员）" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button size="small" @click="addMemberDialog = false">取消</el-button>
+        <el-button size="small" type="primary" @click="doAddMember">添加</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -72,7 +177,12 @@ export default {
       tasks: [],
       cpm: {},
       PX_PER_DAY,
-      drag: null // {id, startX, deltaDays}
+      drag: null, // {id, startX, deltaDays}
+      // SPRINT-UID-R16：成员/门控/ECO
+      members: [],
+      gateMap: {}, // {stageTaskId: {approved: boolean, gateNo: string}}
+      ecos: [],
+      addMemberDialog: false, addMemberForm: { userId: '', roleCode: 'MEMBER' }
     }
   },
   computed: {
@@ -101,16 +211,36 @@ export default {
           days
         }
       })
+    },
+    gateTasks() {
+      // 顶层任务视为阶段门控（无 parentId 即顶层；stageFlag/phaseFlag 若有则优先）
+      const map = {}
+      this.tasks.forEach(t => { if (t.id) map[t.id] = t })
+      const topLevel = this.tasks.filter(t => !t.parentId || !map[t.parentId])
+      return topLevel.filter(t => t.planStart && t.planEnd).slice(0, 20)
     }
   },
   mounted() { this.load() },
   methods: {
     load() {
       this.$http.get(`/project/${this.id}`).then(b => { this.project = b.data || {} }).catch(showError)
-      this.$http.get(`/project/${this.id}/tasks`).then(b => { this.tasks = b.data || [] }).catch(showError)
+      this.$http.get(`/project/${this.id}/tasks`).then(b => {
+        this.tasks = b.data || []
+        // 任务加载完后逐个拉门控状态（Promise.all 并发；失败吞掉）
+        Promise.all(this.gateTasks.map(t =>
+          this.$http.get(`/project/${this.id}/gate/${t.id}`).then(g => ({ id: t.id, ...(g.data || {}) })).catch(() => ({ id: t.id }))
+        )).then(results => {
+          const m = {}
+          results.forEach(r => { m[r.id] = r })
+          this.gateMap = m
+        })
+      }).catch(showError)
       this.$http.get(`/project/${this.id}/critical-path`).then(b => {
         this.cpm = b.data || {}
       }).catch(() => { this.cpm = {} }) // 无任务/环时 CPM 422，甘特仍可看
+      // SPRINT-UID-R16：成员 + ECO
+      this.$http.get(`/project/${this.id}/members`).then(b => { this.members = b.data || [] }).catch(() => {})
+      this.$http.get(`/project/${this.id}/ecos`).then(b => { this.ecos = b.data || [] }).catch(() => {})
     },
     onDragStart(e, row) {
       if (!this.canAdjust) return
@@ -135,6 +265,58 @@ export default {
         showError(err)
         this.load()
       })
+    },
+
+    /* ---------- SPRINT-UID-R16：成员 / 门控 / ECO ---------- */
+    roleDict(code) {
+      return { OWNER: '项目经理', LEAD: '模块负责人', MEMBER: '执行成员' }[code] || code || '—'
+    },
+    showAddMember() {
+      this.addMemberForm = { userId: '', roleCode: 'MEMBER' }
+      this.addMemberDialog = true
+    },
+    doAddMember() {
+      const userId = Number(this.addMemberForm.userId)
+      if (!userId || userId <= 0) { this.$message.warning('请输入合法用户ID'); return }
+      this.$http.post(`/project/${this.id}/members`, { userId, roleCode: this.addMemberForm.roleCode }).then(() => {
+        this.$message.success('成员已添加')
+        this.addMemberDialog = false
+        this.load()
+      }).catch(showError)
+    },
+    removeMember(row) {
+      this.$confirm(`确定将成员 ${row.userId} 移出本项目？`, '移除成员').then(() => {
+        this.$http.post(`/project/${this.id}/members/${row.userId}/remove`).then(() => {
+          this.$message.success('已移除')
+          this.load()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    gateStatusOf(row) {
+      return row.status === 'DONE' ? 'PASSED' : 'PENDING'
+    },
+    gateInfoOf(row) {
+      const info = this.gateMap[row.id] || {}
+      const total = info.totalChildren || 0
+      const notDone = info.notDone == null ? total : info.notDone
+      return { totalChildren: total, doneCount: Math.max(0, total - notDone), gateOpen: !!info.gateOpen }
+    },
+    passGate(row) {
+      const info = this.gateInfoOf(row)
+      const tip = info.gateOpen
+        ? `阶段「${row.taskName}」子任务已全部完成，通过门控将放行下一阶段（FR-PRJ-38/39）`
+        : `阶段「${row.taskName}」仍有未完成子任务，不可通过门控`
+      this.$confirm(tip, '门控评审', {
+        confirmButtonText: info.gateOpen ? '通过' : '知道了',
+        cancelButtonText: '取消',
+        type: info.gateOpen ? 'warning' : 'info'
+      }).then(() => {
+        if (!info.gateOpen) return
+        this.$http.post(`/project/gate/${row.id}/pass`).then(() => {
+          this.$message.success('门控已通过，下一阶段可开工')
+          this.load()
+        }).catch(showError)
+      }).catch(() => {})
     }
   }
 }

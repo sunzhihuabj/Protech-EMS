@@ -192,6 +192,23 @@ public class QmsService {
         gaugeMapper.updateById(gauge);
     }
 
+    /** FR-QMS-08：量具分页台账（含超期锁定态） */
+    public PageResp<QmsGauge> pageGauges(PageReq pageReq, String status) {
+        LambdaQueryWrapper<QmsGauge> wrapper = new LambdaQueryWrapper<QmsGauge>()
+                .eq(QmsGauge::getDeleted, 0)
+                .orderByDesc(QmsGauge::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(QmsGauge::getStatus, status);
+        }
+        Page<QmsGauge> page = gaugeMapper.selectPage(
+                new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
+        PageResp<QmsGauge> resp = new PageResp<>();
+        resp.setTotal(page.getTotal());
+        resp.setPages(page.getPages());
+        resp.setRecords(page.getRecords());
+        return resp;
+    }
+
     /** 验收要点：量具超期锁定（下拉不可选） */
     public List<QmsGauge> usableGauges() {
         List<QmsGauge> all = gaugeMapper.selectList(new LambdaQueryWrapper<QmsGauge>()

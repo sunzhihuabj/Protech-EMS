@@ -71,6 +71,13 @@ public class QmsController {
         return ApiResponse.ok();
     }
 
+    @GetMapping("/gauges")
+    @RequirePermission("qms:gauge:manage")
+    public ApiResponse<PageResp<QmsGauge>> gaugePage(PageReq pageReq,
+                                                     @RequestParam(required = false) String status) {
+        return ApiResponse.ok(qmsService.pageGauges(pageReq, status));
+    }
+
     @GetMapping("/gauges/usable")
     public ApiResponse<List<QmsGauge>> usableGauges() {
         return ApiResponse.ok(qmsService.usableGauges());

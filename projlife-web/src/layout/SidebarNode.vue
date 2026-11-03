@@ -24,6 +24,10 @@ const ROUTE_BY_CODE = {
   'menu:inv': '/inv/txn',
   'menu:mes': '/mes/order',
   'menu:qms': '/qms/inspection',
+  'menu:qms:inspection': '/qms/inspection',
+  'menu:qms:8d': '/qms/8d',
+  'menu:qms:spc': '/qms/spc',
+  'menu:qms:gauges': '/qms/gauges',
   'menu:eam': '/eam/asset',
   'menu:eng': '/eng/dispatch',
   'menu:cost': '/cost/report',
@@ -39,7 +43,8 @@ const ROUTE_BY_CODE = {
   'menu:system:dict': '/sys/dict',
   'menu:system:config': '/sys/config',
   'menu:system:log': '/sys/log',
-  'menu:system:monitor': '/sys/monitor'
+  'menu:system:monitor': '/sys/monitor',
+  'menu:system:file': '/sys/file'
 }
 
 export default {

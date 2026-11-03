@@ -112,9 +112,34 @@
             </div>
           </div>
         </el-card>
+        <!-- SPRINT-UID-R16：接入 file-service 文件上传中心 -->
         <el-card shadow="never">
           <div slot="header"><b>附件（只读水印件，BR-07）</b></div>
-          <p class="muted">暂无附件（上传入口随 file-service 批次）</p>
+          <div style="margin-bottom: 8px">
+            <el-upload
+              :action="'/api/v1/files/upload'"
+              name="file"
+              :headers="fileUploadHeaders"
+              :data="{ bizType: 'CONTRACT', bizId: String(id) }"
+              :show-file-list="false"
+              :on-success="onFileUpload"
+              :on-error="onFileError">
+              <el-button v-permission="'file:upload'" size="small" type="primary" plain icon="el-icon-upload2">上传附件</el-button>
+            </el-upload>
+          </div>
+          <el-table v-if="attachments.length" :data="attachments" size="mini" max-height="180">
+            <el-table-column prop="fileName" label="文件名" min-width="160">
+              <template slot-scope="{ row }">
+                <el-link type="primary" @click="downloadFile(row)">{{ row.fileName }}</el-link>
+              </template>
+            </el-table-column>
+            <el-table-column prop="fileSize" label="大小" width="80" align="right">
+              <template slot-scope="{ row }">{{ formatSize(row.fileSize) }}</template>
+            </el-table-column>
+            <el-table-column prop="uploaderId" label="上传者" width="80" />
+            <el-table-column prop="createdAt" label="上传时间" width="140" />
+          </el-table>
+          <p v-else class="muted">暂无附件（上传后自动关联到本合同）</p>
         </el-card>
       </el-col>
     </el-row>
@@ -169,6 +194,42 @@
       </div>
     </el-dialog>
 
+    <!-- SPRINT-UID-R16：变更台账 + 审批按钮（行内化，不再去审批中心找） -->
+    <el-card shadow="never" style="margin-top: 16px">
+      <div slot="header" style="display: flex; justify-content: space-between; align-items: center">
+        <b>变更台账（{{ changes.length }}）</b>
+        <el-button v-permission="'contract:change'" size="mini" type="primary" plain
+                   @click="$router.push({ name: 'ctContract' })">去台账发起变更</el-button>
+      </div>
+      <el-empty v-if="!changes.length" description="本合同暂无变更单" :image-size="50" />
+      <el-table v-else :data="changes" size="small">
+        <el-table-column prop="changeNo" label="变更单号" width="140" />
+        <el-table-column prop="changeType" label="类型" width="100" />
+        <el-table-column prop="amountDelta" label="金额增减" width="110" align="right">
+          <template slot-scope="{ row }">
+            <span :style="{ color: row.amountDelta > 0 ? 'var(--danger)' : (row.amountDelta < 0 ? 'var(--pri-500)' : 'inherit') }">
+              {{ row.amountDelta == null ? '—' : (row.amountDelta > 0 ? '+' : '') + row.amountDelta }}
+            </span>
+          </template>
+        </el-table-column>
+        <el-table-column prop="effectiveDate" label="生效日" width="110" />
+        <el-table-column prop="approvalStatus" label="状态" width="110">
+          <template slot-scope="{ row }">
+            <pt-status-tag :value="row.approvalStatus || 'PENDING'" :dict="'PENDING:待审批,APPROVED:已通过,REJECTED:已驳回'" />
+          </template>
+        </el-table-column>
+        <el-table-column label="审批" width="200">
+          <template slot-scope="{ row }">
+            <template v-if="row.approvalStatus === 'PENDING'">
+              <el-button v-permission="'contract:change:approve'" size="mini" type="success" @click="approveChange(row, true)">通过</el-button>
+              <el-button v-permission="'contract:change:approve'" size="mini" type="danger" plain @click="approveChange(row, false)">驳回</el-button>
+            </template>
+            <span v-else class="muted">已{{ row.approvalStatus === 'APPROVED' ? '通过' : '处理' }}</span>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-card>
+
     <!-- 6 流转时间轴（操作留痕承载；逆序） -->
     <el-card shadow="never" style="margin-top: 16px">
       <div slot="header"><b>流转时间轴</b></div>
@@ -215,7 +276,10 @@ export default {
       // SPRINT-UID-R15：财务与交底动作
       invDialog: false, invForm: { invoiceType: 'VAT_SPECIAL' },
       rcDialog: false, rcForm: { method: 'BANK' },
-      dpDialog: false, dpForm: {}
+      dpDialog: false, dpForm: {},
+      // SPRINT-UID-R16：变更台账 + 附件
+      changes: [],
+      attachments: []
     }
   },
   computed: {
@@ -226,6 +290,10 @@ export default {
       if (['REVIEWING', 'REVIEWED'].indexOf(this.c.status) !== -1) return '审批/评审中，不可修改'
       if (['SIGNED', 'FILED', 'PERFORMING', 'CLOSED', 'CHANGED'].indexOf(this.c.status) !== -1) return '已生效单据，修改请走变更单'
       return ''
+    },
+    fileUploadHeaders() {
+      const token = localStorage.getItem('pl_token')
+      return token ? { Authorization: 'Bearer ' + token } : {}
     }
   },
   mounted() { this.load() },
@@ -249,6 +317,10 @@ export default {
       }).catch(() => {})
       this.$http.get('/sys/operation-log', { params: { pageNum: 1, pageSize: 10, targetType: 'ct_contract', targetId: this.id } })
         .then(body => { this.logs = (body.data && body.data.records) || [] }).catch(() => {})
+      // SPRINT-UID-R16：变更台账 + 附件
+      this.$http.get(`/contract/${this.id}/changes`).then(body => { this.changes = body.data || [] }).catch(() => {})
+      this.$http.get('/files', { params: { bizType: 'CONTRACT', bizId: String(this.id) } })
+        .then(body => { this.attachments = body.data || [] }).catch(() => {})
     },
     submitReview() { this.$http.post(`/contract/${this.id}/review/submit`).then(() => { this.$message.success('已提交评审'); this.load() }).catch(showError) },
     seal() { this.$http.post(`/contract/${this.id}/seal`, { copyCount: 1 }).then(() => { this.$message.success('已用印'); this.load() }).catch(showError) },
@@ -317,6 +389,42 @@ export default {
         this.dpDialog = false
         this.dpForm = {}
       }).catch(showError)
+    },
+
+    /* ---------- SPRINT-UID-R16：变更审批行内化 + 附件 ---------- */
+    approveChange(row, approved) {
+      this.$confirm(`确定${approved ? '通过' : '驳回'}变更单 ${row.changeNo || row.id}？`, '变更审批').then(() => {
+        this.$http.post(`/contract/changes/${row.id}/approve`, { approved }).then(() => {
+          this.$message.success(approved ? '已通过' : '已驳回')
+          this.load()
+        }).catch(showError)
+      }).catch(() => {})
+    },
+    onFileUpload(resp) {
+      if (resp && resp.code === 0) {
+        this.$message.success('附件上传成功')
+        this.load()
+      } else {
+        this.$message.error('上传失败: ' + (resp && resp.message || '未知'))
+      }
+    },
+    onFileError(err) { showError(err) },
+    downloadFile(row) {
+      // 走 axios 携带 Authorization（拦截器注入 token）；BR-07 水印合成件
+      this.$http.get(`/files/${row.id}/download`, { responseType: 'blob' }).then(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = row.fileName || ('file-' + row.id)
+        document.body.appendChild(a); a.click(); document.body.removeChild(a)
+        URL.revokeObjectURL(url)
+      }).catch(showError)
+    },
+    formatSize(bytes) {
+      if (!bytes) return '—'
+      if (bytes < 1024) return bytes + 'B'
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'K'
+      return (bytes / 1024 / 1024).toFixed(2) + 'M'
     }
   }
 }
