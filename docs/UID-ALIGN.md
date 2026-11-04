@@ -89,4 +89,16 @@ R16 下批候选清掉 3 组功能 + 审核识别的审计遗留三项，详见 
 - **运行态验证**：146/0 无回归 + verify-spec 7/7 + npm build 过；8D 关闭 400 阻断→回填后 200；job-runner(E0020) 实测 V27 四码全通（91/96/103/141）
 - **下批候选**：R19 = SCM/MDM/ENG 模板页转正；SPRINT-SEC3 安全专项；30 僵尸权限码清退迁移
 
-> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17/R18.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。
+## 九、R19 MDM 主数据全链接线（2026-11-04，前端待完成清单转正）
+
+孤儿盘点补充调查确认：剩余孤儿为"前端未完成"而非死代码。MDM 14 孤儿端点全部转正，详见 SPRINT-UID-R19.md：
+
+- **项目建档全家桶**：MdmConsole 建档向导五段式（基础商务 → 风场（可新建自动回填）→ FR-MDM-13/14 命名助手 → FR-MDM-12 三重查重命中卡+forceNewReason → E-08 产品线多选 + owner_pending），12 项必填前端预检置灰；详情抽屉挂产品线/加别名
+- **客户治理**：列表切 GET /mdm/customers（纠正误调 /crm/customers）+ 集团分组条 + FR-MDM-05 resolve 归一检查器 + 别名/停用行内操作
+- **物料台账**：GET /mdm/materials 列表 + BR-06 costPrice 脱敏渲染；**供应商注册**（POST /suppliers-register，md_supplier 建档首获 Web 入口）
+- **V28 取号序列种子对齐（运行态实测发现的真 bug）**：V4 种子占 C0001~C0007/WF2026-001 但 sys_code_sequence 缺行 → next() 首次生成 C0001 撞唯一键 → 客户建档必 500；V28 幂等预占 CUST:GLOBAL=7、WF:<年>=1，新客户 C0008 起步；教训——**种子直接插编号行的迁移必须同步预占取号序列**
+- **权限面免迁移核实**：R18（mdm@demo）持写码 22-35 + V23 view 码跟随补授 + menu:mdm(65)，全端点可达
+- **运行态 14 步全通**：建档取号/归一/命名规则/查重拦截→放行/别名相似度回响 hits=1/产品线落库；负向（12 项校验 1001、查重阻断）按预期
+- **下批候选**：ENG 三块 7 端点（人员准入/机组一机一档/整改闭环）、SCM 反向断链（GET /scm/suppliers 后端缺失）+ onboarding、SPRINT-SEC3
+
+> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17/R18/R19.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。
