@@ -35,6 +35,16 @@ public class ScmController {
         this.scmService = scmService;
     }
 
+    /** 供应商台账（SPRINT-UID-R20 补列表端点：前端 Supplier.vue 一直调本端点但后端从未提供） */
+    @GetMapping("/suppliers")
+    @RequirePermission("scm:supplier:manage")
+    public ApiResponse<PageResp<com.projlife.mdm.entity.MdSupplier>> suppliers(
+            PageReq pageReq,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String keyword) {
+        return ApiResponse.ok(scmService.suppliers(pageReq, status, keyword));
+    }
+
     @PostMapping("/suppliers/{supplierId}/register")
     @RequirePermission("scm:supplier:manage")
     public ApiResponse<Long> register(@PathVariable Long supplierId) {

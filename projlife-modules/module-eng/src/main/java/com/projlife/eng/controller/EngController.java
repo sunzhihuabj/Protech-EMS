@@ -40,6 +40,14 @@ public class EngController {
         return ApiResponse.ok(engService.assertWorkerAndCreate(worker));
     }
 
+    /** 人员台账（SPRINT-UID-R20 补列表，此前仅有写入/激活端点） */
+    @GetMapping("/workers")
+    @RequirePermission("eng:crew:manage")
+    public ApiResponse<PageResp<EngWorker>> workers(PageReq pageReq,
+                                                    @RequestParam(required = false) String status) {
+        return ApiResponse.ok(engService.workers(pageReq, status));
+    }
+
     @PostMapping("/workers/{id}/activate")
     @RequirePermission("eng:crew:manage")
     public ApiResponse<Void> activateWorker(@PathVariable Long id) {
@@ -98,6 +106,15 @@ public class EngController {
         return ApiResponse.ok(engService.createUnit(unit));
     }
 
+    /** 机组台账（SPRINT-UID-R20 补列表，一机一档可视） */
+    @GetMapping("/units")
+    @RequirePermission("eng:install")
+    public ApiResponse<PageResp<EngUnit>> units(PageReq pageReq,
+                                                @RequestParam(required = false) Long projectId,
+                                                @RequestParam(required = false) String status) {
+        return ApiResponse.ok(engService.units(pageReq, projectId, status));
+    }
+
     /** E-29 状态推进（INSTALLING/TO_DEBUG/ACCEPTED） */
     @PostMapping("/units/{id}/advance")
     @RequirePermission("eng:install")
@@ -112,6 +129,15 @@ public class EngController {
     @RequirePermission("eng:rect:manage")
     public ApiResponse<Long> createRectification(@RequestBody EngRectification rect) {
         return ApiResponse.ok(engService.createRectification(rect));
+    }
+
+    /** 整改台账（SPRINT-UID-R20 补列表，UC-ENG-08 闭环可视） */
+    @GetMapping("/rectifications")
+    @RequirePermission("eng:rect:manage")
+    public ApiResponse<PageResp<EngRectification>> rectifications(PageReq pageReq,
+                                                                  @RequestParam(required = false) Long projectId,
+                                                                  @RequestParam(required = false) String status) {
+        return ApiResponse.ok(engService.rectifications(pageReq, projectId, status));
     }
 
     @PostMapping("/rectifications/{id}/advance")

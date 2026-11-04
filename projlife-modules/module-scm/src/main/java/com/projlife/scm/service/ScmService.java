@@ -63,6 +63,31 @@ public class ScmService {
                 .last("LIMIT 1"));
     }
 
+    /**
+     * 供应商台账（SPRINT-UID-R20 补列表端点：前端 Supplier.vue 一直调
+     * GET /scm/suppliers 但后端从未提供——反向断链修复）。
+     */
+    public com.projlife.common.api.PageResp<com.projlife.mdm.entity.MdSupplier> suppliers(
+            com.projlife.common.api.PageReq pageReq, String status, String keyword) {
+        LambdaQueryWrapper<com.projlife.mdm.entity.MdSupplier> wrapper =
+                new LambdaQueryWrapper<com.projlife.mdm.entity.MdSupplier>()
+                        .orderByDesc(com.projlife.mdm.entity.MdSupplier::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(com.projlife.mdm.entity.MdSupplier::getStatus, status);
+        }
+        if (keyword != null && !keyword.isEmpty()) {
+            wrapper.like(com.projlife.mdm.entity.MdSupplier::getSupplierName, keyword);
+        }
+        Page<com.projlife.mdm.entity.MdSupplier> page = supplierMapper.selectPage(
+                new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
+        com.projlife.common.api.PageResp<com.projlife.mdm.entity.MdSupplier> resp =
+                new com.projlife.common.api.PageResp<>();
+        resp.setTotal(page.getTotal());
+        resp.setPages(page.getPages());
+        resp.setRecords(page.getRecords());
+        return resp;
+    }
+
     /** FR-SCM-01：注册（建准入档案） */
     @Audited(module = "scm", action = "register_supplier", targetType = "scm_supplier_onboarding", targetId = "{0.supplierId}")
     @Transactional

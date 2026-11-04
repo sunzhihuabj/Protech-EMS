@@ -101,4 +101,12 @@ R16 下批候选清掉 3 组功能 + 审核识别的审计遗留三项，详见 
 - **运行态 14 步全通**：建档取号/归一/命名规则/查重拦截→放行/别名相似度回响 hits=1/产品线落库；负向（12 项校验 1001、查重阻断）按预期
 - **下批候选**：ENG 三块 7 端点（人员准入/机组一机一档/整改闭环）、SCM 反向断链（GET /scm/suppliers 后端缺失）+ onboarding、SPRINT-SEC3
 
-> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17/R18/R19.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。
+## 十、R20 ENG 工程交付三块 + SCM 反向断链（2026-11-04，前端待完成清单收尾）
+
+- **ENG 补 3 个列表端点**（workers/units/rectifications，此前只有写入与推进端点，前端无法展示台账）+ EngPortal 加「班组人员」「机组与整改」两 tab：人员建档/激活（UC-ENG-10 保险过期行红字预警+后端硬拒）、机组 E-29 建档与逐阶推进（验收自动 24 个月质保）、整改登记与五态闭环（TO_REVIEW 复核双分支：通过/带理由驳回回 DOING）+ FR-ENG-08 验收前检查
+- **SCM 反向断链修复**：后端补 GET /scm/suppliers（前端上线起就调，后端从未提供）；Supplier.vue 整页对齐真实契约——删除不存在的 row.stage 数字列、advance 补传 {passed, auditResult} body（此前必 400）、注册语义纠正（md_supplier 建档归主数据工作台，本页建准入档案）、准入详情抽屉接真实 onboarding 五阶（REGISTERED→QUALIFIED→VISITED→SAMPLED→APPROVED）
+- **EngPortal 顺修 3 处既有错误**：components 重复定义、派工状态 dict 与后端 E-32 枚举错位（CREATED/SENT/... → TO_DISPATCH/DISPATCHED/DOING/TO_ACCEPT/DONE）、danger-text 样式缺失
+- **运行态验证**：146/0 无回归 + verify-spec 7/7 + npm build 过；ENG 人员/机组/整改 16 步全通（5 负向拦截：保险过期激活/非法迁移/无理由驳回/未闭环 open-check）+ SCM 五阶准入 7 步全通（2 负向拦截）
+- **下批候选**：SPRINT-SEC3 安全专项（JWT typ/refresh rotation/按 ID 数据范围/SK- 取号——审核 P1 最后一块）；ENG 派工与机组/人员联动选择器、施工记录照片上传；30 僵尸权限码清退
+
+> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17/R18/R19/R20.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。

@@ -109,6 +109,62 @@ public class EngService {
         return resp;
     }
 
+    // ---------- 台账列表（SPRINT-UID-R20：人员/机组/整改此前仅有写入端点无列表） ----------
+
+    /** 人员台账（FR-ENG-01/02 准入状态可视） */
+    public PageResp<EngWorker> workers(PageReq pageReq, String status) {
+        LambdaQueryWrapper<EngWorker> wrapper = new LambdaQueryWrapper<EngWorker>()
+                .orderByDesc(EngWorker::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(EngWorker::getStatus, status);
+        }
+        Page<EngWorker> page = workerMapper.selectPage(
+                new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
+        PageResp<EngWorker> resp = new PageResp<>();
+        resp.setTotal(page.getTotal());
+        resp.setPages(page.getPages());
+        resp.setRecords(page.getRecords());
+        return resp;
+    }
+
+    /** 机组台账（FR-ENG-21 一机一档；按项目过滤） */
+    public PageResp<EngUnit> units(PageReq pageReq, Long projectId, String status) {
+        LambdaQueryWrapper<EngUnit> wrapper = new LambdaQueryWrapper<EngUnit>()
+                .orderByDesc(EngUnit::getId);
+        if (projectId != null) {
+            wrapper.eq(EngUnit::getMdProjectId, projectId);
+        }
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(EngUnit::getStatus, status);
+        }
+        Page<EngUnit> page = unitMapper.selectPage(
+                new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
+        PageResp<EngUnit> resp = new PageResp<>();
+        resp.setTotal(page.getTotal());
+        resp.setPages(page.getPages());
+        resp.setRecords(page.getRecords());
+        return resp;
+    }
+
+    /** 整改台账（FR-ENG-14 闭环可视；按项目过滤） */
+    public PageResp<EngRectification> rectifications(PageReq pageReq, Long projectId, String status) {
+        LambdaQueryWrapper<EngRectification> wrapper = new LambdaQueryWrapper<EngRectification>()
+                .orderByDesc(EngRectification::getId);
+        if (projectId != null) {
+            wrapper.eq(EngRectification::getProjectId, projectId);
+        }
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(EngRectification::getStatus, status);
+        }
+        Page<EngRectification> page = rectificationMapper.selectPage(
+                new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
+        PageResp<EngRectification> resp = new PageResp<>();
+        resp.setTotal(page.getTotal());
+        resp.setPages(page.getPages());
+        resp.setRecords(page.getRecords());
+        return resp;
+    }
+
     /** FR-ENG-03：派工单（BR-03 必挂项目；BR-04 必选风场） */
     @Audited(module = "eng", action = "create_dispatch", targetType = "eng_dispatch", targetId = "{0.dispatchNo}")
     @Transactional
