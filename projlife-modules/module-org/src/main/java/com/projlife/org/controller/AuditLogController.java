@@ -31,7 +31,9 @@ public class AuditLogController {
     @RequirePermission("system:log:view")
     public ApiResponse<PageResp<SysOperationLog>> page(PageReq pageReq,
                                                        @RequestParam(required = false) String module,
-                                                       @RequestParam(required = false) String action) {
+                                                       @RequestParam(required = false) String action,
+                                                       @RequestParam(required = false) String targetType,
+                                                       @RequestParam(required = false) String targetId) {
         LambdaQueryWrapper<SysOperationLog> wrapper = new LambdaQueryWrapper<SysOperationLog>()
                 .orderByDesc(SysOperationLog::getId);
         if (StringUtils.hasText(module)) {
@@ -39,6 +41,12 @@ public class AuditLogController {
         }
         if (StringUtils.hasText(action)) {
             wrapper.eq(SysOperationLog::getAction, action);
+        }
+        if (StringUtils.hasText(targetType)) {
+            wrapper.eq(SysOperationLog::getTargetType, targetType);
+        }
+        if (StringUtils.hasText(targetId)) {
+            wrapper.eq(SysOperationLog::getTargetId, targetId);
         }
         Page<SysOperationLog> page = logMapper.selectPage(new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
         PageResp<SysOperationLog> resp = new PageResp<>();

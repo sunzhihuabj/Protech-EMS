@@ -330,7 +330,7 @@ export default {
       this.$http.get(`/contract/${this.id}/related`).then(body => {
         this.related = body.data || { projects: [], invoices: [], paymentPlans: [] }
       }).catch(() => {})
-      this.$http.get('/sys/operation-log', { params: { pageNum: 1, pageSize: 10, targetType: 'ct_contract', targetId: this.id } })
+      this.$http.get('/system/logs', { params: { pageNum: 1, pageSize: 10, targetType: 'ct_contract', targetId: this.id } })
         .then(body => { this.logs = (body.data && body.data.records) || [] }).catch(() => {})
       // SPRINT-UID-R16：变更台账 + 附件
       this.$http.get(`/contract/${this.id}/changes`).then(body => { this.changes = body.data || [] }).catch(() => {})

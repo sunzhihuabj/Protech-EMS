@@ -46,7 +46,7 @@ export default {
       this.$http.post('/eam/assets', this.form).then(() => { this.$message.success('设备已登记'); this.dialog = false; this.load() }).catch(showError)
     },
     viewMtbf(row) {
-      this.$http.get(`/eam/assets/${row.id}/mtbf`).then(body => {
+      this.$http.get(`/qms/assets/${row.id}/mtbf`).then(body => {
         this.$notify.info({ title: 'MTBF', message: JSON.stringify(body.data) })
       }).catch(showError)
     }

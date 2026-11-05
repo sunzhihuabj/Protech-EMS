@@ -84,9 +84,9 @@ public class BidController {
         return ApiResponse.ok(bidService.score(id));
     }
 
-    /** FR-BID-12：一键转商机 */
+    /** FR-BID-12：一键转商机（写操作要求写码 bid:notice:convert，R04 持有；与前端 v-permission 对齐） */
     @PostMapping("/notices/{id}/convert")
-    @RequirePermission("bid:notice:view")
+    @RequirePermission("bid:notice:convert")
     public ApiResponse<Map<String, Object>> convert(@PathVariable Long id) {
         return ApiResponse.ok(bidService.convert(id));
     }
