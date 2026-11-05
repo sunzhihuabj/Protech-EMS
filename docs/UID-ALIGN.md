@@ -109,4 +109,14 @@ R16 下批候选清掉 3 组功能 + 审核识别的审计遗留三项，详见 
 - **运行态验证**：146/0 无回归 + verify-spec 7/7 + npm build 过；ENG 人员/机组/整改 16 步全通（5 负向拦截：保险过期激活/非法迁移/无理由驳回/未闭环 open-check）+ SCM 五阶准入 7 步全通（2 负向拦截）
 - **下批候选**：SPRINT-SEC3 安全专项（JWT typ/refresh rotation/按 ID 数据范围/SK- 取号——审核 P1 最后一块）；ENG 派工与机组/人员联动选择器、施工记录照片上传；30 僵尸权限码清退
 
-> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17/R18/R19/R20.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。
+## 十一、SPRINT-SEC3 安全专项（2026-11-05，审核 P0/P1 最后一块收口）
+
+- **JWT typ 校验**（审核 P0）：JwtAuthFilter 补令牌类型校验——refresh 令牌（7 天）不得再当 access 令牌调业务端点；`shouldNotFilter` 精确豁免 `/api/v1/auth/refresh` 独占路径
+- **refresh rotation**（审核 P1）：AuthService.refresh 旧令牌入黑名单 + 签发新 refresh（一次性语义）；前端 request.js 滚动更新存储，天然兼容；运行态实测旧令牌重放 401
+- **SK- 取号收敛**（审核 P0 取号绕引擎）：CodeTypes.receipt（SK-{yyyyMMdd}-{4位}）+ applyReceipt 改走 CodeSequenceService；V29 幂等回填历史手工号进 sys_code_sequence（同 V28 教训：占号必须同步序列行；不用 CAST AS INT 保 H2/MySQL 8 双兼容）
+- **按 ID 数据范围**（审核 P0）：新 DataScopeGuard（E-35 五档按 created_by 工号判定 owner 部门比对）落地 GET /contract/{id}、GET /project/{id}（previewNo/completeness 经 detail 一并收口）；PROJECT/DEPT_SUB/system 三口径备案放行
+- **顺手复活死逻辑**：remindOverduePlans 把工号当 userId 转 Long 恒抛被吞（R18 起逾期收款提醒从未发出）——NotificationService.sendToUserCode 按工号入口修复
+- **验证**：150/0（146 存量 + S31 4 用例）+ verify-spec 7/7 + 运行态 6 步全通；测试基建发现 TestRestTemplate 4xx+POST 的 HttpRetryException 怪癖，post() 统一改 JDK HttpClient
+- **下批候选**：其余按 ID 直查端点（opportunity/farm/mdm 等 10 处）分批套用 DataScopeGuard；prj_member 有数据后 PROJECT 档收严；30 僵尸权限码清退
+
+> 每轮记录：docs/SPRINT-UID-R1/R2/R3/R4/R15/R16/R17/R18/R19/R20.md + docs/SPRINT-SEC3.md（本文件为总对账）；变更控制按 UID-00 §八（L2 级改动已同步 UID-01/04 引用）。

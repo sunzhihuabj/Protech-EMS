@@ -21,10 +21,14 @@ import java.io.IOException;
 import java.util.Collections;
 
 /**
- * JWT 认证过滤器：解析 Bearer 令牌 → 黑名单校验 → 实时加载登录用户（角色/权限） → 写入安全上下文。
+ * JWT 认证过滤器：解析 Bearer 令牌 → 黑名单校验 → 令牌类型校验（SPRINT-SEC3：仅接受 access）→
+ * 实时加载登录用户（角色/权限） → 写入安全上下文。
  */
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    /** 刷新端点独占 refresh 令牌，跳过 access 类型校验（其余端点一律拒绝 refresh 令牌） */
+    private static final String REFRESH_PATH = "/api/v1/auth/refresh";
 
     private final JwtUtil jwtUtil;
     private final TokenBlacklistService blacklist;
@@ -34,6 +38,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         this.jwtUtil = jwtUtil;
         this.blacklist = blacklist;
         this.userDetailsProvider = userDetailsProvider;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return REFRESH_PATH.equals(request.getRequestURI());
     }
 
     @Override
@@ -48,6 +57,10 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             Claims claims = jwtUtil.parse(token);
             if (blacklist.isRevoked(claims)) {
                 throw BizException.of(401, "令牌已失效，请重新登录");
+            }
+            if (!JwtUtil.TYPE_ACCESS.equals(claims.get("typ"))) {
+                // SPRINT-SEC3：refresh 令牌不得当访问令牌使用
+                throw BizException.of(401, "令牌类型不正确（应为访问令牌）");
             }
             String uid = (String) claims.get("uid");
             LoginUser user = userDetailsProvider.loadById(Long.valueOf(uid));

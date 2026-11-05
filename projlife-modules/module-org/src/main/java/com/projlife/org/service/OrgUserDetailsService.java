@@ -80,6 +80,17 @@ public class OrgUserDetailsService implements UserDetailsProvider {
         return loginUser;
     }
 
+    @Override
+    public LoginUser loadByUserCode(String userCode) {
+        if (userCode == null || userCode.isEmpty()) {
+            return null;
+        }
+        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserCode, userCode)
+                .last("LIMIT 1"));
+        return user == null ? null : buildLoginUser(user);
+    }
+
     /** 角色/权限变更后调用，立即失效缓存 */
     public void evict(Long userId) {
         cache.remove(CACHE_PREFIX + userId);

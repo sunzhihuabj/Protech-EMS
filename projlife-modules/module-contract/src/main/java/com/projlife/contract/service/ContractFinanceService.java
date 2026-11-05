@@ -34,17 +34,20 @@ public class ContractFinanceService {
     private final CtReceiptMapper receiptMapper;
     private final com.projlife.mdm.api.MdmApi mdmApi;
     private final com.projlife.org.service.NotificationService notificationService;
+    private final com.projlife.org.service.code.CodeSequenceService codeSequenceService;
 
     public ContractFinanceService(CtContractMapper contractMapper, CtContractPaymentPlanMapper planMapper,
                                   CtInvoiceMapper invoiceMapper, CtReceiptMapper receiptMapper,
                                   com.projlife.mdm.api.MdmApi mdmApi,
-                                  com.projlife.org.service.NotificationService notificationService) {
+                                  com.projlife.org.service.NotificationService notificationService,
+                                  com.projlife.org.service.code.CodeSequenceService codeSequenceService) {
         this.contractMapper = contractMapper;
         this.planMapper = planMapper;
         this.invoiceMapper = invoiceMapper;
         this.receiptMapper = receiptMapper;
         this.mdmApi = mdmApi;
         this.notificationService = notificationService;
+        this.codeSequenceService = codeSequenceService;
     }
 
     /** FR-CT-25 + BR-02：惰性冻结判定（job-worker 每日批量标记，接口层再校验双保险） */
@@ -114,9 +117,9 @@ public class ContractFinanceService {
         if (receipt.getAmount() == null || receipt.getAmount().signum() <= 0) {
             throw BizException.badRequest("回款金额必填且 >0");
         }
-        String receiptNo = "SK-" + LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"))
-                + "-" + String.format("%04d", receiptMapper.selectCount(new LambdaQueryWrapper<CtReceipt>()
-                .likeRight(CtReceipt::getReceiptNo, "SK-" + LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd")))) + 1);
+        // SPRINT-SEC3：取号收敛走 CodeSequenceService（并发安全，替代 selectCount+1 手工推号）
+        String receiptNo = codeSequenceService.next(com.projlife.org.service.code.CodeTypes.receipt(
+                LocalDate.now().format(java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd"))));
         receipt.setReceiptNo(receiptNo);
         receipt.setStatus("PENDING");
         receipt.setProjectId(resolveProjectId(contract));
@@ -167,13 +170,8 @@ public class ContractFinanceService {
             if (contract == null || contract.getCreatedBy() == null) {
                 continue;
             }
-            Long receiverId;
-            try {
-                receiverId = Long.valueOf(contract.getCreatedBy());
-            } catch (NumberFormatException ex) {
-                continue;
-            }
-            notificationService.send(receiverId, "CONTRACT_PAYMENT_OVERDUE",
+            // SPRINT-SEC3：created_by 存工号（审计填充器），改走按工号入口（原 Long.valueOf 恒抛异常被吞）
+            notificationService.sendToUserCode(contract.getCreatedBy(), "CONTRACT_PAYMENT_OVERDUE",
                     "【逾期提醒】收款计划已逾期", contract.getContractName() + " · " + plan.getPhaseName()
                             + " · 计划日 " + plan.getPlanDate() + " · 金额 " + plan.getAmount(),
                     "ct_contract", String.valueOf(plan.getContractId()), "INNER");

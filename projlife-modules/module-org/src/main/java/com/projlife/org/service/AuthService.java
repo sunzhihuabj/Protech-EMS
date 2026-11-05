@@ -162,7 +162,9 @@ public class AuthService {
         }
         LoginResp resp = new LoginResp();
         resp.accessToken = jwtUtil.generateAccess(user.getId(), user.getUserCode(), user.getUsername(), user.getUserType());
-        resp.refreshToken = refreshToken;
+        // SPRINT-SEC3：rotation——旧 refresh 令牌立即入黑名单，签发新 refresh 令牌（一次性使用）
+        blacklist.revoke(claims);
+        resp.refreshToken = jwtUtil.generateRefresh(user.getId(), user.getUserCode(), user.getUsername(), user.getUserType());
         resp.expiresIn = securityProps.getAccessTtlSeconds();
         resp.mustChangePwd = user.getMustChangePwd() != null && user.getMustChangePwd() == 1;
         resp.userId = user.getId();

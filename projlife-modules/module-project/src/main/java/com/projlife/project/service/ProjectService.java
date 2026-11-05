@@ -48,11 +48,13 @@ public class ProjectService implements PrjApi {
     private final CodeSequenceService codeSequenceService;
     private final TemplateInstantiateService instantiateService;
     private final MdmApi mdmApi;
+    private final com.projlife.security.auth.DataScopeGuard dataScopeGuard;
 
     public ProjectService(PrjProjectMapper projectMapper, PrjTemplateMapper templateMapper,
                           PrjTemplateTaskMapper templateTaskMapper, PrjTaskMapper taskMapper,
                           PrjMemberMapper memberMapper, CodeSequenceService codeSequenceService,
-                          TemplateInstantiateService instantiateService, MdmApi mdmApi) {
+                          TemplateInstantiateService instantiateService, MdmApi mdmApi,
+                          com.projlife.security.auth.DataScopeGuard dataScopeGuard) {
         this.projectMapper = projectMapper;
         this.templateMapper = templateMapper;
         this.templateTaskMapper = templateTaskMapper;
@@ -61,6 +63,7 @@ public class ProjectService implements PrjApi {
         this.codeSequenceService = codeSequenceService;
         this.instantiateService = instantiateService;
         this.mdmApi = mdmApi;
+        this.dataScopeGuard = dataScopeGuard;
     }
 
     public PageResp<PrjProject> page(PageReq pageReq, String keyword, String status) {
@@ -80,8 +83,11 @@ public class ProjectService implements PrjApi {
         return resp;
     }
 
+    /** 按 ID 直查数据范围校验（SPRINT-SEC3：SELF/DEPT 档只能看自己/本部门立项的项目） */
     public PrjProject detail(Long id) {
-        return mustGet(id);
+        PrjProject project = mustGet(id);
+        dataScopeGuard.checkByOwner(project.getCreatedBy());
+        return project;
     }
 
     public List<PrjTask> taskTree(Long projectId) {

@@ -51,13 +51,15 @@ public class ContractService {
     private final MdmApi mdmApi;
     private final com.projlife.project.api.PrjApi prjApi;
     private final com.projlife.org.service.ApprovalService approvalService;
+    private final com.projlife.security.auth.DataScopeGuard dataScopeGuard;
     @org.springframework.beans.factory.annotation.Value("${projlife.approval.enabled:false}")
     private boolean approvalEnabled;
 
     public ContractService(CtContractMapper contractMapper, CtContractPaymentPlanMapper planMapper,
                            MdLegalEntityMapper legalEntityMapper, CodeSequenceService codeSequenceService,
                            MdmApi mdmApi, com.projlife.project.api.PrjApi prjApi,
-            com.projlife.org.service.ApprovalService approvalService) {
+                           com.projlife.org.service.ApprovalService approvalService,
+                           com.projlife.security.auth.DataScopeGuard dataScopeGuard) {
         this.contractMapper = contractMapper;
         this.planMapper = planMapper;
         this.legalEntityMapper = legalEntityMapper;
@@ -65,6 +67,7 @@ public class ContractService {
         this.mdmApi = mdmApi;
         this.prjApi = prjApi;
         this.approvalService = approvalService;
+        this.dataScopeGuard = dataScopeGuard;
     }
 
     public PageResp<CtContract> page(PageReq pageReq, String keyword, String status) {
@@ -85,8 +88,11 @@ public class ContractService {
         return resp;
     }
 
+    /** 按 ID 直查数据范围校验（SPRINT-SEC3：SELF/DEPT 档只能看自己/本部门的单据） */
     public CtContract detail(Long id) {
-        return mustGet(id);
+        CtContract contract = mustGet(id);
+        dataScopeGuard.checkByOwner(contract.getCreatedBy());
+        return contract;
     }
 
     /** 关联项目编码（评审提交前至少 1 个，BR-01） */

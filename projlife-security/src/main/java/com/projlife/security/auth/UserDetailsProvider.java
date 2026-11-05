@@ -13,4 +13,7 @@ public interface UserDetailsProvider {
 
     /** 按 userId 加载 */
     LoginUser loadById(Long userId);
+
+    /** 按工号加载（SPRINT-SEC3：DataScopeGuard 查创建人部门用；工号不存在返回 null） */
+    LoginUser loadByUserCode(String userCode);
 }

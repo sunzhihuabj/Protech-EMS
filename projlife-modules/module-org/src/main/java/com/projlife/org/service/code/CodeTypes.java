@@ -188,6 +188,11 @@ public final class CodeTypes {
         return new CodeRequest("AIC:" + date, "AI-" + date + "-", 6);
     }
 
+    /** 回款单：SK-{YYYYMMDD}-{4位}，按日（SPRINT-SEC3：收敛取号走引擎） */
+    public static CodeRequest receipt(String date) {
+        return new CodeRequest("SK:" + date, "SK-" + date + "-", 4);
+    }
+
     /** 编码请求载体：scope_key + 展示前缀 + 流水位数 */
     public static class CodeRequest {
 

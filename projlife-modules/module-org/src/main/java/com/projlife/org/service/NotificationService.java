@@ -7,7 +7,9 @@ import com.projlife.common.api.PageResp;
 import com.projlife.common.exception.BizException;
 import com.projlife.common.spi.NotifyChannelAdapter;
 import com.projlife.org.entity.SysNotification;
+import com.projlife.org.entity.SysUser;
 import com.projlife.org.mapper.SysNotificationMapper;
+import com.projlife.org.mapper.SysUserMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -25,10 +27,13 @@ public class NotificationService {
     private static final Logger log = LoggerFactory.getLogger(NotificationService.class);
 
     private final SysNotificationMapper notificationMapper;
+    private final SysUserMapper userMapper;
     private final NotifyChannelAdapter channelAdapter;
 
-    public NotificationService(SysNotificationMapper notificationMapper, NotifyChannelAdapter channelAdapter) {
+    public NotificationService(SysNotificationMapper notificationMapper, SysUserMapper userMapper,
+                               NotifyChannelAdapter channelAdapter) {
         this.notificationMapper = notificationMapper;
+        this.userMapper = userMapper;
         this.channelAdapter = channelAdapter;
     }
 
@@ -57,6 +62,22 @@ public class NotificationService {
                 log.warn("微信渠道发送异常，降级为仅站内 receiverId={}", receiverId, ex);
             }
         }
+    }
+
+    /** 按工号发送（SPRINT-SEC3：created_by 存工号，提醒类 job 用此入口；工号不存在/system 时静默跳过） */
+    public void sendToUserCode(String userCode, String msgType, String title, String content,
+                               String bizType, String bizId, String channel) {
+        if (userCode == null || userCode.isEmpty() || "system".equals(userCode)) {
+            return;
+        }
+        SysUser user = userMapper.selectOne(new LambdaQueryWrapper<SysUser>()
+                .eq(SysUser::getUserCode, userCode)
+                .last("LIMIT 1"));
+        if (user == null) {
+            log.warn("按工号发送通知失败：工号不存在 userCode={} bizId={}", userCode, bizId);
+            return;
+        }
+        send(user.getId(), msgType, title, content, bizType, bizId, channel);
     }
 
     /** 我的通知（SELF 数据范围由查询条件保证） */
