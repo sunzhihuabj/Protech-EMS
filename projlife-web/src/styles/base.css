@@ -43,6 +43,22 @@ body { overflow: hidden; }
 
 .pl-page { padding: 0; }
 
+/* SPRINT-UI-1 P2：页面载入递进显现（路由容器直接子元素 60ms 递进 fade-up；
+   仅入挂载时触发一次，tab 内切换不重建不重播；prefers-reduced-motion 兜底） */
+.pl-page > * { animation: pl-page-in 240ms ease both; }
+.pl-page > *:nth-child(1) { animation-delay: 0ms; }
+.pl-page > *:nth-child(2) { animation-delay: 60ms; }
+.pl-page > *:nth-child(3) { animation-delay: 120ms; }
+.pl-page > *:nth-child(4) { animation-delay: 160ms; }
+.pl-page > *:nth-child(n+5) { animation-delay: 200ms; }
+@keyframes pl-page-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-page > * { animation: none; }
+}
+
 .pl-toolbar {
   margin-bottom: 12px;
   display: flex;

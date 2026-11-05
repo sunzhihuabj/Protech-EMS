@@ -259,6 +259,17 @@ export default {
 .pl-logo-text { font-size: 16px; letter-spacing: 1px; }
 .pl-menu-scroll { flex: 1; overflow-y: auto; overflow-x: hidden; }
 .pl-menu-scroll >>> .el-menu { border-right: none; }
+/* SPRINT-UI-1 P2：侧栏激活项左侧主色指示条 + 激活/悬停底色（覆盖 Element inline 背景） */
+.pl-menu-scroll >>> .el-menu-item.is-active {
+  background-color: var(--sidebar-on) !important;
+  box-shadow: inset 3px 0 0 var(--accent);
+  color: var(--sidebar-ink) !important;
+  font-weight: 600;
+}
+.pl-menu-scroll >>> .el-menu-item:hover {
+  background-color: var(--sidebar-on) !important;
+  color: var(--sidebar-ink) !important;
+}
 .pl-collapse-btn {
   height: 40px; border: none; background: transparent; color: var(--sidebar-ink-2);
   cursor: pointer; flex-shrink: 0;
