@@ -639,7 +639,7 @@ export default {
 <style scoped>
 .muted { color: var(--ink-3); font-size: 12px; }
 .warn-text { color: var(--danger, #f56c6c); font-size: 12px; margin-left: 8px; }
-.danger-text { color: #f56c6c; }
+.danger-text { color: var(--danger); }
 .spacer { flex: 1; }
 .group-bar { margin-bottom: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
 .group-tag { cursor: pointer; }

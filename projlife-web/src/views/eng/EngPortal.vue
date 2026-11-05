@@ -548,6 +548,6 @@ dpCols: [
 </script>
 
 <style scoped>
-.danger-text { color: #f56c6c; }
+.danger-text { color: var(--danger); }
 .muted { color: var(--ink-3); font-size: 12px; }
 </style>

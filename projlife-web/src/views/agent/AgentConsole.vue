@@ -9,7 +9,8 @@
     <el-row :gutter="16">
       <el-col :span="10">
         <el-card shadow="never">
-          <div slot="header"><b>1. 注册（FR-AGT-01，管理端 JWT，secret 仅返一次）</b></div>
+          <!-- FR-AGT-01（管理端 JWT，secret 仅返一次） -->
+          <div slot="header"><b>1. 注册</b></div>
           <el-form inline size="small">
             <el-form-item label="平台名"><el-input v-model.trim="regForm.platform" style="width: 160px" /></el-form-item>
             <el-form-item label="身份">

@@ -138,7 +138,8 @@
         </el-card>
         <!-- SPRINT-UID-R18：任务依赖（此前 POST /tasks/{id}/dependencies 无任何前端入口） -->
         <el-card shadow="never" :body-style="{ padding: '16px' }">
-          <div slot="header"><b>任务依赖（CPM 前置关系，FR-PRJ-21）</b></div>
+          <!-- FR-PRJ-21 CPM 前置关系 -->
+          <div slot="header"><b>任务依赖</b></div>
           <el-form size="small" label-width="90px">
             <el-form-item label="本任务ID" required>
               <el-select v-model="depForm.taskId" filterable placeholder="选择后继任务" style="width: 100%">

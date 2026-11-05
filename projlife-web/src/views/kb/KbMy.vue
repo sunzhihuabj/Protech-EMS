@@ -1,7 +1,8 @@
 <template>
   <div class="pl-page">
     <el-card shadow="never" :body-style="{ padding: '16px' }">
-      <div slot="header"><b>我的看板订阅（FR-KB-16 组合视图）</b></div>
+      <!-- FR-KB-16 组合视图 -->
+      <div slot="header"><b>我的看板订阅</b></div>
       <el-row :gutter="12" v-loading="loading">
         <el-col :xs="12" :sm="8" :md="8" :lg="6" v-for="b in boards" :key="b.boardCode">
           <el-card shadow="hover" class="kb-my-card" @click.native="go(b)">

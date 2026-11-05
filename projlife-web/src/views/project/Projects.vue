@@ -307,13 +307,13 @@ columns: [
 </script>
 
 <style scoped>
-.muted { color: #98a5b1; font-size: 12px; }
-.gantt { margin-top: 16px; border-top: 1px solid #eee; padding-top: 8px; }
+.muted { color: var(--ink-4); font-size: 12px; }
+.gantt { margin-top: 16px; border-top: 1px solid var(--line); padding-top: 8px; }
 .gantt-row { display: flex; align-items: center; margin-bottom: 4px; }
-.gantt-label { width: 220px; font-size: 12px; color: #556; flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.gantt-track { flex: 1; height: 14px; background: #f5f7f9; border-radius: 4px; position: relative; }
-.gantt-bar { position: absolute; top: 2px; height: 10px; border-radius: 4px; background: #7fa6b5; }
-.gantt-bar.st-DONE { background: #67c23a; }
-.gantt-bar.st-DOING { background: #409eff; }
-.gantt-bar.st-DELAYED { background: #e5484d; }
+.gantt-label { width: 220px; font-size: 12px; color: var(--ink-2); flex-shrink: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gantt-track { flex: 1; height: 14px; background: var(--surface-3); border-radius: 4px; position: relative; }
+.gantt-bar { position: absolute; top: 2px; height: 10px; border-radius: 4px; background: var(--pri-300); }
+.gantt-bar.st-DONE { background: var(--ok); }
+.gantt-bar.st-DOING { background: var(--pri-500); }
+.gantt-bar.st-DELAYED { background: var(--danger); }
 </style>

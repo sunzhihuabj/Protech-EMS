@@ -73,5 +73,5 @@ export default {
 
 <style scoped>
 .json-box { padding: 8px 24px; font-size: 12px; }
-.json-box code { white-space: pre-wrap; word-break: break-all; color: #556; }
+.json-box code { white-space: pre-wrap; word-break: break-all; color: var(--ink-2); }
 </style>

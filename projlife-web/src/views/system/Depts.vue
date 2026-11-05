@@ -124,5 +124,5 @@ export default {
 </script>
 
 <style scoped>
-.danger { color: #e5484d; }
+.danger { color: var(--danger); }
 </style>

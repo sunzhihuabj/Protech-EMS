@@ -286,5 +286,5 @@ moCols: [
 
 <style scoped>
 .muted { color: var(--ink-3); font-size: 12px; }
-.danger-text { color: #f56c6c; }
+.danger-text { color: var(--danger); }
 </style>

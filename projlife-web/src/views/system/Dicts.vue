@@ -174,6 +174,6 @@ export default {
 </script>
 
 <style scoped>
-.empty { color: #98a5b1; text-align: center; padding: 32px 0; }
-.danger { color: #e5484d; }
+.empty { color: var(--ink-4); text-align: center; padding: 32px 0; }
+.danger { color: var(--danger); }
 </style>

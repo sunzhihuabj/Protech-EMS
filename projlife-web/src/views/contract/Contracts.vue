@@ -398,5 +398,5 @@ export default {
 
 <style scoped>
 .extract-row { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
-.extract-key { width: 130px; color: #8a97a3; font-size: 12px; flex-shrink: 0; }
+.extract-key { width: 130px; color: var(--ink-4); font-size: 12px; flex-shrink: 0; }
 </style>

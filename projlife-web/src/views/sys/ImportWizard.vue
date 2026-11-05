@@ -2,7 +2,8 @@
   <!-- P9 导入向导（FR-SYS-11）：下载模板 → 上传 → 干跑报告 → 确认导入 → 批次结果 -->
   <div class="pl-page">
     <el-card shadow="never" :body-style="{ padding: '16px' }">
-      <div slot="header"><b>导入向导（FR-SYS-11：干跑与正式导入两阶段分离）</b></div>
+      <!-- FR-SYS-11：干跑与正式导入两阶段分离 -->
+      <div slot="header"><b>导入向导</b></div>
       <el-steps :active="step" simple style="margin-bottom: 16px">
         <el-step title="下载模板" icon="el-icon-download" />
         <el-step title="上传文件" icon="el-icon-upload" />

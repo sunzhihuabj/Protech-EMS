@@ -63,5 +63,5 @@ export default {
 </script>
 
 <style scoped>
-.empty { color: #98a5b1; padding: 24px 0; text-align: center; }
+.empty { color: var(--ink-4); padding: 24px 0; text-align: center; }
 </style>

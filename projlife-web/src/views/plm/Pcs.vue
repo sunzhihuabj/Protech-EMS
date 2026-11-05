@@ -291,10 +291,10 @@ export default {
     },
     covColor(pct) {
       const v = Number(pct) || 0
-      if (v === 0) return '#f56c6c'
-      if (v < 5) return '#f56c6c'
-      if (v < 15) return '#e6a23c'
-      return '#67c23a'
+      if (v === 0) return 'var(--danger)'
+      if (v < 5) return 'var(--danger)'
+      if (v < 15) return 'var(--warn)'
+      return 'var(--ok)'
     },
     covTagType(verdict) {
       if (verdict === '零覆盖' || verdict === '严重不足') return 'danger'

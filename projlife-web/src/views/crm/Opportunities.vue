@@ -38,7 +38,8 @@
       </el-col>
       <el-col :span="8">
         <el-card shadow="never">
-          <div slot="header"><b>销售漏斗（FR-CRM-13）</b></div>
+          <!-- FR-CRM-13 -->
+          <div slot="header"><b>销售漏斗</b></div>
           <div v-if="funnel">
             <p>跟踪中 <b>{{ funnel.tracking }}</b> 个 · 金额 {{ funnel.trackingAmount }}</p>
             <p>已成交 <b>{{ funnel.won }}</b> 个 · 金额 {{ funnel.wonAmount }}</p>
@@ -222,7 +223,7 @@ export default {
 </script>
 
 <style scoped>
-.muted { color: #98a5b1; font-size: 13px; }
+.muted { color: var(--ink-4); font-size: 13px; }
 .opp-win { color: var(--pri-500, #1F7B8C); font-weight: 600; }
 .opp-win:hover { color: var(--pri-700, #155E6C); }
 </style>

@@ -34,7 +34,7 @@
           <el-table-column prop="actualQty" label="实盘" width="100" />
           <el-table-column prop="diffQty" label="差异" width="100">
             <template slot-scope="{ row }">
-              <span v-if="row.diffQty !== null" :style="{ color: Number(row.diffQty) < 0 ? '#f56c6c' : '#67c23a' }">{{ row.diffQty }}</span>
+              <span v-if="row.diffQty !== null" :style="{ color: Number(row.diffQty) < 0 ? 'var(--danger)' : 'var(--ok)' }">{{ row.diffQty }}</span>
               <span v-else class="muted">未盘</span>
             </template>
           </el-table-column>
@@ -68,7 +68,7 @@
               <el-button v-if="row.status === 'CANDIDATE'" size="mini" type="text" @click="confirmSlow(row)">确认（需归因）</el-button>
               <el-button v-if="row.status === 'CONFIRMED'" size="mini" type="text" @click="dispose(row)">发起处置</el-button>
             </template>
-          </el-table>
+          </el-table-column>
         </el-table>
 
         <!-- SPRINT-UID-R15：处置单台账（审批 L1/L2/L3 + 完成回填）——修复"发起后无审批/完成入口"断链 -->

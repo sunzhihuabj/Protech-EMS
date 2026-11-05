@@ -126,7 +126,8 @@
         </el-card>
         <!-- SPRINT-UID-R16：接入 file-service 文件上传中心 -->
         <el-card shadow="never">
-          <div slot="header"><b>附件（只读水印件，BR-07）</b></div>
+          <!-- BR-07 只读水印件 -->
+          <div slot="header"><b>附件</b></div>
           <div style="margin-bottom: 8px">
             <el-upload
               :action="'/api/v1/files/upload'"

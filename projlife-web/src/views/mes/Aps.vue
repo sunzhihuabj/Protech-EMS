@@ -21,7 +21,8 @@
       <!-- L1 排产 -->
       <el-tab-pane label="L1 顺排" name="l1">
         <el-card shadow="never">
-          <div slot="header"><b>L1 粗排：优先级→订单→工序序顺排，最小负载选资源（FR-APS）</b></div>
+          <!-- FR-APS：L1 粗排 优先级→订单→工序序顺排，最小负载选资源 -->
+          <div slot="header"><b>L1 粗排</b></div>
           <el-form inline size="small">
             <el-form-item label="订单ID（逗号分隔）"><el-input v-model.trim="l1Form.orderIds" style="width: 240px" placeholder="如 3,4" /></el-form-item>
             <el-form-item label="开始日"><el-date-picker v-model="l1Form.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" /></el-form-item>

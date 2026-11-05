@@ -2,11 +2,30 @@
   <!-- 登录页（UID-02 §8.1）：左品牌区（≥1366）+ 右表单区；错误不区分账号/密码（防枚举）；
        锁定显示"锁定至 HH:MM"；禁止自助注册与自助找回；审计提示常显 -->
   <div class="pl-login">
-    <div class="pl-brand" aria-hidden="true">
-      <div class="pl-brand-logo">P</div>
-      <h1>Protech 企业综合业务管理系统</h1>
-      <p>订单全生命周期 · 一体化经营总台</p>
+    <!-- 背景装饰层：工程网格 + 主色 glow（纯 CSS，随主题主色联动） -->
+    <div class="pl-login-bg" aria-hidden="true">
+      <div class="pl-login-grid"></div>
+      <div class="pl-login-glow pl-login-glow--a"></div>
+      <div class="pl-login-glow pl-login-glow--b"></div>
     </div>
+
+    <div class="pl-brand" aria-hidden="true">
+      <div class="pl-brand-logo">
+        <svg viewBox="0 0 48 48" width="44" height="44">
+          <path d="M12 40 V10 h14 a10 10 0 0 1 0 20 h-14" fill="none"
+                stroke="currentColor" stroke-width="4" stroke-linecap="square" />
+          <path d="M26 30 v10" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="square" />
+        </svg>
+      </div>
+      <h1>Protech 企业综合业务管理系统</h1>
+      <p class="pl-brand-sub">订单全生命周期 · 一体化经营总台</p>
+      <ul class="pl-brand-points">
+        <li><i class="el-icon-circle-check"></i>商机 → 合同 → 交付 → 回款 全链闭环</li>
+        <li><i class="el-icon-circle-check"></i>九板经营驾驶舱 · 实时红灯预警</li>
+        <li><i class="el-icon-circle-check"></i>全程留痕审计 · 数据范围分级管控</li>
+      </ul>
+    </div>
+
     <div class="pl-login-card">
       <h2 class="pl-login-title">登录</h2>
       <el-form @submit.native.prevent="onSubmit">
@@ -72,25 +91,65 @@ export default {
 
 <style scoped>
 .pl-login {
-  height: 100%; display: flex; align-items: center; justify-content: center; gap: 64px;
-  background: linear-gradient(135deg, var(--pri-800) 0%, var(--pri-600) 100%);
+  height: 100%; position: relative; overflow: hidden;
+  display: flex; align-items: center; justify-content: center; gap: 72px;
+  background: linear-gradient(135deg, var(--pri-900) 0%, var(--pri-700) 55%, var(--pri-600) 100%);
 }
-.pl-brand { color: #fff; max-width: 380px; }
+
+/* --- 背景装饰：工程网格 + 双 glow 光斑（取主色，随主题联动） --- */
+.pl-login-bg { position: absolute; inset: 0; pointer-events: none; }
+.pl-login-grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, #000 30%, transparent 100%);
+  -webkit-mask-image: radial-gradient(ellipse 90% 80% at 50% 45%, #000 30%, transparent 100%);
+}
+.pl-login-glow { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .35; }
+.pl-login-glow--a { width: 480px; height: 480px; left: -120px; bottom: -160px; background: var(--pri-300); }
+.pl-login-glow--b { width: 360px; height: 360px; right: -100px; top: -120px; background: var(--accent); opacity: .22; }
+
+/* --- 品牌区 --- */
+.pl-brand { position: relative; color: #fff; max-width: 400px; animation: pl-rise .5s ease both; }
 .pl-brand-logo {
-  width: 48px; height: 48px; border-radius: var(--r-3); background: rgba(255,255,255,.12);
-  display: flex; align-items: center; justify-content: center; font-size: 24px; font-weight: 700;
-  margin-bottom: 16px;
+  width: 56px; height: 56px; border-radius: var(--r-3);
+  background: rgba(255,255,255,.10); border: 1px solid rgba(255,255,255,.18);
+  display: flex; align-items: center; justify-content: center; color: var(--accent);
+  margin-bottom: 20px; box-shadow: inset 0 1px 0 rgba(255,255,255,.12);
 }
-.pl-brand h1 { font-size: 24px; margin: 0 0 8px; }
-.pl-brand p { color: rgba(255,255,255,.72); font-size: 14px; }
+.pl-brand h1 { font-size: 26px; margin: 0 0 10px; letter-spacing: 1px; }
+.pl-brand-sub { color: rgba(255,255,255,.72); font-size: 14px; margin: 0 0 28px; }
+.pl-brand-points { list-style: none; margin: 0; padding: 0; }
+.pl-brand-points li {
+  display: flex; align-items: center; gap: 8px; font-size: 13px;
+  color: rgba(255,255,255,.78); padding: 7px 0;
+}
+.pl-brand-points i { color: var(--accent); font-size: 14px; }
+
+/* --- 表单卡（入场动效 + 细节精修） --- */
 .pl-login-card {
-  width: 380px; padding: 36px; background: var(--surface);
-  border-radius: var(--r-3); border: 1px solid var(--line); box-shadow: var(--elev-3);
+  position: relative; width: 380px; padding: 38px 36px 30px; background: var(--surface);
+  border-radius: var(--r-4); border: 1px solid var(--line); box-shadow: var(--elev-3);
+  animation: pl-rise .5s ease .12s both;
 }
-.pl-login-title { margin: 0 0 20px; font-size: 20px; color: var(--ink); }
-.pl-btn { width: 100%; }
+.pl-login-card::before {
+  content: ''; position: absolute; top: 0; left: 36px; right: 36px; height: 3px;
+  border-radius: 0 0 var(--r-1) var(--r-1); background: var(--pri-500);
+}
+.pl-login-title { margin: 0 0 22px; font-size: 20px; color: var(--ink); }
+.pl-btn { width: 100%; letter-spacing: 6px; font-weight: 600; }
 .pl-tip { color: var(--ink-3); font-size: 12px; margin-top: 16px; }
 .pl-lock { color: var(--danger-ink); font-size: 13px; margin-top: 12px; }
 .pl-audit { color: var(--ink-4); font-size: 11px; margin-top: 12px; border-top: 1px dashed var(--line); padding-top: 12px; }
+
+@keyframes pl-rise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pl-brand, .pl-login-card { animation: none; }
+}
 @media (max-width: 1365px) { .pl-brand { display: none; } }
 </style>

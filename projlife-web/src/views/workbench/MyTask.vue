@@ -26,7 +26,8 @@
 
     <!-- 部门负载（FR-PRJ-25：按 assignee 聚合工作日占比） -->
     <el-card shadow="never" :body-style="{ padding: '16px' }">
-      <div slot="header"><b>部门负载（FR-PRJ-25）</b></div>
+      <!-- FR-PRJ-25 -->
+      <div slot="header"><b>部门负载</b></div>
       <div class="load-toolbar">
         <span class="muted">部门ID</span>
         <el-input-number v-model="loadQuery.deptId" :min="1" :controls="false" size="small" style="width: 90px" />

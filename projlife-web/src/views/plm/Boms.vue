@@ -162,7 +162,7 @@ export default {
       this.loading = true
       this.$http.get('/plm/bom', { params: this.query }).then(body => {
         this.records = (body.data && body.data.records) || []
-        this.total = (body.data && body.data.total) || 0
+        this.total = Number((body.data && body.data.total) || 0) || 0
       }).catch(showError).finally(() => { this.loading = false })
     },
     loadMaterials() {
@@ -263,7 +263,7 @@ export default {
 </script>
 
 <style scoped>
-.not-applicable { color: #e08700; font-size: 12px; margin-top: 4px; }
-.issues { max-height: 160px; overflow: auto; font-size: 12px; color: #556; }
+.not-applicable { color: var(--warn-ink); font-size: 12px; margin-top: 4px; }
+.issues { max-height: 160px; overflow: auto; font-size: 12px; color: var(--ink-2); }
 .issues div { margin-bottom: 4px; }
 </style>
