@@ -44,6 +44,46 @@
           <el-button v-permission="'inv:count:manage'" size="mini" :disabled="!countId" @click="startCount">开始盘点</el-button>
           <el-button v-permission="'inv:count:manage'" size="mini" type="warning" :disabled="!countId" @click="reviewCount">复核生成差异单</el-button>
         </div>
+
+        <!-- SPRINT-ORPHAN1：差异单台账（此前复核生成后无查询/审批入口） -->
+        <h4 class="inv-sub">差异单（A-31 分级：&lt;1 万 L1 / &lt;10 万 L2 / 其余 L3；R11 审 L1，R10/R15 审 L2/L3）</h4>
+        <div class="pl-toolbar" style="margin-bottom: 6px">
+          <el-select v-model="diffFilter" size="mini" style="width: 120px" clearable placeholder="审批状态" @change="loadDiffs">
+            <el-option value="pending" label="待审批" /><el-option value="approved" label="已审批" />
+          </el-select>
+          <el-button size="mini" icon="el-icon-refresh" @click="loadDiffs">刷新</el-button>
+        </div>
+        <el-table :data="diffList" v-loading="diffLoading" size="small" border>
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="diffNo" label="差异单号" width="150" />
+          <el-table-column prop="countId" label="盘点单" width="80" />
+          <el-table-column prop="materialId" label="物料" width="90" />
+          <el-table-column prop="bookQty" label="账面" width="90" />
+          <el-table-column prop="actualQty" label="实盘" width="90" />
+          <el-table-column prop="diffQty" label="差异" width="90">
+            <template slot-scope="{ row }">
+              <span :style="{ color: Number(row.diffQty) < 0 ? 'var(--danger)' : 'var(--ok)' }">{{ row.diffQty }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="diffAmount" label="差异金额" width="100" align="right" />
+          <el-table-column prop="cause" label="归因(E-37)" width="150" />
+          <el-table-column prop="approvalLevel" label="级别" width="70">
+            <template slot-scope="{ row }"><el-tag size="mini">{{ row.approvalLevel }}</el-tag></template>
+          </el-table-column>
+          <el-table-column label="状态" width="90">
+            <template slot-scope="{ row }">
+              <el-tag v-if="row.approvedAt" size="mini" type="success">已闭环</el-tag>
+              <el-tag v-else size="mini" type="danger">待审批</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="110" fixed="right">
+            <template slot-scope="{ row }">
+              <el-button v-if="!row.approvedAt" size="mini" type="text" class="inv-act"
+                         v-permission="'inv:count:manage'" @click="approveDiff(row)">批{{ row.approvalLevel }}</el-button>
+              <span v-else class="pl-empty-val">—</span>
+            </template>
+          </el-table-column>
+        </el-table>
       </el-tab-pane>
 
       <!-- 呆滞 -->
@@ -308,6 +348,7 @@ export default {
       countId: null, countLines: [], countLoading: false,
       countDialog: false, countForm: { countType: 'A' }, countFormLines: [{}],
       entryDialog: false, entryLines: [],
+      diffList: [], diffLoading: false, diffFilter: '',
       slowList: [], slowLoading: false, slowDialog: false,
       slowForm: { responsibility: 'DESIGN' }, disposeDialog: false, disposeForm: {}, disposeRow: null,
       // SPRINT-UID-R15：处置单台账 + 补货全链（BR-05）
@@ -323,11 +364,13 @@ export default {
     this.loadSlow()
     this.loadDisposals()
     this.loadReplenish()
+    this.loadDiffs()
   },
   watch: {
     tab(val) {
       if (val === 'slow') { this.loadSlow(); this.loadDisposals() }
       if (val === 'replenish') this.loadReplenish()
+      if (val === 'count') this.loadDiffs()
     }
   },
   methods: {
@@ -491,7 +534,25 @@ export default {
       http.post(`/inv/counts/${this.countId}/review`).then(body => {
         const diffs = body.data || []
         this.$notify.success({ title: '复核完成', message: '生成差异单 ' + diffs.length + ' 张（无归因不调账已校验）' })
+        this.loadDiffs()
       }).catch(showError)
+    },
+    loadDiffs() {
+      this.diffLoading = true
+      const params = this.diffFilter ? { approved: this.diffFilter === 'approved' } : {}
+      http.get('/inv/counts/diffs', { params }).then(body => {
+        this.diffList = body.data || []
+      }).catch(showError).finally(() => { this.diffLoading = false })
+    },
+    approveDiff(row) {
+      this.$confirm(`确认按 ${row.approvalLevel} 审批差异单 ${row.diffNo}？通过即闭环调账`, '差异审批', {
+        confirmButtonText: '通过', cancelButtonText: '取消', type: 'warning'
+      }).then(() => {
+        http.post(`/inv/counts/diffs/${row.id}/approve`, { level: row.approvalLevel }).then(() => {
+          this.$message.success('差异单已审批闭环')
+          this.loadDiffs()
+        }).catch(showError)
+      }).catch(() => {})
     },
     loadSlow() {
       this.slowLoading = true

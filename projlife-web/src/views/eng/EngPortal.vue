@@ -25,8 +25,33 @@
           <el-button v-permission="'eng:log'" size="small" type="primary" icon="el-icon-edit-outline" @click="logDialog = true">记施工日志</el-button>
           <el-button v-permission="'eng:install'" size="small" @click="qcDialog = true">质量检查</el-button>
           <el-button v-permission="'eng:expense'" size="small" @click="issueDialog = true">现场领料</el-button>
+          <span class="muted">日志提交后经 AI-009 合规检查（降级不阻塞）</span>
         </div>
-        <el-empty description="记录提交后经 AI-009 合规检查（降级不阻塞），可在售后/整改模块跟踪闭环" :image-size="70" />
+
+        <!-- SPRINT-ORPHAN1：领料台账（此前领料后无查询/退料入口） -->
+        <h4 class="muted" style="margin: 4px 0 6px">领料台账（退料累计不得超领料）</h4>
+        <el-table :data="issueList" v-loading="issueLoading" size="small" border>
+          <el-table-column prop="id" label="ID" width="60" />
+          <el-table-column prop="projectId" label="项目" width="80" />
+          <el-table-column prop="dispatchId" label="派工单" width="80" />
+          <el-table-column prop="materialId" label="物料" width="90" />
+          <el-table-column prop="issueQty" label="领料数" width="90" align="right" />
+          <el-table-column prop="returnQty" label="已退数" width="90" align="right">
+            <template slot-scope="{ row }">{{ row.returnQty == null ? '—' : row.returnQty }}</template>
+          </el-table-column>
+          <el-table-column prop="status" label="状态" width="100">
+            <template slot-scope="{ row }">
+              <pt-status-tag :value="row.status || 'ISSUED'" :dict="'ISSUED:已领用,RETURNED:已退料,PART_RETURNED:部分退料'" />
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="110" fixed="right">
+            <template slot-scope="{ row }">
+              <el-button v-if="row.returnQty == null || Number(row.returnQty) < Number(row.issueQty)"
+                         v-permission="'eng:expense'" size="mini" type="text" @click="returnIssue(row)">退料</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <p class="muted" style="margin: 8px 0 0">施工日志/质检经弹窗提交后可在项目档案与整改模块跟踪闭环。</p>
       </el-tab-pane>
 
       <!-- 售后 -->
@@ -296,6 +321,7 @@ dpCols: [
       logDialog: false, logForm: {},
       qcDialog: false, qcForm: { result: 'PASS' },
       issueDialog: false, issueForm: {},
+      issueList: [], issueLoading: false,
       woList: [], woLoading: false, woDialog: false, woForm: { urgency: 'NORMAL', warrantyFlag: 0 },
       // SPRINT-UID-R20：班组人员准入
       workerCols: [
@@ -324,6 +350,7 @@ dpCols: [
     this.loadWorkers()
     this.loadUnits()
     this.loadRects()
+    this.loadIssues()
   },
   methods: {
     nextActions(status) {
@@ -370,7 +397,24 @@ dpCols: [
       http.post('/eng/records/material-issues', this.issueForm).then(body => {
         this.$message.success('领料已登记 id=' + body.data)
         this.issueDialog = false
+        this.loadIssues()
       }).catch(showError)
+    },
+    loadIssues() {
+      this.issueLoading = true
+      http.get('/eng/records/material-issues').then(body => {
+        this.issueList = body.data || []
+      }).catch(showError).finally(() => { this.issueLoading = false })
+    },
+    returnIssue(row) {
+      this.$prompt('退料数量（累计不得超领料 ' + row.issueQty + '）', '现场退料 #' + row.id, {
+        inputPattern: /^\d*\.?\d+$/, inputErrorMessage: '数量必须为正数'
+      }).then(({ value }) => {
+        http.post(`/eng/records/material-issues/${row.id}/return`, { qty: value }).then(() => {
+          this.$message.success('退料已登记')
+          this.loadIssues()
+        }).catch(showError)
+      }).catch(() => {})
     },
     loadWo() {
       this.woLoading = true

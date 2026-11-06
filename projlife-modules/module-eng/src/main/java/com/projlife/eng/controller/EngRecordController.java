@@ -52,6 +52,13 @@ public class EngRecordController {
         return ApiResponse.ok(recordService.issue(issue));
     }
 
+    /** 领料台账（SPRINT-ORPHAN1：领料后此前无查询/退料入口） */
+    @GetMapping("/material-issues")
+    @RequirePermission("eng:expense")
+    public ApiResponse<List<EngMaterialIssue>> issues(@RequestParam(required = false) Long projectId) {
+        return ApiResponse.ok(recordService.issueList(projectId));
+    }
+
     /** 现场退料（累计不超领料） */
     @PostMapping("/material-issues/{id}/return")
     @RequirePermission("eng:expense")

@@ -163,6 +163,21 @@ public class InventoryCountService {
         return created;
     }
 
+    /** 差异单台账（SPRINT-ORPHAN1 转正：复核生成后此前无查询/审批入口） */
+    @RequirePermission("inv:count:manage")
+    public List<InvDiff> diffList(Boolean approved) {
+        LambdaQueryWrapper<InvDiff> wrapper = new LambdaQueryWrapper<InvDiff>()
+                .orderByDesc(InvDiff::getId);
+        if (approved != null) {
+            if (approved) {
+                wrapper.isNotNull(InvDiff::getApprovedAt);
+            } else {
+                wrapper.isNull(InvDiff::getApprovedAt);
+            }
+        }
+        return diffMapper.selectList(wrapper);
+    }
+
     /** 差异审批：L1/L2/L3 权限分离（动态校验）；通过即闭环 */
     @Transactional
     public InvDiff approve(Long diffId, String level) {

@@ -570,6 +570,16 @@ public class BomService {
         return id;
     }
 
+    /** ECN 台账（审批列表数据源，SPRINT-ORPHAN1 转正） */
+    public List<BomChange> ecnList(String status) {
+        LambdaQueryWrapper<BomChange> wrapper = new LambdaQueryWrapper<BomChange>()
+                .orderByDesc(BomChange::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(BomChange::getStatus, status);
+        }
+        return changeMapper.selectList(wrapper);
+    }
+
     /** FR-PLM-28/30 + BR-09：ECN 变更（旧料处置必填 ≥10 字） */
     @Audited(module = "bom", action = "create_ecn", targetType = "bom_change", targetId = "{0.changeNo}")
     @Transactional

@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -68,6 +69,13 @@ public class InventoryCountController {
     @RequirePermission("inv:count:manage")
     public ApiResponse<List<InvDiff>> review(@PathVariable Long id) {
         return ApiResponse.ok(countService.review(id));
+    }
+
+    /** 差异单台账（SPRINT-ORPHAN1：复核生成后此前无查询/审批入口） */
+    @GetMapping("/diffs")
+    @RequirePermission("inv:count:manage")
+    public ApiResponse<List<InvDiff>> diffs(@RequestParam(required = false) Boolean approved) {
+        return ApiResponse.ok(countService.diffList(approved));
     }
 
     /** 差异审批（L1/L2/L3） */

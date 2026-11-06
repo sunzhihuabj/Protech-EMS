@@ -144,12 +144,14 @@ export default {
       query: { pageNum: 1, pageSize: 20, bomForm: '', bomView: '' },
       dialog: false, form: {},
       lineDialog: false, lines: [], lineForm: {}, lineTarget: null, issues: [], materials: [],
-      ecoDialog: false, ecoForm: {}, impactConfirmed: false, ecoTarget: null
+      ecoDialog: false, ecoForm: {}, impactConfirmed: false, ecoTarget: null,
+      ecns: [], ecnsLoading: false, ecnStatus: ''
     }
   },
   mounted() {
     this.load()
     this.loadMaterials()
+    this.loadEcns()
   },
   methods: {
     viewsFor(form) {
@@ -256,7 +258,26 @@ export default {
         { ...this.ecoForm, impactConfirmed: this.impactConfirmed ? 1 : 0 }).then(body => {
         this.$message.success(`ECN 已提交（${body.data.changeNo || '编号见列表'}）`)
         this.ecoDialog = false
+        this.loadEcns()
       }).catch(showError)
+    },
+    loadEcns() {
+      this.ecnsLoading = true
+      this.$http.get('/plm/ecn', { params: { status: this.ecnStatus || undefined } }).then(body => {
+        this.ecns = body.data || []
+      }).catch(showError).finally(() => { this.ecnsLoading = false })
+    },
+    decideEcn(row, approved) {
+      const action = approved ? '批准发布' : '驳回'
+      this.$confirm(`确认${action} ${row.changeNo}？` + (approved ? '将生成新版本并置为现行，旧版转 OBSOLETE。' : ''), 'ECN 审批', {
+        confirmButtonText: action, cancelButtonText: '取消', type: approved ? 'warning' : 'info'
+      }).then(() => {
+        this.$http.post(`/plm/ecn/${row.id}/publish`, { approved }).then(body => {
+          this.$message.success(approved ? `已发布新版本 ${body.data.newVersion}（新 BOM #${body.data.newBomId}）` : '已驳回')
+          this.loadEcns()
+          this.load()
+        }).catch(showError)
+      }).catch(() => {})
     }
   }
 }
@@ -266,4 +287,5 @@ export default {
 .not-applicable { color: var(--warn-ink); font-size: 12px; margin-top: 4px; }
 .issues { max-height: 160px; overflow: auto; font-size: 12px; color: var(--ink-2); }
 .issues div { margin-bottom: 4px; }
+.ecn-act + .ecn-act { margin-left: 8px; }
 </style>

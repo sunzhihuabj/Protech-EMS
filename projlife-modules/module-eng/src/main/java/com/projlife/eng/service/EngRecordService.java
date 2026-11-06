@@ -26,6 +26,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -131,6 +132,17 @@ public class EngRecordService {
         }
         materialIssueMapper.insert(issue);
         return issue;
+    }
+
+    /** 领料台账（SPRINT-ORPHAN1 转正：领料后此前无查询/退料入口） */
+    @RequirePermission("eng:expense")
+    public List<EngMaterialIssue> issueList(Long projectId) {
+        LambdaQueryWrapper<EngMaterialIssue> wrapper = new LambdaQueryWrapper<EngMaterialIssue>()
+                .orderByDesc(EngMaterialIssue::getId);
+        if (projectId != null) {
+            wrapper.eq(EngMaterialIssue::getProjectId, projectId);
+        }
+        return materialIssueMapper.selectList(wrapper);
     }
 
     /** 现场退料：累计退料不得超领料 */

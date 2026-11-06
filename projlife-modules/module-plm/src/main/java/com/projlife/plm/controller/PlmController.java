@@ -149,6 +149,13 @@ public class PlmController {
         return ApiResponse.ok(bomService.createEcn(change));
     }
 
+    /** ECN 台账（SPRINT-ORPHAN1：提交后此前无任何查询/审批入口，断半环） */
+    @GetMapping("/ecn")
+    @RequirePermission("bom:edit")
+    public ApiResponse<List<BomChange>> ecnList(@RequestParam(required = false) String status) {
+        return ApiResponse.ok(bomService.ecnList(status));
+    }
+
     @PostMapping("/ecn/{changeId}/publish")
     @RequirePermission("bom:ecn:approve")
     public ApiResponse<Map<String, Object>> publishEcn(@PathVariable Long changeId,
