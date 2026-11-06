@@ -161,6 +161,7 @@ public class ProjectController {
     @GetMapping("/{id}/ecos")
     @RequirePermission("project:view")
     public ApiResponse<List<PrjEco>> ecos(@PathVariable Long id) {
+        projectService.assertVisible(id);
         return ApiResponse.ok(ecoService.listByProject(id));
     }
 
@@ -168,6 +169,7 @@ public class ProjectController {
     @PostMapping("/{id}/ecos")
     @RequirePermission("project:eco:create")
     public ApiResponse<Long> createEco(@PathVariable Long id, @RequestBody PrjEco eco) {
+        projectService.assertVisible(id);
         eco.setProjectId(id);
         return ApiResponse.ok(ecoService.create(eco));
     }
@@ -211,6 +213,7 @@ public class ProjectController {
     @GetMapping("/{id}/critical-path")
     @RequirePermission("project:view")
     public ApiResponse<com.projlife.project.service.CpmService.CpmResult> criticalPath(@PathVariable Long id) {
+        projectService.assertVisible(id);
         return ApiResponse.ok(cpmService.calculate(id));
     }
 }

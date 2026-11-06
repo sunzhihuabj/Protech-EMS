@@ -63,6 +63,7 @@ public class TaskService {
     @Transactional
     public void addDependency(PrjTaskDependency dep) {
         PrjTask task = mustGet(dep.getTaskId());
+        projectService.assertVisible(task.getProjectId());
         mustGet(dep.getPreTaskId());
         if (dep.getTaskId().equals(dep.getPreTaskId())) {
             throw BizException.badRequest("任务不能依赖自身");
@@ -120,6 +121,7 @@ public class TaskService {
     @Transactional
     public void start(Long taskId) {
         PrjTask task = mustGet(taskId);
+        projectService.assertVisible(task.getProjectId());
         if (!"TODO".equals(task.getStatus()) && !"DELAYED".equals(task.getStatus())) {
             throw BizException.badRequest("仅未开始/已延期任务可开工（当前 " + task.getStatus() + "）");
         }
@@ -142,6 +144,7 @@ public class TaskService {
     @Transactional
     public void finish(Long taskId, List<Long> outputFileIds, String finishNote) {
         PrjTask task = mustGet(taskId);
+        projectService.assertVisible(task.getProjectId());
         if (!"DOING".equals(task.getStatus())) {
             throw BizException.badRequest("仅进行中任务可完工");
         }
@@ -165,6 +168,7 @@ public class TaskService {
     @Transactional
     public void reviewTask(Long taskId, boolean approved, String reason) {
         PrjTask task = mustGet(taskId);
+        projectService.assertVisible(task.getProjectId());
         if (!"PENDING_APPROVAL".equals(task.getStatus())) {
             throw BizException.badRequest("仅待审批任务可审");
         }
@@ -211,6 +215,7 @@ public class TaskService {
     @Transactional
     public int adjustDates(Long taskId, LocalDate newEnd) {
         PrjTask task = mustGet(taskId);
+        projectService.assertVisible(task.getProjectId());
         int shift = (int) (newEnd.toEpochDay() - task.getPlanEnd().toEpochDay());
         task.setPlanEnd(newEnd);
         if (shift > 0) {

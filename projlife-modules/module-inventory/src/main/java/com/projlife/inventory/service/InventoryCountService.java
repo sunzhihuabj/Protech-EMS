@@ -33,13 +33,16 @@ public class InventoryCountService {
     private final InvCountLineMapper lineMapper;
     private final InvDiffMapper diffMapper;
     private final CodeSequenceService codeSequenceService;
+    private final com.projlife.security.auth.DataScopeGuard dataScopeGuard;
 
     public InventoryCountService(InvCountMapper countMapper, InvCountLineMapper lineMapper,
-                                 InvDiffMapper diffMapper, CodeSequenceService codeSequenceService) {
+                                 InvDiffMapper diffMapper, CodeSequenceService codeSequenceService,
+                                 com.projlife.security.auth.DataScopeGuard dataScopeGuard) {
         this.countMapper = countMapper;
         this.lineMapper = lineMapper;
         this.diffMapper = diffMapper;
         this.codeSequenceService = codeSequenceService;
+        this.dataScopeGuard = dataScopeGuard;
     }
 
     /** 创建盘点单（A/B/C/FULL 四类）；盘点行独立传参（实体无 transient 行集） */
@@ -68,10 +71,10 @@ public class InventoryCountService {
         return count;
     }
 
-    /** 盘点行清单 */
+    /** 盘点行清单（SPRINT-C：按盘点单 ID 直查补数据范围校验） */
     @RequirePermission("inv:count:manage")
     public List<InvCountLine> lines(Long countId) {
-        mustGet(countId);
+        dataScopeGuard.checkByOwner(mustGet(countId).getCreatedBy());
         return lineMapper.selectList(new LambdaQueryWrapper<InvCountLine>()
                 .eq(InvCountLine::getCountId, countId).eq(InvCountLine::getDeleted, 0)
                 .orderByAsc(InvCountLine::getId));

@@ -1,8 +1,11 @@
 package com.projlife.api;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.projlife.common.context.LoginUser;
 import com.projlife.common.context.UserContextHolder;
 import com.projlife.common.exception.BizException;
+import com.projlife.project.entity.PrjMember;
+import com.projlife.project.mapper.PrjMemberMapper;
 import com.projlife.security.auth.DataScopeGuard;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -42,6 +45,9 @@ class S31Security3Test {
 
     @Autowired
     private DataScopeGuard dataScopeGuard;
+
+    @Autowired
+    private PrjMemberMapper memberMapper;
 
     @org.springframework.boot.test.web.server.LocalServerPort
     private int port;
@@ -200,6 +206,54 @@ class S31Security3Test {
                 () -> assertDoesNotThrow(() -> dataScopeGuard.checkByOwner("E0004"), "ALL 档放行"));
         asUser(2L, "E0002", 4L, "SELF",
                 () -> assertDoesNotThrow(() -> dataScopeGuard.checkByOwner("system"), "系统动作数据放行（备案）"));
+    }
+
+    @Test
+    @Order(5)
+    @DisplayName("SEC3-C PROJECT 档落地：非成员 403 / 在册成员放行 / SELF·DEPT 成员兜底")
+    void projectScopeMembership() {
+        Long pid = 999901L;
+        memberMapper.delete(new LambdaQueryWrapper<PrjMember>().eq(PrjMember::getProjectId, pid));
+        try {
+            // PROJECT 档：非在册成员 → 拒
+            asUser(4L, "E0004", 15L, "PROJECT", () ->
+                    assertThrows(BizException.class, () -> dataScopeGuard.checkByProject(pid, "E0002"),
+                            "PROJECT 档非在册成员应拒"));
+
+            // PROJECT 档：在册成员 → 放行
+            PrjMember member = new PrjMember();
+            member.setProjectId(pid);
+            member.setUserId(4L);
+            member.setRoleCode("MEMBER");
+            member.setJoinDate(LocalDate.now());
+            member.setIsActive(1);
+            memberMapper.insert(member);
+            asUser(4L, "E0004", 15L, "PROJECT", () ->
+                    assertDoesNotThrow(() -> dataScopeGuard.checkByProject(pid, "E0002"),
+                            "PROJECT 档在册成员应放行"));
+
+            // SELF 档：owner 非本人但在册成员 → 兜底放行（FR-PRJ-28 协作成员通道）
+            asUser(4L, "E0004", 15L, "SELF", () ->
+                    assertDoesNotThrow(() -> dataScopeGuard.checkByProject(pid, "E0002"),
+                            "SELF 档在册成员兜底放行"));
+
+            // SELF 档：非本人且非成员 → 拒
+            asUser(2L, "E0002", 4L, "SELF", () ->
+                    assertThrows(BizException.class, () -> dataScopeGuard.checkByProject(pid, "E0004"),
+                            "SELF 档非成员看他人项目应拒"));
+
+            // DEPT 档：同部门 owner → owner 口径放行
+            asUser(3L, "E0003", 4L, "DEPT", () ->
+                    assertDoesNotThrow(() -> dataScopeGuard.checkByProject(pid, "E0002"),
+                            "DEPT 档同部门放行"));
+
+            // system 动作数据：放行（备案）
+            asUser(4L, "E0004", 15L, "PROJECT", () ->
+                    assertDoesNotThrow(() -> dataScopeGuard.checkByProject(pid, "system"),
+                            "system 动作数据放行（备案）"));
+        } finally {
+            memberMapper.delete(new LambdaQueryWrapper<PrjMember>().eq(PrjMember::getProjectId, pid));
+        }
     }
 
     /** 进程内直测 Guard：临时写入登录上下文，断言后必清（防泄漏影响后续用例） */

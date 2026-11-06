@@ -95,6 +95,12 @@ public class ContractService {
         return contract;
     }
 
+    /** 合同可见性断言（SPRINT-C）：子资源端点（risks/changes/dispatches/related/payment-plans）
+     *  此前按合同 ID 直查子表绕过 detail 的守卫，统一先过本断言 */
+    public void assertVisible(Long id) {
+        dataScopeGuard.checkByOwner(mustGet(id).getCreatedBy());
+    }
+
     /** 关联项目编码（评审提交前至少 1 个，BR-01） */
     public List<Long> linkedProjectIds(Long contractId) {
         return mdmApi.linkedProjectIds(contractId);

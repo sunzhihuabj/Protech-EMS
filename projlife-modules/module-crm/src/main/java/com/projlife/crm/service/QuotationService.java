@@ -40,17 +40,20 @@ public class QuotationService {
     private final CodeSequenceService codeSequenceService;
     private final MdmApi mdmApi;
     private final com.projlife.crm.service.contractbridge.ContractDraftBridge contractDraftBridge;
+    private final com.projlife.security.auth.DataScopeGuard dataScopeGuard;
 
     public QuotationService(CrmQuotationMapper quotationMapper, CrmQuotationLineMapper lineMapper,
                             CrmOpportunityMapper opportunityMapper, CodeSequenceService codeSequenceService,
                             MdmApi mdmApi,
-                            com.projlife.crm.service.contractbridge.ContractDraftBridge contractDraftBridge) {
+                            com.projlife.crm.service.contractbridge.ContractDraftBridge contractDraftBridge,
+                            com.projlife.security.auth.DataScopeGuard dataScopeGuard) {
         this.quotationMapper = quotationMapper;
         this.lineMapper = lineMapper;
         this.opportunityMapper = opportunityMapper;
         this.codeSequenceService = codeSequenceService;
         this.mdmApi = mdmApi;
         this.contractDraftBridge = contractDraftBridge;
+        this.dataScopeGuard = dataScopeGuard;
     }
 
     public PageResp<CrmQuotation> page(PageReq pageReq, Long opportunityId, String status) {
@@ -71,7 +74,9 @@ public class QuotationService {
         return resp;
     }
 
+    /** SPRINT-C：按报价 ID 直查行表此前绕过数据范围，补 owner 口径校验 */
     public List<CrmQuotationLine> linesOf(Long quotationId) {
+        dataScopeGuard.checkByOwner(mustGet(quotationId).getCreatedBy());
         return lineMapper.selectList(new LambdaQueryWrapper<CrmQuotationLine>()
                 .eq(CrmQuotationLine::getQuotationId, quotationId));
     }
@@ -148,9 +153,10 @@ public class QuotationService {
         quotationMapper.updateById(quotation);
     }
 
-    /** FR-CRM-18：价格基准提示（成本告警不阻断，红字 + R05 确认口径） */
+    /** FR-CRM-18：价格基准提示（成本告警不阻断，红字 + R05 确认口径）（SPRINT-C：补数据范围校验） */
     public Map<String, Object> priceBasis(Long quotationId) {
         CrmQuotation quotation = mustGet(quotationId);
+        dataScopeGuard.checkByOwner(quotation.getCreatedBy());
         Map<String, Object> basis = new HashMap<>();
         basis.put("amount", quotation.getAmount());
         basis.put("unitPrice", quotation.getUnitPrice());

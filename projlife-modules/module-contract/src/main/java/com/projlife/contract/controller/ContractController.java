@@ -156,6 +156,7 @@ public class ContractController {
     @GetMapping("/{id}/ai/risks")
     @RequirePermission("contract:view")
     public ApiResponse<List<CtContractRisk>> risks(@PathVariable Long id) {
+        contractService.assertVisible(id);
         return ApiResponse.ok(aiService.risksOf(id));
     }
 
@@ -199,6 +200,7 @@ public class ContractController {
     @GetMapping("/{id}/changes")
     @RequirePermission("contract:view")
     public ApiResponse<List<CtContractChange>> changes(@PathVariable Long id) {
+        contractService.assertVisible(id);
         return ApiResponse.ok(changeService.changesOf(id));
     }
 
@@ -226,6 +228,7 @@ public class ContractController {
     @GetMapping("/{id}/dispatches")
     @RequirePermission("contract:view")
     public ApiResponse<List<CtContractDispatch>> dispatches(@PathVariable Long id) {
+        contractService.assertVisible(id);
         return ApiResponse.ok(dispatchService.dispatchesOf(id));
     }
 
@@ -241,12 +244,14 @@ public class ContractController {
     @GetMapping("/{id}/related")
     @RequirePermission("contract:view")
     public ApiResponse<java.util.Map<String, Object>> related(@PathVariable Long id) {
+        contractService.assertVisible(id);
         return ApiResponse.ok(relatedService.related(id));
     }
 
     @GetMapping("/{id}/payment-plans")
     @RequirePermission("contract:view")
     public ApiResponse<List<CtContractPaymentPlan>> paymentPlans(@PathVariable Long id) {
+        contractService.assertVisible(id);
         return ApiResponse.ok(financeService.plansOf(id));
     }
 

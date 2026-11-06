@@ -83,14 +83,21 @@ public class ProjectService implements PrjApi {
         return resp;
     }
 
-    /** 按 ID 直查数据范围校验（SPRINT-SEC3：SELF/DEPT 档只能看自己/本部门立项的项目） */
+    /** 按 ID 直查数据范围校验（SPRINT-C：PROJECT 档须在册成员，SELF/DEPT 档 owner 口径 + 成员兜底） */
     public PrjProject detail(Long id) {
         PrjProject project = mustGet(id);
-        dataScopeGuard.checkByOwner(project.getCreatedBy());
+        dataScopeGuard.checkByProject(project.getId(), project.getCreatedBy());
         return project;
     }
 
+    /** 项目可见性断言：子资源/任务/成员维护等按项目 ID 直查的统一入口（SPRINT-C） */
+    public void assertVisible(Long projectId) {
+        PrjProject project = mustGet(projectId);
+        dataScopeGuard.checkByProject(project.getId(), project.getCreatedBy());
+    }
+
     public List<PrjTask> taskTree(Long projectId) {
+        assertVisible(projectId);
         return taskMapper.selectList(new LambdaQueryWrapper<PrjTask>()
                 .eq(PrjTask::getProjectId, projectId)
                 .orderByAsc(PrjTask::getWbsCode));
@@ -166,11 +173,11 @@ public class ProjectService implements PrjApi {
                 .last("LIMIT 1"));
     }
 
-    /** FR-PRJ-28：成员维护 */
+    /** FR-PRJ-28：成员维护（SPRINT-C：须项目可见——防跨项目自提权加入成员） */
     @Audited(module = "project", action = "add_member", targetType = "prj_member", targetId = "{0.userId}")
     @Transactional
     public Long addMember(PrjMember member) {
-        mustGet(member.getProjectId());
+        assertVisible(member.getProjectId());
         member.setIsActive(1);
         member.setJoinDate(LocalDate.now());
         memberMapper.insert(member);
@@ -179,6 +186,7 @@ public class ProjectService implements PrjApi {
 
     @Transactional
     public void removeMember(Long projectId, Long userId) {
+        assertVisible(projectId);
         PrjMember member = memberMapper.selectOne(new LambdaQueryWrapper<PrjMember>()
                 .eq(PrjMember::getProjectId, projectId)
                 .eq(PrjMember::getUserId, userId)
@@ -196,6 +204,7 @@ public class ProjectService implements PrjApi {
     }
 
     public List<PrjMember> membersOf(Long projectId) {
+        assertVisible(projectId);
         return memberMapper.selectList(new LambdaQueryWrapper<PrjMember>()
                 .eq(PrjMember::getProjectId, projectId)
                 .eq(PrjMember::getIsActive, 1));
@@ -203,6 +212,7 @@ public class ProjectService implements PrjApi {
 
     /** FR-PRJ-38/39 阶段门控：阶段任务全部完成方可提交评审 */
     public Map<String, Object> gateStatus(Long projectId, Long stageTaskId) {
+        assertVisible(projectId);
         PrjTask stage = taskMapper.selectById(stageTaskId);
         if (stage == null || stage.getProjectId() == null
                 || !stage.getProjectId().equals(projectId)) {
@@ -221,7 +231,7 @@ public class ProjectService implements PrjApi {
         return result;
     }
 
-    /** 门控评审通过：项目进度推进（简化：记录审批留痕） */
+    /** 门控评审通过：项目进度推进（简化：记录审批留痕）（SPRINT-C：按 taskId 直查同样过守卫） */
     @Audited(module = "project", action = "gate_review_pass", targetType = "prj_task", targetId = "{0}")
     @Transactional
     public void passGate(Long stageTaskId) {
@@ -229,6 +239,7 @@ public class ProjectService implements PrjApi {
         if (stage == null) {
             throw BizException.notFound("阶段任务不存在");
         }
+        assertVisible(stage.getProjectId());
         stage.setStatus("DONE");
         stage.setActualEnd(java.time.LocalDateTime.now());
         taskMapper.updateById(stage);
