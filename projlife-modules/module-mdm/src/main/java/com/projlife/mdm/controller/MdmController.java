@@ -145,6 +145,12 @@ public class MdmController {
         return ApiResponse.ok(farmService.create(farm));
     }
 
+    /** 风场台账（SPRINT-A：派工联动选择器数据源；口径与 GET /farms/{id} 一致——登录可读，派工前置数据） */
+    @GetMapping("/farms")
+    public ApiResponse<java.util.List<MdWindFarm>> farms(@RequestParam(required = false) String status) {
+        return ApiResponse.ok(farmService.list(status));
+    }
+
     @GetMapping("/farms/{id}")
     public ApiResponse<MdWindFarm> farm(@PathVariable Long id) {
         return ApiResponse.ok(farmService.detail(id));

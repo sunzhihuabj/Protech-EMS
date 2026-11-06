@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -34,18 +35,26 @@ public class EngController {
 
     // ---------- 人员准入 ----------
 
+    /** 班组台账（SPRINT-A：派工联动选择器数据源） */
+    @GetMapping("/crews")
+    @RequirePermission("eng:crew:manage")
+    public ApiResponse<List<com.projlife.eng.entity.EngCrew>> crews() {
+        return ApiResponse.ok(engService.crews());
+    }
+
     @PostMapping("/workers")
     @RequirePermission("eng:crew:manage")
     public ApiResponse<Long> createWorker(@RequestBody EngWorker worker) {
         return ApiResponse.ok(engService.assertWorkerAndCreate(worker));
     }
 
-    /** 人员台账（SPRINT-UID-R20 补列表，此前仅有写入/激活端点） */
+    /** 人员台账（FR-ENG-01/02 准入状态可视；crewId 供派工联动按班组过滤） */
     @GetMapping("/workers")
     @RequirePermission("eng:crew:manage")
     public ApiResponse<PageResp<EngWorker>> workers(PageReq pageReq,
-                                                    @RequestParam(required = false) String status) {
-        return ApiResponse.ok(engService.workers(pageReq, status));
+                                                    @RequestParam(required = false) String status,
+                                                    @RequestParam(required = false) Long crewId) {
+        return ApiResponse.ok(engService.workers(pageReq, status, crewId));
     }
 
     @PostMapping("/workers/{id}/activate")

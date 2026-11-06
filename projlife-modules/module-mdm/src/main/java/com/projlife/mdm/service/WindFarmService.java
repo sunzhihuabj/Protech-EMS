@@ -38,6 +38,16 @@ public class WindFarmService {
         return farm;
     }
 
+    /** 风场台账（SPRINT-A 派工联动选择器数据源；仅 ACTIVE 档可选派） */
+    public java.util.List<MdWindFarm> list(String status) {
+        LambdaQueryWrapper<MdWindFarm> wrapper = new LambdaQueryWrapper<MdWindFarm>()
+                .orderByAsc(MdWindFarm::getId);
+        if (status != null && !status.isEmpty()) {
+            wrapper.eq(MdWindFarm::getStatus, status);
+        }
+        return farmMapper.selectList(wrapper);
+    }
+
     /** FR-MDM-10：一地一档查重（省+市+县+归一化名称） */
     public Long findByLocation(String province, String city, String county, String farmName) {
         String core = nameRuleService.stripSuffix(farmName);

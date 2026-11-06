@@ -113,7 +113,8 @@ public class FileService {
                 byte[] watermarked = watermarkService.watermarkImage(in, realName, userCode);
                 // W3：合成图落盘，原图删除（03 册 §4.1，验收 UC-SYS-09）
                 Path w3 = Paths.get(storageRoot, "watermarked", attachment.getFilePath()).normalize();
-                if (!w3.startsWith(Paths.get(storageRoot, "watermarked"))) {
+                Path w3Base = Paths.get(storageRoot, "watermarked").normalize();
+                if (!w3.startsWith(w3Base)) {
                     throw BizException.of(ErrorCode.PARAM_INVALID, "非法路径");
                 }
                 Files.createDirectories(w3.getParent());

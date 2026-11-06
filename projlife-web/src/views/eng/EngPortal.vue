@@ -52,6 +52,36 @@
           </el-table-column>
         </el-table>
         <p class="muted" style="margin: 8px 0 0">施工日志/质检经弹窗提交后可在项目档案与整改模块跟踪闭环。</p>
+
+        <!-- SPRINT-A：现场照片（files/upload 转正到工程域；BR-07 下载走水印合成件） -->
+        <h4 class="muted" style="margin: 14px 0 6px">现场照片（档案号 P-{项目ID}；jpg/png，下载为水印合成件）</h4>
+        <div class="pl-toolbar" style="margin-bottom: 8px">
+          <span class="muted">项目ID</span>
+          <el-input-number v-model="photoProjectId" :min="1" :controls="false" size="small" style="width: 90px" @change="loadPhotos" />
+          <el-upload
+            action="/api/v1/files/upload"
+            name="file"
+            accept=".jpg,.jpeg,.png"
+            :headers="fileUploadHeaders"
+            :data="{ bizType: 'ENG_SITE', bizId: String(photoProjectId || '') }"
+            :show-file-list="false"
+            :on-success="onPhotoUpload"
+            :on-error="onPhotoError">
+            <el-button v-permission="'file:upload'" size="small" type="primary" plain icon="el-icon-camera"
+                       :disabled="!photoProjectId">上传照片</el-button>
+          </el-upload>
+        </div>
+        <div v-if="photos.length" class="eng-photo-grid">
+          <div v-for="p in photos" :key="p.id" class="eng-photo-item">
+            <img v-if="p._url" :src="p._url" :alt="p.fileName" loading="lazy" @click="previewPhoto(p)" />
+            <div v-else class="eng-photo-loading"><i class="el-icon-loading"></i></div>
+            <div class="eng-photo-meta">
+              <span class="eng-photo-name" :title="p.fileName">{{ p.fileName }}</span>
+              <el-button type="text" size="mini" icon="el-icon-download" @click="downloadPhoto(p)">水印件</el-button>
+            </div>
+          </div>
+        </div>
+        <el-empty v-else-if="photoProjectId" description="该项目暂无现场照片" :image-size="46" />
       </el-tab-pane>
 
       <!-- 售后 -->
@@ -148,12 +178,41 @@
       </el-tab-pane>
     </el-tabs>
 
-    <!-- 派工弹窗 -->
-    <el-dialog title="新建派工（缺项目 BR-03 / 缺风场 BR-04）" :visible.sync="dpDialog" width="480px">
+    <!-- 派工弹窗（SPRINT-A：项目→风场/机组、班组→负责人 联动选择器，替代手输 id） -->
+    <el-dialog title="新建派工（缺项目 BR-03 / 缺风场 BR-04）" :visible.sync="dpDialog" width="560px">
       <el-form label-width="100px" size="small">
-        <el-form-item label="项目ID" required><el-input v-model.trim="dpForm.mdProjectId" /></el-form-item>
-        <el-form-item label="风场ID" required><el-input v-model.trim="dpForm.farmId" /></el-form-item>
-        <el-form-item label="负责人ID" required><el-input v-model.trim="dpForm.leaderId" /></el-form-item>
+        <el-form-item label="项目" required>
+          <el-select v-model="dpForm.mdProjectId" filterable remote clearable
+                     :remote-method="searchProjects" :loading="projectSearching"
+                     placeholder="搜索项目名称/编码" style="width: 100%" @change="onDpProjectChange" @clear="clearDpProject">
+            <el-option v-for="p in projectOptions" :key="p.id" :value="p.id"
+                       :label="p.projectCode + ' ' + (p.stdName || p.projectName || '')" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="风场" required>
+          <el-select v-model="dpForm.farmId" filterable placeholder="选择风场（BR-04）" style="width: 100%">
+            <el-option v-for="f in farms" :key="f.id" :value="f.id" :label="f.farmName + '（' + f.farmCode + '）'" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="机组（多选）">
+          <el-select v-model="dpUnitIds" multiple collapse-tags placeholder="选定项目后联动可选机组" style="width: 100%"
+                     :disabled="!dpForm.mdProjectId">
+            <el-option v-for="u in dispatchUnits" :key="u.id" :value="u.id"
+                       :label="u.unitNo + ' ' + (u.unitName || '')" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="班组" required>
+          <el-select v-model="dpForm.crewId" placeholder="选择班组" style="width: 100%" @change="onDpCrewChange">
+            <el-option v-for="c in crews" :key="c.id" :value="c.id" :label="c.crewName + '（' + c.crewCode + '）'" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="负责人" required>
+          <el-select v-model="dpForm.leaderId" filterable placeholder="选定班组后联动在册人员" style="width: 100%"
+                     :disabled="!dpForm.crewId">
+            <el-option v-for="w in dispatchWorkers" :key="w.id" :value="w.id"
+                       :label="w.name + (w.status === 'ACTIVE' ? '' : '（' + w.status + '）')" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="计划开始" required><el-date-picker v-model="dpForm.planStart" type="date" value-format="yyyy-MM-dd" style="width: 100%" /></el-form-item>
         <el-form-item label="计划结束" required><el-date-picker v-model="dpForm.planEnd" type="date" value-format="yyyy-MM-dd" style="width: 100%" /></el-form-item>
       </el-form>
@@ -318,6 +377,10 @@ dpCols: [
       ],
       tab: 'dispatch',
       dispatchList: [], dpLoading: false, dpDialog: false, dpForm: {},
+      // SPRINT-A：派工联动选择器 + 现场照片
+      projectOptions: [], projectSearching: false,
+      farms: [], crews: [], dispatchUnits: [], dispatchWorkers: [], dpUnitIds: [],
+      photos: [], photoProjectId: null,
       logDialog: false, logForm: {},
       qcDialog: false, qcForm: { result: 'PASS' },
       issueDialog: false, issueForm: {},
@@ -344,6 +407,12 @@ dpCols: [
     // 项目ID变化联动机组/整改列表过滤（R20）
     unitProjectId() { this.loadUnits(); this.loadRects() }
   },
+  computed: {
+    fileUploadHeaders() {
+      const token = localStorage.getItem('pl_token')
+      return token ? { Authorization: 'Bearer ' + token } : {}
+    }
+  },
   mounted() {
     this.loadDispatch()
     this.loadWo()
@@ -351,6 +420,8 @@ dpCols: [
     this.loadUnits()
     this.loadRects()
     this.loadIssues()
+    this.loadFarms()
+    this.loadCrews()
   },
   methods: {
     nextActions(status) {
@@ -369,9 +440,16 @@ dpCols: [
         .catch(showError).finally(() => { this.dpLoading = false })
     },
     createDispatch() {
-      http.post('/eng/dispatch', this.dpForm).then(body => {
+      if (!this.dpForm.mdProjectId || !this.dpForm.farmId || !this.dpForm.crewId || !this.dpForm.leaderId) {
+        this.$message.warning('项目/风场/班组/负责人必选（BR-03/04）')
+        return
+      }
+      const payload = { ...this.dpForm, unitIds: this.dpUnitIds.join(',') || null }
+      http.post('/eng/dispatch', payload).then(body => {
         this.$message.success('派工单已创建 ' + (body.data.dispatchNo || body.data))
         this.dpDialog = false
+        this.dpForm = {}
+        this.dpUnitIds = []
         this.loadDispatch()
       }).catch(showError)
     },
@@ -405,6 +483,80 @@ dpCols: [
       http.get('/eng/records/material-issues').then(body => {
         this.issueList = body.data || []
       }).catch(showError).finally(() => { this.issueLoading = false })
+    },
+    /* ---------- SPRINT-A：派工联动选择器 + 现场照片 ---------- */
+    searchProjects(keyword) {
+      if (!keyword || keyword.length < 2) { this.projectOptions = []; return }
+      this.projectSearching = true
+      http.get('/mdm/projects', { params: { pageNum: 1, pageSize: 20, keyword } }).then(body => {
+        this.projectOptions = (body.data && body.data.records) || []
+      }).catch(() => {}).finally(() => { this.projectSearching = false })
+    },
+    loadFarms() {
+      http.get('/mdm/farms', { params: { status: 'ACTIVE' } }).then(body => {
+        this.farms = body.data || []
+      }).catch(() => {})
+    },
+    loadCrews() {
+      http.get('/eng/crews').then(body => {
+        this.crews = body.data || []
+      }).catch(() => {})
+    },
+    onDpProjectChange() {
+      this.dpUnitIds = []
+      this.dispatchUnits = []
+      if (this.dpForm.mdProjectId) {
+        http.get('/eng/units', { params: { projectId: this.dpForm.mdProjectId } }).then(body => {
+          this.dispatchUnits = body.data || []
+        }).catch(() => {})
+      }
+    },
+    clearDpProject() {
+      this.dpUnitIds = []
+      this.dispatchUnits = []
+    },
+    onDpCrewChange() {
+      this.dpForm.leaderId = null
+      this.dispatchWorkers = []
+      if (this.dpForm.crewId) {
+        http.get('/eng/workers', { params: { pageNum: 1, pageSize: 100, crewId: this.dpForm.crewId, status: 'ACTIVE' } }).then(body => {
+          this.dispatchWorkers = (body.data && body.data.records) || []
+        }).catch(() => {})
+      }
+    },
+    loadPhotos() {
+      if (!this.photoProjectId) { this.photos = []; return }
+      http.get('/files', { params: { bizType: 'ENG_SITE', bizId: String(this.photoProjectId) } }).then(body => {
+        const list = body.data || []
+        // BR-07：无原文件出口——缩略图也拉水印合成件转 blob URL（现场照片量小，逐张可接受）
+        list.forEach(p => { this.$set(p, '_url', '') })
+        this.photos = list
+        list.forEach(p => {
+          http.get(`/files/${p.id}/download`, { responseType: 'blob' }).then(blob => {
+            this.$set(p, '_url', URL.createObjectURL(blob))
+          }).catch(() => {})
+        })
+      }).catch(() => {})
+    },
+    onPhotoUpload(resp) {
+      if (resp && resp.code === 0) {
+        this.$message.success('照片已上传（BR-07：下载输出水印合成件）')
+        this.loadPhotos()
+      } else {
+        this.$message.error('上传失败: ' + (resp && resp.message || '未知'))
+      }
+    },
+    onPhotoError(err) { showError(err) },
+    previewPhoto(p) { this.downloadPhoto(p) },
+    downloadPhoto(p) {
+      http.get(`/files/${p.id}/download`, { responseType: 'blob' }).then(blob => {
+        const url = URL.createObjectURL(blob)
+        const a = document.createElement('a')
+        a.href = url
+        a.download = p.fileName
+        a.click()
+        URL.revokeObjectURL(url)
+      }).catch(showError)
     },
     returnIssue(row) {
       this.$prompt('退料数量（累计不得超领料 ' + row.issueQty + '）', '现场退料 #' + row.id, {
@@ -590,6 +742,23 @@ dpCols: [
   }
 }
 </script>
+
+<style scoped>
+/* SPRINT-A：现场照片墙（缩略 3 列网格，令牌取色） */
+.eng-photo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.eng-photo-item {
+  border: 1px solid var(--line); border-radius: var(--r-3); overflow: hidden;
+  background: var(--surface); transition: box-shadow 180ms ease, border-color 180ms ease;
+}
+.eng-photo-item:hover { border-color: var(--pri-300, var(--line-2)); box-shadow: var(--elev-1); }
+.eng-photo-item img { display: block; width: 100%; height: 110px; object-fit: cover; cursor: zoom-in; background: var(--surface-2, var(--line)); }
+.eng-photo-loading {
+  height: 110px; display: flex; align-items: center; justify-content: center;
+  color: var(--ink-4); font-size: 20px; background: var(--surface-2, var(--line));
+}
+.eng-photo-meta { display: flex; align-items: center; gap: 4px; padding: 4px 8px; }
+.eng-photo-name { flex: 1; font-size: 12px; color: var(--ink-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+</style>
 
 <style scoped>
 .danger-text { color: var(--danger); }

@@ -7,10 +7,12 @@ import com.projlife.common.api.PageResp;
 import com.projlife.common.context.UserContextHolder;
 import com.projlife.common.exception.BizException;
 import com.projlife.common.exception.ErrorCode;
+import com.projlife.eng.entity.EngCrew;
 import com.projlife.eng.entity.EngDispatch;
 import com.projlife.eng.entity.EngRectification;
 import com.projlife.eng.entity.EngUnit;
 import com.projlife.eng.entity.EngWorker;
+import com.projlife.eng.mapper.EngCrewMapper;
 import com.projlife.eng.mapper.EngDispatchMapper;
 import com.projlife.eng.mapper.EngRectificationMapper;
 import com.projlife.eng.mapper.EngUnitMapper;
@@ -38,18 +40,27 @@ public class EngService {
     private final EngWorkerMapper workerMapper;
     private final EngUnitMapper unitMapper;
     private final EngRectificationMapper rectificationMapper;
+    private final EngCrewMapper crewMapper;
     private final MdmApi mdmApi;
     private final CodeSequenceService codeSequenceService;
 
     public EngService(EngDispatchMapper dispatchMapper, EngWorkerMapper workerMapper,
                       EngUnitMapper unitMapper, EngRectificationMapper rectificationMapper,
-                      MdmApi mdmApi, CodeSequenceService codeSequenceService) {
+                      EngCrewMapper crewMapper, MdmApi mdmApi, CodeSequenceService codeSequenceService) {
         this.dispatchMapper = dispatchMapper;
         this.workerMapper = workerMapper;
         this.unitMapper = unitMapper;
         this.rectificationMapper = rectificationMapper;
+        this.crewMapper = crewMapper;
         this.mdmApi = mdmApi;
         this.codeSequenceService = codeSequenceService;
+    }
+
+    // ---------- 班组（SPRINT-A 派工联动选择器数据源） ----------
+
+    public List<EngCrew> crews() {
+        return crewMapper.selectList(new LambdaQueryWrapper<EngCrew>()
+                .orderByAsc(EngCrew::getId));
     }
 
     // ---------- 人员准入（FR-ENG-01/02，UC-ENG-10） ----------
@@ -112,11 +123,14 @@ public class EngService {
     // ---------- 台账列表（SPRINT-UID-R20：人员/机组/整改此前仅有写入端点无列表） ----------
 
     /** 人员台账（FR-ENG-01/02 准入状态可视） */
-    public PageResp<EngWorker> workers(PageReq pageReq, String status) {
+    public PageResp<EngWorker> workers(PageReq pageReq, String status, Long crewId) {
         LambdaQueryWrapper<EngWorker> wrapper = new LambdaQueryWrapper<EngWorker>()
                 .orderByDesc(EngWorker::getId);
         if (status != null && !status.isEmpty()) {
             wrapper.eq(EngWorker::getStatus, status);
+        }
+        if (crewId != null) {
+            wrapper.eq(EngWorker::getCrewId, crewId);
         }
         Page<EngWorker> page = workerMapper.selectPage(
                 new Page<>(pageReq.getPageNum(), pageReq.getPageSize()), wrapper);
