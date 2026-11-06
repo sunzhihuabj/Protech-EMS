@@ -12,8 +12,16 @@
       <div v-else class="pt-table-toolbar-main"><slot name="toolbar" /></div>
     </div>
 
-    <!-- 3 表格 -->
-    <el-table ref="table" :data="data" v-loading="loading" :row-key="rowKey"
+    <!-- 3 表格：首屏骨架（loading 且无数据时替代转圈遮罩），翻页遮罩仍走 v-loading -->
+    <div v-if="loading && data.length === 0" class="pt-skeleton" aria-busy="true" aria-label="加载中">
+      <div class="pt-skeleton-row pt-skeleton-row--head">
+        <span v-for="(c, i) in skeletonCols" :key="'sh' + i" :style="{ width: c }"></span>
+      </div>
+      <div v-for="r in 5" :key="'sr' + r" class="pt-skeleton-row">
+        <span v-for="(c, i) in skeletonCols" :key="'sc' + i" :style="{ width: c }"></span>
+      </div>
+    </div>
+    <el-table v-else ref="table" :data="data" v-loading="loading" :row-key="rowKey"
               :height="height" size="small" highlight-current-row
               :empty-text="' '" @sort-change="onSort" @selection-change="onSelection"
               @row-click="row => $emit('row-click', row)"
@@ -36,16 +44,13 @@
       <el-table-column v-if="$scopedSlots.actions" label="操作" :width="actionWidth" fixed="right">
         <template slot-scope="{ row }"><slot name="actions" :row="row" /></template>
       </el-table-column>
-      <!-- 空态（FR-SYS-24 三型：48 图标 + 主文案 16 + 说明 12 + 主行动 32；禁"暂无数据"裸文案） -->
+      <!-- 空态（FR-SYS-24 三型：蓝图插画 + 主文案 16 + 说明 12 + 主行动 32；禁"暂无数据"裸文案） -->
       <template slot="empty">
-        <div class="pt-empty">
-          <i class="el-icon-document" aria-hidden="true"></i>
-          <div class="pt-empty-title">{{ emptyTitle }}</div>
-          <div class="pt-empty-hint">{{ emptyHint }}</div>
+        <pt-empty :type="emptyType" :title="emptyTitle" :hint="emptyHint">
           <el-button v-if="emptyActionText" size="small" type="primary"
                      @click="$emit('empty-action')">{{ emptyActionText }}</el-button>
           <el-button v-if="emptyType === 'no-result'" size="small" @click="$emit('empty-action')">清除筛选</el-button>
-        </div>
+        </pt-empty>
       </template>
     </el-table>
 
@@ -66,8 +71,11 @@
 
 <script>
 /** 金额/数量/日期/编码一律 tabular（UID-01 §二 强制清单）；列宽策略 编码120|名称flex200|日期112|金额120|状态96|操作88 */
+import PtEmpty from './PtEmpty.vue'
+
 export default {
   name: 'PtTable',
+  components: { PtEmpty },
   props: {
     columns: { type: Array, required: true },
     data: { type: Array, default: () => [] },
@@ -91,6 +99,16 @@ export default {
   computed: {
     selectedCount() { return this.selectedRows.length },
     batchPages() { return Math.max(1, Math.ceil(this.selectedCount / this.page.pageSize)) },
+    /** 骨架列宽：有 width 用 width，money/num/日期给短条，其余 flex 长条 */
+    skeletonCols() {
+      return this.columns.map(c => {
+        if (c.width) return Math.min(c.width, 160) + 'px'
+        if (c.type === 'money') return '110px'
+        if (c.type === 'num') return '80px'
+        if (c.type === 'action') return '88px'
+        return '22%'
+      })
+    },
     actionWidth() {
       const n = (this.$scopedSlots.actions && this.columns.length >= 0) ? 1 : 0
       return Math.max(88, n * 88)
@@ -134,8 +152,18 @@ export default {
 .pt-table-pager { height: 56px; display: flex; align-items: center; gap: 12px; }
 .pt-table-pager .spacer { flex: 1; }
 .pt-total { font-size: 12px; color: var(--ink-2); font-variant-numeric: tabular-nums; }
-.pt-empty { padding: 24px 0; }
-.pt-empty >>> .el-icon-document { font-size: 48px; color: var(--ink-4); }
-.pt-empty-title { font-size: 16px; font-weight: 600; color: var(--ink); margin: 8px 0 4px; }
-.pt-empty-hint { font-size: 12px; color: var(--ink-3); margin-bottom: 12px; }
+
+/* SPRINT-UI-2：首屏骨架（shimmer 扫光走令牌色，禁自创 hex） */
+.pt-skeleton { padding: 4px 0; }
+.pt-skeleton-row { display: flex; gap: 16px; padding: 0 12px; margin: 12px 0; }
+.pt-skeleton-row--head span { height: 10px; opacity: .7; }
+.pt-skeleton-row span {
+  display: inline-block; height: 14px; border-radius: var(--r-1, 3px);
+  background: linear-gradient(90deg, var(--surface-2, var(--line)) 25%, var(--row-hover, var(--line-2)) 50%, var(--surface-2, var(--line)) 75%);
+  background-size: 400% 100%; animation: pt-skel 1.4s ease infinite;
+}
+@keyframes pt-skel { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .pt-skeleton-row span { animation: none; }
+}
 </style>

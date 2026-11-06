@@ -24,6 +24,12 @@
             <i :class="m.trend >= 0 ? 'el-icon-top' : 'el-icon-bottom'"></i>{{ Math.abs(m.trend) }}%
           </span>
         </div>
+        <!-- SPRINT-UI-2：12 期迷你趋势（SVG polyline，描边走令牌；单点不画） -->
+        <svg v-if="m.spark && m.spark.length > 1" class="wb-spark" viewBox="0 0 100 26"
+             preserveAspectRatio="none" aria-hidden="true">
+          <polyline :points="sparkPoints(m.spark)" class="wb-spark-line" />
+          <circle :cx="sparkXY(m.spark).x" :cy="sparkXY(m.spark).y" r="2.4" class="wb-spark-dot" />
+        </svg>
         <div class="wb-stat-foot">{{ m.code }}</div>
       </div>
       <div v-if="metricCards.length === 0 && !metricsLoading" class="wb-stat wb-stat--empty">
@@ -173,9 +179,9 @@ export default {
     },
     loadMetrics() {
       this.metricsLoading = true
-      // periods=2：取最近两期计算环比（P1 指标卡趋势）
+      // periods=12：全序列画 sparkline，末两期算环比（SPRINT-UI-2）
       Promise.all(WATCH_METRICS.map(code =>
-        http.get(`/kb/metrics/${code}/trend`, { params: { periods: 2 } })
+        http.get(`/kb/metrics/${code}/trend`, { params: { periods: 12 } })
           .then(body => {
             const periods = (body.data && body.data.periods) || []
             if (periods.length === 0) return null
@@ -185,11 +191,34 @@ export default {
             if (prev && prev.metricValue != null && cur.metricValue != null && Number(prev.metricValue) !== 0) {
               trend = Math.round((Number(cur.metricValue) - Number(prev.metricValue)) / Math.abs(Number(prev.metricValue)) * 100)
             }
-            return { code, value: cur.metricValue, target: cur.targetValue, status: cur.status, trend }
+            const spark = periods.map(p => (p.metricValue == null ? null : Number(p.metricValue)))
+              .filter(v => v != null)
+            return { code, value: cur.metricValue, target: cur.targetValue, status: cur.status, trend, spark }
           }).catch(() => null)
       )).then(list => {
         this.metricCards = list.filter(Boolean)
       }).finally(() => { this.metricsLoading = false })
+    },
+    /** sparkline 归一化：x 均分 0-100，y 按 min/max 压入 3-23（留边距） */
+    sparkXY(series) {
+      const n = series.length
+      const min = Math.min(...series)
+      const max = Math.max(...series)
+      const span = max - min || 1
+      const x = 100
+      const y = 23 - (series[n - 1] - min) / span * 20
+      return { x, y }
+    },
+    sparkPoints(series) {
+      const n = series.length
+      const min = Math.min(...series)
+      const max = Math.max(...series)
+      const span = max - min || 1
+      return series.map((v, i) => {
+        const x = n === 1 ? 0 : (i / (n - 1)) * 100
+        const y = 23 - (v - min) / span * 20
+        return x.toFixed(1) + ',' + y.toFixed(1)
+      }).join(' ')
     },
     metricName(code) {
       return METRIC_NAMES[code] || code
@@ -244,6 +273,18 @@ export default {
 .wb-stat-foot { font-family: var(--mono); font-size: 11px; color: var(--ink-4); }
 .wb-stat--empty { display: flex; flex-direction: column; justify-content: center; }
 .wb-stat-empty-text { font-size: 13px; color: var(--ink-4); margin-top: 6px; }
+
+/* --- SPRINT-UI-2：12 期 sparkline（卡片右下角淡入，不抢数值主体） --- */
+.wb-spark {
+  position: absolute; right: 12px; bottom: 10px; width: 88px; height: 26px;
+  opacity: .75; pointer-events: none;
+}
+.wb-spark-line {
+  fill: none; stroke: var(--pri-400, var(--ink-3)); stroke-width: 1.6;
+  stroke-linecap: round; stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.wb-spark-dot { fill: var(--pri-500, var(--ink-2)); }
 
 /* --- 卡片头三段式：标题 / 副题 / 操作 --- */
 .wb-card { border-color: var(--line); }

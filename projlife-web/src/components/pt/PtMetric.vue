@@ -14,6 +14,12 @@
       <span class="pt-metric-target">目标 {{ target === null ? '—' : displayTarget }}{{ unit }}</span>
       <span v-if="trend === 1" class="pt-metric-trend is-up">▲</span>
       <span v-else-if="trend === -1" class="pt-metric-trend is-down">▼</span>
+      <!-- SPRINT-UI-2：可选 sparkline（>1 点才画，归一化 3-17 高度带） -->
+      <svg v-if="spark && spark.length > 1" class="pt-metric-spark" viewBox="0 0 100 20"
+           preserveAspectRatio="none" aria-hidden="true">
+        <polyline :points="sparkPoints" class="pt-metric-spark-line" />
+        <circle :cx="100" :cy="sparkLastY" r="2" class="pt-metric-spark-dot" />
+      </svg>
     </div>
     <i v-if="$listeners.click" class="el-icon-arrow-right pt-metric-arrow" aria-hidden="true"></i>
   </div>
@@ -33,7 +39,8 @@ export default {
     state: { type: String, default: '' },
     precision: { type: Number, default: 0 },
     trend: { type: Number, default: 0 },
-    manual: { type: Boolean, default: false }
+    manual: { type: Boolean, default: false },
+    spark: { type: Array, default: null }
   },
   computed: {
     displayActual() {
@@ -43,6 +50,25 @@ export default {
     displayTarget() {
       if (this.target === null) return '—'
       return Number(this.target).toFixed(this.precision)
+    },
+    sparkPoints() {
+      const s = this.spark
+      const n = s.length
+      const min = Math.min(...s)
+      const max = Math.max(...s)
+      const span = max - min || 1
+      return s.map((v, i) => {
+        const x = n === 1 ? 0 : (i / (n - 1)) * 100
+        const y = 17 - (v - min) / span * 14
+        return x.toFixed(1) + ',' + y.toFixed(1)
+      }).join(' ')
+    },
+    sparkLastY() {
+      const s = this.spark
+      const min = Math.min(...s)
+      const max = Math.max(...s)
+      const span = max - min || 1
+      return 17 - (s[s.length - 1] - min) / span * 14
     }
   }
 }
@@ -67,5 +93,11 @@ export default {
 .pt-metric-target-row { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ink-3); font-variant-numeric: tabular-nums; }
 .pt-metric-trend.is-up { color: var(--up); }
 .pt-metric-trend.is-down { color: var(--down); }
+.pt-metric-spark { width: 72px; height: 18px; margin-left: auto; opacity: .8; }
+.pt-metric-spark-line {
+  fill: none; stroke: var(--pri-400, var(--ink-3)); stroke-width: 1.5;
+  stroke-linecap: round; stroke-linejoin: round; vector-effect: non-scaling-stroke;
+}
+.pt-metric-spark-dot { fill: var(--pri-500, var(--ink-2)); }
 .pt-metric-arrow { position: absolute; right: 10px; bottom: 8px; font-size: 16px; color: var(--ink-4); }
 </style>
