@@ -81,7 +81,7 @@ class S4FlowTest {
     private void loginAs(String username) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, Object> body = Map.of("username", username, "password", "ProjLife@2026", "client", "web");
+        Map<String, Object> body = Map.of("username", username, "password", "12345678", "client", "web");
         currentToken = (String) ((Map<?, ?>) ((Map<?, ?>) rest
                 .postForEntity("/api/v1/auth/login", new HttpEntity<>(body, headers), Map.class)
                 .getBody()).get("data")).get("accessToken");

@@ -33,7 +33,7 @@ afterAll(async () => {
 
 describe('M00 认证与会话（FR-M00-004）', () => {
   it('登录成功返回 token/refresh/expires', async () => {
-    const res = await post('/api/v1/auth/login', { username: 'admin', password: 'ProjLife@2026' });
+    const res = await post('/api/v1/auth/login', { username: 'admin', password: '12345678' });
     expect(res.statusCode).toBe(201);
     const body = res.json();
     expect(body.code).toBe(0);
@@ -52,7 +52,7 @@ describe('M00 认证与会话（FR-M00-004）', () => {
       const res = await post('/api/v1/auth/login', { username: 'SWB02', password: 'wrong-password' });
       expect(res.statusCode).toBe(422);
     }
-    const res = await post('/api/v1/auth/login', { username: 'SWB02', password: 'ProjLife@2026' });
+    const res = await post('/api/v1/auth/login', { username: 'SWB02', password: '12345678' });
     expect(res.statusCode).toBe(422);
     expect(res.json().msg).toMatch(/锁定/);
     const res2 = await post('/api/v1/auth/login', { username: 'SWB02', password: 'wrong-password' });
@@ -68,7 +68,7 @@ describe('M00 认证与会话（FR-M00-004）', () => {
   });
 
   it('refresh 轮换会话', async () => {
-    const l = await post('/api/v1/auth/login', { username: 'qa-demo', password: 'ProjLife@2026' });
+    const l = await post('/api/v1/auth/login', { username: 'qa-demo', password: '12345678' });
     const refreshToken = l.json().data.refreshToken;
     const r1 = await post('/api/v1/auth/refresh', { refreshToken });
     expect(r1.statusCode).toBe(201);
@@ -79,7 +79,7 @@ describe('M00 认证与会话（FR-M00-004）', () => {
   it('密码强度校验', async () => {
     const me = await get('/api/v1/auth/me', op);
     void me;
-    const res = await post('/api/v1/auth/change-password', { oldPassword: 'ProjLife@2026', newPassword: 'short1' }, op);
+    const res = await post('/api/v1/auth/change-password', { oldPassword: '12345678', newPassword: 'short1' }, op);
     expect(res.statusCode).toBe(422);
     expect(res.json().msg).toMatch(/密码强度/);
   });

@@ -144,7 +144,7 @@ SELECT r.id, p.id, 'seed' FROM sys_role r
 JOIN sys_permission p ON p.id IN (1, 2, 19, 21)
 WHERE r.id IN (1, 2, 6, 7, 8, 9, 10, 11, 12, 13, 14, 16, 17);
 
--- ---------- 用户（演示账号，密码统一 ProjLife@2026；admin 首登强改） ----------
+-- ---------- 用户（演示账号，初始密码 ProjLife@2026——V32 已统一重置为 12345678；admin 首登强改） ----------
 INSERT INTO sys_user (id, user_code, username, real_name, password_hash, phone, dept_id, position, user_type, legal_entity_id, status, must_change_pwd, remark, created_by) VALUES
 (1, 'E0001', 'admin@demo',  '系统管理员', '$2b$10$o.B/R5qKQxULfD5K6fiMbuPce7LtcMqU1ET0vSkXSXbyhm5JlYZPe', '13800000001', 2,  '系统管理', 'INTERNAL', 1, 'ACTIVE', 1, '首登强制改密', 'seed'),
 (2, 'E0002', 'biz@demo',    '商务专员',   '$2b$10$o.B/R5qKQxULfD5K6fiMbuPce7LtcMqU1ET0vSkXSXbyhm5JlYZPe', '13800000002', 4,  '商务',     'INTERNAL', 1, 'ACTIVE', 0, '演示账号', 'seed'),

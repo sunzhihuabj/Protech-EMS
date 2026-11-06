@@ -53,7 +53,7 @@ export async function req(
   return wrap(await r);
 }
 
-export async function login(username: string, password = 'ProjLife@2026'): Promise<string> {
+export async function login(username: string, password = '12345678'): Promise<string> {
   const res = await req('POST', '/api/v1/auth/login', { username, password });
   if (res.statusCode !== 201) {
     throw new Error(`login ${username} failed: ${res.statusCode} ${JSON.stringify(res.body)}`);

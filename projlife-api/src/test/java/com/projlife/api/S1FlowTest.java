@@ -95,7 +95,7 @@ class S1FlowTest {
     private Map<String, Object> login(String username) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, Object> body = Map.of("username", username, "password", "ProjLife@2026", "client", "web");
+        Map<String, Object> body = Map.of("username", username, "password", "12345678", "client", "web");
         ResponseEntityMap resp = post("/api/v1/auth/login", null, body, null);
         return (Map<String, Object>) ((Map<String, Object>) resp.body().get("data"));
     }
@@ -168,7 +168,7 @@ class S1FlowTest {
         Map<String, Object> login = login("biz@demo");
         bizToken = (String) login.get("accessToken");
         var adminLogin = post("/api/v1/auth/login", null,
-                java.util.Map.of("username", "admin@demo", "password", "ProjLife@2026", "client", "web"), null);
+                java.util.Map.of("username", "admin@demo", "password", "12345678", "client", "web"), null);
         adminToken = (String) ((java.util.Map<?, ?>) adminLogin.body().get("data")).get("accessToken");
         Map<String, Object> opp = new HashMap<>();
         opp.put("oppName", "竹子岭风场升降机采购（demo E2E）");

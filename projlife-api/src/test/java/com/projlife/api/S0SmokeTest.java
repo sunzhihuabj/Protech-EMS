@@ -112,7 +112,7 @@ class S0SmokeTest {
     @Test
     @DisplayName("S0-2/S0-15 Flyway 迁移成功 + 种子数据完整（42 组字典/14 部门/18 角色/9 板）")
     void seedLoaded() {
-        Map<String, Object> login = login("admin@demo", "ProjLife@2026", "web");
+        Map<String, Object> login = login("admin@demo", "12345678", "web");
         assertEquals(0, ((Number) login.get("code")).intValue(), "登录应成功");
         String token = tokenOf((Map<String, Object>) login.get("data"));
 
@@ -132,7 +132,7 @@ class S0SmokeTest {
             last = login("tech@demo", "wrong-password", "web");
         }
         assertEquals(1001, ((Number) last.get("code")).intValue(), "错误密码应返回 1001");
-        Map<String, Object> locked = login("tech@demo", "ProjLife@2026", "web");
+        Map<String, Object> locked = login("tech@demo", "12345678", "web");
         // HTTP 状态 429，业务码 6001（TOO_MANY）
         assertEquals(6001, ((Number) locked.get("code")).intValue(), "第 6 次即使密码正确也应锁定");
         // 解锁，避免影响其他用例（真实环境由 15 分钟 TTL 自然解锁）
@@ -142,7 +142,7 @@ class S0SmokeTest {
     @Test
     @DisplayName("S0-3 登出后 token 进入黑名单（401）")
     void logoutBlacklist() throws Exception {
-        Map<String, Object> data = (Map<String, Object>) login("admin@demo", "ProjLife@2026", "web").get("data");
+        Map<String, Object> data = (Map<String, Object>) login("admin@demo", "12345678", "web").get("data");
         String token = tokenOf(data);
         assertEquals(0, ((Number) get("/api/v1/auth/me", token).get("code")).intValue());
         Map<String, Object> logoutResp = post("/api/v1/auth/logout", token, null, null);
@@ -163,7 +163,7 @@ class S0SmokeTest {
     @Test
     @DisplayName("S0-4 RBAC：R11 调用户管理接口被拒 403 + missingPerm")
     void rbacForbidden() {
-        Map<String, Object> data = (Map<String, Object>) login("store@demo", "ProjLife@2026", "web").get("data");
+        Map<String, Object> data = (Map<String, Object>) login("store@demo", "12345678", "web").get("data");
         String token = tokenOf(data);
         Map<String, Object> resp = get("/api/v1/org/users", token);
         assertEquals(2002, ((Number) resp.get("code")).intValue(), "越权应 403/2002");
@@ -172,10 +172,10 @@ class S0SmokeTest {
     @Test
     @DisplayName("BR-08 端限制：施工人员 PC 登录 403，小程序放行")
     void workerClientLimit() {
-        Map<String, Object> pc = login("worker@demo", "ProjLife@2026", "web");
+        Map<String, Object> pc = login("worker@demo", "12345678", "web");
         assertEquals(2002, ((Number) pc.get("code")).intValue(), "PC 登录应 403");
 
-        Map<String, Object> mp = login("worker@demo", "ProjLife@2026", "mp");
+        Map<String, Object> mp = login("worker@demo", "12345678", "mp");
         assertEquals(0, ((Number) mp.get("code")).intValue(), "小程序登录应放行");
     }
 
@@ -237,7 +237,7 @@ class S0SmokeTest {
     @Test
     @DisplayName("S0-8 字典保护：系统内置枚举删除被拒（422）")
     void systemDictProtected() {
-        Map<String, Object> data = (Map<String, Object>) login("admin@demo", "ProjLife@2026", "web").get("data");
+        Map<String, Object> data = (Map<String, Object>) login("admin@demo", "12345678", "web").get("data");
         String token = tokenOf(data);
         Map<String, Object> types = (Map<String, Object>) get("/api/v1/system/dicts", token);
         List<Map<String, Object>> rows = (List<Map<String, Object>>) types.get("data");
@@ -250,7 +250,7 @@ class S0SmokeTest {
     @Test
     @DisplayName("S0-6 审计切面：写操作留痕可查")
     void auditRecorded() {
-        Map<String, Object> data = (Map<String, Object>) login("admin@demo", "ProjLife@2026", "web").get("data");
+        Map<String, Object> data = (Map<String, Object>) login("admin@demo", "12345678", "web").get("data");
         String token = tokenOf(data);
         Map<String, Object> body = Map.of(
                 "userCode", "E9099", "username", "audit-demo@demo", "realName", "审计演示",

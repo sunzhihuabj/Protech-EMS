@@ -33,7 +33,7 @@ cd projlife-ai-gateway && mvn spring-boot:run
 cd projlife-web && npm install && npm run dev
 ```
 
-默认账号：`admin@demo / ProjLife@2026`（首登强制改密）；演示账号见 `db/migration/V2__seed_base.sql`。
+默认账号：`admin@demo / 12345678`（首登强制改密）；演示账号见 `db/migration/V2__seed_base.sql`（种子密码统一 `12345678`，V32 重置）。
 
 ## 演示路径（S0，约 5 分钟）
 

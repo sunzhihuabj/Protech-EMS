@@ -1,7 +1,7 @@
 # UAT 演示验证路径（11 册 §7.2 十步 × 12 册用例）
 
 > 前置：`cd deploy && docker compose up -d`（或本机 dev：api:9090 + web:5173）
-> 演示账号（种子）：admin(R-SYS) / exec(R-EXEC) / chain-sw(R-CHAIN) / pm-demo(R-PM) / op-demo(R-OP) / fin-demo(R-FIN) / ga-demo(R-GA)，密码统一 `ProjLife@2026`
+> 演示账号（种子）：admin(R-SYS) / exec(R-EXEC) / chain-sw(R-CHAIN) / pm-demo(R-PM) / op-demo(R-OP) / fin-demo(R-FIN) / ga-demo(R-GA)，密码统一 `12345678`
 > 每步可独立演示（演示即验收证据）；对应 12 册用例编号标注。
 
 | # | 步骤 | 操作 | 预期（验收要点） | 用例 |

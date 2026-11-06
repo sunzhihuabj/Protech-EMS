@@ -9,7 +9,7 @@ import { CODE_RULES, CONFIG_DEFAULTS_SEED } from './seed-data';
 
 const prisma = new PrismaClient();
 
-const DEMO_PASSWORD = 'ProjLife@2026';
+const DEMO_PASSWORD = '12345678';
 
 // ---------- 01 册 §3.1 组织结构（14 部门 + 技术中心两组 = 16 行，共 121 人） ----------
 interface DeptDef {

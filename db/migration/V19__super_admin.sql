@@ -13,7 +13,7 @@ INSERT IGNORE INTO sys_role_permission (role_id, perm_id, created_by)
 SELECT 20, p.id, 'seed' FROM sys_permission p
 WHERE NOT EXISTS (SELECT 1 FROM sys_role_permission rp WHERE rp.role_id = 20 AND rp.perm_id = p.id);
 
--- 3. 创建 Administrator 用户（密码同种子：ProjLife@2026，首登不强制改密——测试账户）
+-- 3. 创建 Administrator 用户（初始密码同种子 ProjLife@2026——V32 已重置为 12345678，首登不强制改密——测试账户）
 INSERT INTO sys_user (id, user_code, username, real_name, password_hash, phone, dept_id, position, user_type, legal_entity_id, status, must_change_pwd, remark, created_by)
 SELECT 30, 'E0030', 'Administrator', '超级管理员',
        (SELECT password_hash FROM sys_user WHERE username = 'biz@demo' LIMIT 1),

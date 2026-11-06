@@ -34,7 +34,7 @@ public class InternalJobInvoker {
     @Value("${projlife.job.system-username:job-runner}")
     private String username;
 
-    @Value("${projlife.job.system-password:ProjLife@2026}")
+    @Value("${projlife.job.system-password:12345678}")
     private String password;
 
     /** 内部任务端点共享密钥（与主应用 projlife.security.internal-key 同值注入，SPRINT-UID-R17） */

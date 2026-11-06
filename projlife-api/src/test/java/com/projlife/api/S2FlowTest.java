@@ -240,7 +240,7 @@ class S2FlowTest {
     private Map<String, Object> loginBody(String username) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        Map<String, Object> body = Map.of("username", username, "password", "ProjLife@2026", "client", "web");
+        Map<String, Object> body = Map.of("username", username, "password", "12345678", "client", "web");
         org.springframework.http.ResponseEntity<Map> resp =
                 rest.postForEntity("/api/v1/auth/login", new HttpEntity<>(body, headers), Map.class);
         return (Map<String, Object>) ((Map<?, ?>) resp.getBody()).get("data");

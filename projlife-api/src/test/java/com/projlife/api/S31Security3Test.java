@@ -107,7 +107,7 @@ class S31Security3Test {
 
     private void loginAs(String username) {
         Resp resp = post("/api/v1/auth/login", null,
-                Map.of("username", username, "password", "ProjLife@2026", "client", "web"));
+                Map.of("username", username, "password", "12345678", "client", "web"));
         assertEquals(0, resp.code(), "登录应成功: " + username);
         Map<?, ?> data = (Map<?, ?>) resp.data();
         accessToken = (String) data.get("accessToken");
